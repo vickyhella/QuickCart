@@ -13,6 +13,16 @@ export const Products: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'sku', 'price', 'status', 'updatedAt'],
     description: 'Manage press-on nail designs, images, prices, and publishing status.',
+    components: {
+      beforeList: ['/components/ProductBulkEditor#ProductBulkEditLink'],
+      views: {
+        bulkEdit: {
+          Component: '/components/ProductBulkEditor#ProductBulkEditor',
+          path: '/bulk-edit',
+          exact: true,
+        },
+      },
+    },
   },
   fields: [
     { name: 'title', type: 'text', required: true },

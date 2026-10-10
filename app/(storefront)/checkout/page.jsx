@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
+import { shippingCountries } from '@/lib/countries'
 
 const emptyAddress = { fullName: '', phone: '', address1: '', address2: '', city: '', state: '', postalCode: '', country: 'US' }
 
@@ -118,12 +119,17 @@ export default function CheckoutPage() {
                   ['fullName', 'Full name', true], ['phone', 'Phone number', false],
                   ['address1', 'Address', true], ['address2', 'Apartment, suite, etc.', false],
                   ['city', 'City', true], ['state', 'State / Province', false],
-                  ['postalCode', 'ZIP / Postal code', true], ['country', 'Country code (e.g. US)', true],
+                  ['postalCode', 'ZIP / Postal code', true],
                 ].map(([key, label, required]) => <label key={key} className="text-sm">{label}
                   <input required={required} autoComplete={key === 'address1' ? 'address-line1' : key === 'postalCode' ? 'postal-code' : key} value={address[key]} maxLength={key === 'country' ? 2 : undefined} onChange={(event) => setAddress((current) => ({ ...current, [key]: key === 'country' ? event.target.value.toUpperCase() : event.target.value }))} className="block w-full mt-2 rounded-lg border border-[#d8c9c1] px-3 py-3" />
                 </label>)}
+                <label className="text-sm">Country
+                  <select required autoComplete="country" value={address.country} onChange={(event) => setAddress((current) => ({ ...current, country: event.target.value }))} className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-3">
+                    {shippingCountries.map(([code, name]) => <option key={code} value={code}>{name} ({code})</option>)}
+                  </select>
+                </label>
               </div>
-              <p className="text-xs text-[#827873] mt-4">Enter the two-letter country code required for international shipping, such as US, CA, or GB.</p>
+              <p className="text-xs text-[#827873] mt-4">We currently ship to the 33 countries listed above. Shipping uses the same order tiers in every country.</p>
             </section>
           </div>
 

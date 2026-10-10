@@ -49,34 +49,39 @@ export async function GET() {
       if (variant?.id) productURL.searchParams.set('variant', String(variant.id))
       const variantImage = variant?.image && typeof variant.image === 'object' ? variant.image : null
       const itemImageLink = new URL(variantImage?.url || image.url, siteURL).toString()
-      const dimensions = variant ? [['shape', variant.shape], ['length', variant.length], ['size', (variant.size || 's').toUpperCase()]].filter(([, value]) => value) : []
+      const dimensions = variant ? [['Shape', variant.shape], ['Length', variant.length], ['Size', (variant.size || 's').toUpperCase()]].filter(([, value]) => value) : []
       const title = `${product.title}${variant ? ` - ${[variant.shape, variant.length, (variant.size || 's').toUpperCase()].filter(Boolean).join(' ')}` : ''}`
       const availability = variant?.trackStock && Number(variant.stock || 0) < 1 ? 'out_of_stock' : 'in_stock'
-      const gtin = variant?.gtin || product.gtin
-      const mpn = variant?.mpn || product.mpn
+      const gtin = product.gtin
+      const mpn = product.mpn
       const sale = comparePrice > currentPrice ? `<g:sale_price>${amount(currentPrice)}</g:sale_price>` : ''
       const price = comparePrice > currentPrice ? comparePrice : currentPrice
       return `<item>
         <g:id>${text(`${product.id}-${variant?.id || 'default'}`)}</g:id>
         <g:item_group_id>${text(product.id)}</g:item_group_id>
         <g:title>${text(title)}</g:title>
-        ${variant ? `<g:item_group_title>${text(product.title)}</g:item_group_title>` : ''}
-        <g:description>${text(product.description)}</g:description>
+        <g:description>${text(String(product.description || '').replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[`*_>#~-]/g, ' '))}</g:description>
         <g:link>${text(productURL.toString())}</g:link>
         <g:image_link>${text(itemImageLink)}</g:image_link>
         ${extraImages}
         <g:availability>${availability}</g:availability>
         <g:price>${amount(price)}</g:price>
         ${sale}
-        <g:condition>new</g:condition>
+        <g:condition>${text(product.condition || 'new')}</g:condition>
         <g:brand>${text(product.brand || 'Ginny Nana')}</g:brand>
         ${gtin ? `<g:gtin>${text(gtin)}</g:gtin>` : ''}
         ${mpn ? `<g:mpn>${text(mpn)}</g:mpn>` : ''}
         ${!gtin && !mpn ? '<g:identifier_exists>false</g:identifier_exists>' : ''}
-        ${product.googleProductCategory ? `<g:google_product_category>${text(product.googleProductCategory)}</g:google_product_category>` : ''}
-        <g:product_type>${text(product.category || 'press-on-nails')}</g:product_type>
+        <g:google_product_category>${text(product.googleProductCategory || 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails')}</g:google_product_category>
+        <g:product_type>Press-on Nails</g:product_type>
+        <g:age_group>${text(product.ageGroup || 'adult')}</g:age_group>
+        <g:adult>${product.adult === true ? 'yes' : 'no'}</g:adult>
+        <g:gender>${text(product.gender || 'unisex')}</g:gender>
+        ${product.color ? `<g:color>${text(product.color)}</g:color>` : ''}
+        <g:material>${text(product.material || 'ABS Plastic')}</g:material>
         ${variant ? `<g:size>${text((variant.size || 's').toUpperCase())}</g:size>` : ''}
-        ${dimensions.map(([name, value]) => `<g:variant_option><g:name>${text(name)}</g:name><g:value>${text(value)}</g:value></g:variant_option>`).join('')}
+        ${product.multipack && Number(product.multipack) > 1 ? `<g:multipack>${Math.floor(Number(product.multipack))}</g:multipack>` : ''}
+        ${dimensions.map(([name, value]) => `<g:product_detail><g:section_name>Variant</g:section_name><g:attribute_name>${text(name)}</g:attribute_name><g:attribute_value>${text(value)}</g:attribute_value></g:product_detail>`).join('')}
       </item>`
     })
   })

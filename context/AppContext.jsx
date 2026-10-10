@@ -2,6 +2,7 @@
 import { userDummyData } from "@/assets/assets";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 export const AppContext = createContext();
 
@@ -91,6 +92,8 @@ export const AppContextProvider = (props) => {
                 quantity: (current[lineKey]?.quantity || 0) + 1,
             },
         }))
+    const productName = products.find((product) => product._id === line.productId)?.name || 'Product'
+    toast.success(`${productName} added to cart`)
     }
 
     const updateCartQuantity = async (lineKey, quantity) => {

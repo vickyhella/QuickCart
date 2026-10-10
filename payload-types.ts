@@ -204,17 +204,45 @@ export interface Product {
   sku?: string | null;
   brand?: string | null;
   /**
-   * Optional global trade item number. Leave blank if this handmade product has no GTIN.
+   * Merchant Center material. Default is ABS Plastic; enter another material when adding a product.
+   */
+  material?: string | null;
+  color?: string | null;
+  gender?: ('female' | 'male' | 'unisex') | null;
+  ageGroup?: ('adult' | 'kids' | 'toddler' | 'infant' | 'newborn') | null;
+  condition?: ('new' | 'used' | 'refurbished') | null;
+  /**
+   * Enable only for sexually suggestive or adult content.
+   */
+  adult?: boolean | null;
+  /**
+   * Only set when the offer bundles multiple identical products.
+   */
+  multipack?: number | null;
+  /**
+   * Optional GTIN. Leave blank when none is assigned.
    */
   gtin?: string | null;
   /**
-   * Optional manufacturer part number, if the product has one.
+   * Optional manufacturer-assigned MPN. Do not invent one; blank outputs identifier_exists=false if GTIN is also absent.
    */
   mpn?: string | null;
   /**
-   * Optional Google product category for Merchant Center.
+   * Google product category. Select the closest matching taxonomy category.
    */
-  googleProductCategory?: string | null;
+  googleProductCategory?:
+    | (
+        | 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails'
+        | 'Health & Beauty > Personal Care > Cosmetics > Nail Care'
+        | 'Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Polish'
+        | 'Health & Beauty > Personal Care > Cosmetics'
+      )
+    | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  /**
+   * Markdown supported, including images via ![alt](https://...). Raw HTML is not enabled.
+   */
   description: string;
   price: number;
   /**
@@ -222,16 +250,22 @@ export interface Product {
    */
   compareAtPrice?: number | null;
   category: 'press-on-nails' | 'nail-care' | 'accessories' | 'mystery-box';
-  length?: ('x-short' | 'short' | 'medium' | 'long' | 'x-long') | null;
-  shape?: ('square' | 'oval' | 'almond' | 'round') | null;
+  /**
+   * Product-level length label. Variant lengths can be added in the spreadsheet variant editor.
+   */
+  length?: string | null;
+  /**
+   * Product-level shape label. Variant shapes can be added in the spreadsheet variant editor.
+   */
+  shape?: string | null;
   /**
    * Create one row for each shape, length, and size combination. Leave variant prices blank to use the product price.
    */
   variants?:
     | {
         sku: string;
-        length: 'x-short' | 'short' | 'medium' | 'long' | 'x-long';
-        shape: 'square' | 'oval' | 'almond' | 'round';
+        length: string;
+        shape: string;
         size?: ('xs' | 's' | 'm' | 'l') | null;
         price?: number | null;
         compareAtPrice?: number | null;
@@ -506,9 +540,18 @@ export interface ProductsSelect<T extends boolean = true> {
   slug?: T;
   sku?: T;
   brand?: T;
+  material?: T;
+  color?: T;
+  gender?: T;
+  ageGroup?: T;
+  condition?: T;
+  adult?: T;
+  multipack?: T;
   gtin?: T;
   mpn?: T;
   googleProductCategory?: T;
+  seoTitle?: T;
+  seoDescription?: T;
   description?: T;
   price?: T;
   compareAtPrice?: T;

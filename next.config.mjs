@@ -2,6 +2,7 @@
 import { withPayload } from '@payloadcms/next/withPayload';
 
 const nextConfig = {
+    trailingSlash: true,
     images: {
         remotePatterns: [
             {

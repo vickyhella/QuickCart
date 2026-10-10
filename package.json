@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed:products": "node --import tsx/esm scripts/seed-products.mts"
+    "seed:products": "node --import tsx/esm scripts/seed-products.mts",
+    "seed:pages": "node --import tsx/esm scripts/seed-pages.mts"
   },
   "dependencies": {
     "@payloadcms/db-sqlite": "^3.90.2",
@@ -19,6 +20,8 @@
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "react-hot-toast": "^2.5.1",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "sharp": "^0.35.5"
   },
   "devDependencies": {

@@ -5,6 +5,7 @@ import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { Media } from './collections/Media'
+import { Pages } from './collections/Pages'
 import { Products } from './collections/Products'
 import { Users } from './collections/Users'
 
@@ -17,7 +18,7 @@ export default buildConfig({
       baseDir: path.resolve(path.dirname(filename), 'app/(payload)'),
     },
   },
-  collections: [Users, Media, Products],
+  collections: [Users, Media, Products, Pages],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   db: sqliteAdapter({

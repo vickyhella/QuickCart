@@ -14,12 +14,19 @@ export default function Footer() {
             <Link href="/all-products">All products</Link>
             <Link href="/all-products?isNew=true">New arrivals</Link>
             <Link href="/all-products?sale=true">On sale</Link>
-            <Link href="/admin">Product manager</Link>
+            <Link href="/about-us/">About us</Link>
+            <Link href="/contact-us/">Contact us</Link>
           </div>
         </div>
         <div>
-          <h2 className="text-sm font-medium text-[#302522]">Get in touch</h2>
-          <a href="mailto:ginnynana@hotmail.com" className="inline-block text-sm mt-4">ginnynana@hotmail.com</a>
+          <h2 className="text-sm font-medium text-[#302522]">Customer care</h2>
+          <div className="text-sm flex flex-col gap-3 mt-4">
+            <Link href="/privacy-policy/">Privacy policy</Link>
+            <Link href="/terms-conditions/">Terms of service</Link>
+            <Link href="/refunds-returns/">Refunds & returns</Link>
+            <Link href="/shipping-policy/">Shipping policy</Link>
+            <a href="mailto:ginnynana@hotmail.com">ginnynana@hotmail.com</a>
+          </div>
         </div>
       </div>
       <p className="border-t border-[#eee5df] px-5 py-4 text-center text-xs">© {new Date().getFullYear()} Ginny Nana</p>

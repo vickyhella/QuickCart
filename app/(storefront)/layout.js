@@ -1,5 +1,5 @@
 import { Outfit } from "next/font/google";
-import "./globals.css";
+import "../globals.css";
 import { AppContextProvider } from "@/context/AppContext";
 import { Toaster } from "react-hot-toast";
 

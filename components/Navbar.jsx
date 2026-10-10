@@ -18,10 +18,12 @@ const Navbar = () => {
           <Link href="/all-products?shape=almond" className="hover:text-[#8b5e56]">By Shape</Link>
           <Link href="/all-products?isNew=true" className="hover:text-[#8b5e56]">New Arrivals</Link>
           <Link href="/all-products?sale=true" className="hover:text-[#8b5e56]">On Sale</Link>
+          <Link href="/my-orders" className="hover:text-[#8b5e56]">Order status</Link>
         </div>
         <div className="flex items-center gap-4 text-sm">
           <Link href="/admin" className="border border-[#d8c9c1] rounded-full px-4 py-2 hover:bg-[#f8f3ef]">Manage products</Link>
           <Link href="/cart" className="hidden sm:inline">Cart</Link>
+          <Link href="/my-orders" className="sm:hidden">Orders</Link>
         </div>
         <button className="md:hidden text-sm" onClick={() => router.push('/all-products')}>Shop</button>
       </nav>

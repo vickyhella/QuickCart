@@ -19,6 +19,28 @@ export const AppContextProvider = (props) => {
     const [isSeller, setIsSeller] = useState(true)
     const [cartItems, setCartItems] = useState({})
 
+    useEffect(() => {
+        try {
+            const saved = window.localStorage.getItem('ginnynana-cart')
+            if (saved) {
+                const parsed = JSON.parse(saved)
+                const migrated = Object.fromEntries(Object.entries(parsed).map(([key, value]) => {
+                    if (typeof value === 'number') {
+                        return [`${key}:`, { productId: String(key), variantId: '', length: '', shape: '', quantity: value }]
+                    }
+                    return [key, value]
+                }))
+                setCartItems(migrated)
+            }
+        } catch (error) {
+            console.error('Cart restore failed:', error)
+        }
+    }, [])
+
+    useEffect(() => {
+        window.localStorage.setItem('ginnynana-cart', JSON.stringify(cartItems))
+    }, [cartItems])
+
     const fetchProductData = async () => {
         try {
             const response = await fetch('/api/products?limit=100&depth=1&sort=-createdAt&where[status][equals]=published', { cache: 'no-store' })
@@ -52,36 +74,38 @@ export const AppContextProvider = (props) => {
         setUserData(userDummyData)
     }
 
-    const addToCart = async (itemId) => {
-
-        let cartData = structuredClone(cartItems);
-        if (cartData[itemId]) {
-            cartData[itemId] += 1;
+    const addToCart = async (itemId, variant) => {
+        const line = {
+            productId: String(itemId),
+            variantId: variant?.id ? String(variant.id) : '',
+            length: variant?.length || '',
+            shape: variant?.shape || '',
+            quantity: 1,
         }
-        else {
-            cartData[itemId] = 1;
-        }
-        setCartItems(cartData);
-
+        const lineKey = `${line.productId}:${line.variantId || `${line.length}-${line.shape}`}`
+        setCartItems((current) => ({
+            ...current,
+            [lineKey]: {
+                ...line,
+                quantity: (current[lineKey]?.quantity || 0) + 1,
+            },
+        }))
     }
 
-    const updateCartQuantity = async (itemId, quantity) => {
-
-        let cartData = structuredClone(cartItems);
-        if (quantity === 0) {
-            delete cartData[itemId];
-        } else {
-            cartData[itemId] = quantity;
-        }
-        setCartItems(cartData)
-
+    const updateCartQuantity = async (lineKey, quantity) => {
+        setCartItems((current) => {
+            const next = { ...current }
+            if (quantity <= 0) delete next[lineKey]
+            else if (next[lineKey]) next[lineKey] = { ...next[lineKey], quantity }
+            return next
+        })
     }
 
     const getCartCount = () => {
         let totalCount = 0;
-        for (const items in cartItems) {
-            if (cartItems[items] > 0) {
-                totalCount += cartItems[items];
+        for (const lineKey in cartItems) {
+            if (cartItems[lineKey]?.quantity > 0) {
+                totalCount += cartItems[lineKey].quantity;
             }
         }
         return totalCount;
@@ -89,13 +113,14 @@ export const AppContextProvider = (props) => {
 
     const getCartAmount = () => {
         let totalAmount = 0;
-        for (const items in cartItems) {
-            let itemInfo = products.find((product) => product._id === items);
-            if (cartItems[items] > 0) {
-                totalAmount += itemInfo.offerPrice * cartItems[items];
-            }
+        for (const lineKey in cartItems) {
+            const line = cartItems[lineKey]
+            const product = products.find((item) => item._id === line?.productId)
+            const variant = product?.variants?.find((item) => String(item.id) === line?.variantId)
+            const price = Number(variant?.price ?? product?.offerPrice ?? 0)
+            if (product && line?.quantity > 0) totalAmount += price * line.quantity
         }
-        return Math.floor(totalAmount * 100) / 100;
+        return Math.round(totalAmount * 100) / 100;
     }
 
     useEffect(() => {

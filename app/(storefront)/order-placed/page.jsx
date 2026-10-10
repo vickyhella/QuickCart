@@ -1,28 +1,32 @@
 'use client'
-import { assets } from '@/assets/assets'
+
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import Footer from '@/components/Footer'
+import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
-import Image from 'next/image'
-import { useEffect } from 'react'
 
-const OrderPlaced = () => {
-
-  const { router } = useAppContext()
+export default function OrderPlaced() {
+  const [orderNumber, setOrderNumber] = useState('')
+  const { setCartItems } = useAppContext()
 
   useEffect(() => {
-    setTimeout(() => {
-      router.push('/my-orders')
-    }, 5000)
-  }, [])
+    const currentOrderNumber = new URLSearchParams(window.location.search).get('orderNumber') || ''
+    setOrderNumber(currentOrderNumber)
+    if (currentOrderNumber) setCartItems({})
+  }, [setCartItems])
 
   return (
-    <div className='h-screen flex flex-col justify-center items-center gap-5'>
-      <div className="flex justify-center items-center relative">
-        <Image className="absolute p-5" src={assets.checkmark} alt='' />
-        <div className="animate-spin rounded-full h-24 w-24 border-4 border-t-green-300 border-gray-200"></div>
-      </div>
-      <div className="text-center text-2xl font-semibold">Order Placed Successfully</div>
-    </div>
+    <main className="min-h-screen bg-[#fffdfa] text-[#302522]">
+      <Navbar />
+      <section className="px-5 py-24 text-center">
+        <div className="mx-auto w-16 h-16 rounded-full bg-green-100 text-green-800 flex items-center justify-center text-3xl">✓</div>
+        <h1 className="font-serif text-4xl mt-6">Payment confirmed</h1>
+        <p className="text-[#6e5c55] mt-3">Thank you for your order. PayPal confirmed your payment.</p>
+        {orderNumber && <p className="mt-4 text-sm">Order number: <strong>{orderNumber}</strong></p>}
+        <Link href="/all-products" className="inline-block mt-8 rounded-full bg-[#754b43] text-white px-7 py-3">Continue shopping</Link>
+      </section>
+      <Footer />
+    </main>
   )
 }
-
-export default OrderPlaced

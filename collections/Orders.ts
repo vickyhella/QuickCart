@@ -1,0 +1,91 @@
+import type { CollectionConfig } from 'payload'
+
+export const Orders: CollectionConfig = {
+  slug: 'orders',
+  access: {
+    read: ({ req }) => Boolean(req.user),
+    create: () => false,
+    update: ({ req }) => Boolean(req.user),
+    delete: ({ req }) => Boolean(req.user),
+  },
+  admin: {
+    useAsTitle: 'orderNumber',
+    defaultColumns: ['orderNumber', 'customerEmail', 'total', 'paymentStatus', 'fulfillmentStatus', 'createdAt'],
+    description: 'Customer orders and fulfillment status.',
+  },
+  fields: [
+    { name: 'orderNumber', type: 'text', required: true, unique: true, index: true },
+    { name: 'customerEmail', type: 'email', required: true },
+    { name: 'currency', type: 'text', required: true, defaultValue: 'USD' },
+    {
+      name: 'items',
+      type: 'array',
+      required: true,
+      fields: [
+        { name: 'product', type: 'relationship', relationTo: 'products', required: true },
+        { name: 'title', type: 'text', required: true },
+        { name: 'sku', type: 'text' },
+        { name: 'variant', type: 'text' },
+        { name: 'variantId', type: 'text' },
+        { name: 'quantity', type: 'number', required: true, min: 1 },
+        { name: 'unitPrice', type: 'number', required: true, min: 0 },
+      ],
+    },
+    {
+      name: 'shippingAddress',
+      type: 'group',
+      fields: [
+        { name: 'fullName', type: 'text', required: true },
+        { name: 'phone', type: 'text' },
+        { name: 'address1', type: 'text', required: true },
+        { name: 'address2', type: 'text' },
+        { name: 'city', type: 'text', required: true },
+        { name: 'state', type: 'text' },
+        { name: 'postalCode', type: 'text', required: true },
+        { name: 'country', type: 'text', required: true },
+      ],
+    },
+    { name: 'subtotal', type: 'number', required: true, min: 0 },
+    { name: 'shippingTotal', type: 'number', required: true, min: 0, defaultValue: 0 },
+    { name: 'taxTotal', type: 'number', required: true, min: 0, defaultValue: 0 },
+    { name: 'discountTotal', type: 'number', required: true, min: 0, defaultValue: 0 },
+    { name: 'total', type: 'number', required: true, min: 0 },
+    { name: 'promoCode', type: 'text' },
+    {
+      name: 'paymentProvider',
+      type: 'select',
+      options: [
+        { label: 'Stripe', value: 'stripe' },
+        { label: 'PayPal', value: 'paypal' },
+      ],
+    },
+    { name: 'paymentReference', type: 'text', index: true },
+    {
+      name: 'paymentStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'pending',
+      options: [
+        { label: 'Pending', value: 'pending' },
+        { label: 'Paid', value: 'paid' },
+        { label: 'Failed', value: 'failed' },
+        { label: 'Refunded', value: 'refunded' },
+      ],
+    },
+    {
+      name: 'fulfillmentStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'unfulfilled',
+      options: [
+        { label: 'Unfulfilled', value: 'unfulfilled' },
+        { label: 'Processing', value: 'processing' },
+        { label: 'Shipped', value: 'shipped' },
+        { label: 'Delivered', value: 'delivered' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ],
+    },
+    { name: 'trackingNumber', type: 'text' },
+    { name: 'customerNote', type: 'textarea' },
+  ],
+}

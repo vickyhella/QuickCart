@@ -1,77 +1,68 @@
-'use client';
-import React, { useEffect, useState } from "react";
-import { assets, orderDummyData } from "@/assets/assets";
-import Image from "next/image";
-import { useAppContext } from "@/context/AppContext";
-import Footer from "@/components/Footer";
-import Navbar from "@/components/Navbar";
-import Loading from "@/components/Loading";
+'use client'
 
-const MyOrders = () => {
+import { useState } from 'react'
+import Footer from '@/components/Footer'
+import Navbar from '@/components/Navbar'
 
-    const { currency } = useAppContext();
+export default function OrderLookupPage() {
+  const [orderNumber, setOrderNumber] = useState('')
+  const [email, setEmail] = useState('')
+  const [order, setOrder] = useState(null)
+  const [error, setError] = useState('')
+  const [busy, setBusy] = useState(false)
 
-    const [orders, setOrders] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    const fetchOrders = async () => {
-        setOrders(orderDummyData)
-        setLoading(false);
+  const lookup = async (event) => {
+    event.preventDefault()
+    setBusy(true)
+    setError('')
+    setOrder(null)
+    try {
+      const response = await fetch('/api/orders/lookup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderNumber, email }),
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Unable to find this order.')
+      setOrder(result)
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setBusy(false)
     }
+  }
 
-    useEffect(() => {
-        fetchOrders();
-    }, []);
-
-    return (
-        <>
-            <Navbar />
-            <div className="flex flex-col justify-between px-6 md:px-16 lg:px-32 py-6 min-h-screen">
-                <div className="space-y-5">
-                    <h2 className="text-lg font-medium mt-6">My Orders</h2>
-                    {loading ? <Loading /> : (<div className="max-w-5xl border-t border-gray-300 text-sm">
-                        {orders.map((order, index) => (
-                            <div key={index} className="flex flex-col md:flex-row gap-5 justify-between p-5 border-b border-gray-300">
-                                <div className="flex-1 flex gap-5 max-w-80">
-                                    <Image
-                                        className="max-w-16 max-h-16 object-cover"
-                                        src={assets.box_icon}
-                                        alt="box_icon"
-                                    />
-                                    <p className="flex flex-col gap-3">
-                                        <span className="font-medium text-base">
-                                            {order.items.map((item) => item.product.name + ` x ${item.quantity}`).join(", ")}
-                                        </span>
-                                        <span>Items : {order.items.length}</span>
-                                    </p>
-                                </div>
-                                <div>
-                                    <p>
-                                        <span className="font-medium">{order.address.fullName}</span>
-                                        <br />
-                                        <span >{order.address.area}</span>
-                                        <br />
-                                        <span>{`${order.address.city}, ${order.address.state}`}</span>
-                                        <br />
-                                        <span>{order.address.phoneNumber}</span>
-                                    </p>
-                                </div>
-                                <p className="font-medium my-auto">{currency}{order.amount}</p>
-                                <div>
-                                    <p className="flex flex-col">
-                                        <span>Method : COD</span>
-                                        <span>Date : {new Date(order.date).toLocaleDateString()}</span>
-                                        <span>Payment : Pending</span>
-                                    </p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>)}
-                </div>
-            </div>
-            <Footer />
-        </>
-    );
-};
-
-export default MyOrders;
+  return (
+    <main className="min-h-screen bg-[#fffdfa] text-[#302522]">
+      <Navbar />
+      <section className="max-w-2xl mx-auto px-5 py-14 md:py-20">
+        <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">Ginny Nana</p>
+        <h1 className="font-serif text-4xl mt-2">Track your order</h1>
+        <p className="text-sm text-[#6e5c55] mt-3">Enter the order number shown after payment and the email used at checkout.</p>
+        <form onSubmit={lookup} className="grid gap-4 mt-8">
+          <label className="text-sm">Order number
+            <input required value={orderNumber} onChange={(event) => setOrderNumber(event.target.value.toUpperCase())} placeholder="GN-…" className="block w-full mt-2 rounded-lg border border-[#d8c9c1] px-3 py-3" />
+          </label>
+          <label className="text-sm">Email address
+            <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="block w-full mt-2 rounded-lg border border-[#d8c9c1] px-3 py-3" />
+          </label>
+          {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+          <button disabled={busy} className="rounded-full bg-[#754b43] text-white py-3 disabled:opacity-50">{busy ? 'Looking up…' : 'Find order'}</button>
+        </form>
+        {order && <section className="mt-9 rounded-xl border border-[#e8ded8] p-5">
+          <h2 className="font-serif text-2xl">Order {order.orderNumber}</h2>
+          <p className="text-xs text-[#827873] mt-1">Placed {new Date(order.createdAt).toLocaleDateString()}</p>
+          <div className="grid sm:grid-cols-2 gap-3 mt-5 text-sm">
+            <p>Payment: <strong className="capitalize">{order.paymentStatus}</strong></p>
+            <p>Fulfillment: <strong className="capitalize">{order.fulfillmentStatus}</strong></p>
+            {order.trackingNumber && <p className="sm:col-span-2">Tracking number: <strong>{order.trackingNumber}</strong></p>}
+          </div>
+          <ul className="border-t border-[#e8ded8] mt-5 pt-4 space-y-2 text-sm">
+            {order.items.map((item, index) => <li key={`${item.title}-${index}`}>{item.title}{item.variant ? ` — ${item.variant}` : ''} × {item.quantity}</li>)}
+          </ul>
+        </section>}
+      </section>
+      <Footer />
+    </main>
+  )
+}

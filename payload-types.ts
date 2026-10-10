@@ -71,6 +71,8 @@ export interface Config {
     media: Media;
     products: Product;
     pages: Page;
+    orders: Order;
+    discounts: Discount;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +84,8 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    orders: OrdersSelect<false> | OrdersSelect<true>;
+    discounts: DiscountsSelect<false> | DiscountsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -91,8 +95,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'store-settings': StoreSetting;
+  };
+  globalsSelect: {
+    'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -194,6 +202,19 @@ export interface Product {
   title: string;
   slug: string;
   sku?: string | null;
+  brand?: string | null;
+  /**
+   * Optional global trade item number. Leave blank if this handmade product has no GTIN.
+   */
+  gtin?: string | null;
+  /**
+   * Optional manufacturer part number, if the product has one.
+   */
+  mpn?: string | null;
+  /**
+   * Optional Google product category for Merchant Center.
+   */
+  googleProductCategory?: string | null;
   description: string;
   price: number;
   /**
@@ -203,6 +224,24 @@ export interface Product {
   category: 'press-on-nails' | 'nail-care' | 'accessories' | 'mystery-box';
   length?: ('x-short' | 'short' | 'medium' | 'long' | 'x-long') | null;
   shape?: ('square' | 'oval' | 'almond' | 'round') | null;
+  /**
+   * Create one row for each shape and length customers can choose. Leave variant prices blank to use the product price.
+   */
+  variants?:
+    | {
+        sku: string;
+        length: 'x-short' | 'short' | 'medium' | 'long' | 'x-long';
+        shape: 'square' | 'oval' | 'almond' | 'round';
+        price?: number | null;
+        compareAtPrice?: number | null;
+        gtin?: string | null;
+        mpn?: string | null;
+        stock?: number | null;
+        trackStock?: boolean | null;
+        enabled?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
   featuredImage?: (number | null) | Media;
   gallery?: (number | Media)[] | null;
   status: 'draft' | 'published';
@@ -231,6 +270,71 @@ export interface Page {
   seoTitle?: string | null;
   seoDescription?: string | null;
   status: 'draft' | 'published';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Customer orders and fulfillment status.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders".
+ */
+export interface Order {
+  id: number;
+  orderNumber: string;
+  customerEmail: string;
+  currency: string;
+  items: {
+    product: number | Product;
+    title: string;
+    sku?: string | null;
+    variant?: string | null;
+    variantId?: string | null;
+    quantity: number;
+    unitPrice: number;
+    id?: string | null;
+  }[];
+  shippingAddress: {
+    fullName: string;
+    phone?: string | null;
+    address1: string;
+    address2?: string | null;
+    city: string;
+    state?: string | null;
+    postalCode: string;
+    country: string;
+  };
+  subtotal: number;
+  shippingTotal: number;
+  taxTotal: number;
+  discountTotal: number;
+  total: number;
+  promoCode?: string | null;
+  paymentProvider?: ('stripe' | 'paypal') | null;
+  paymentReference?: string | null;
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  fulfillmentStatus: 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
+  trackingNumber?: string | null;
+  customerNote?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Create discount codes for checkout.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "discounts".
+ */
+export interface Discount {
+  id: number;
+  code: string;
+  kind: 'percentage' | 'fixed';
+  value: number;
+  minimumSubtotal?: number | null;
+  usageLimit?: number | null;
+  usageCount?: number | null;
+  expiresAt?: string | null;
+  active?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -273,6 +377,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'pages';
         value: number | Page;
+      } | null)
+    | ({
+        relationTo: 'orders';
+        value: number | Order;
+      } | null)
+    | ({
+        relationTo: 'discounts';
+        value: number | Discount;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -388,12 +500,31 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   sku?: T;
+  brand?: T;
+  gtin?: T;
+  mpn?: T;
+  googleProductCategory?: T;
   description?: T;
   price?: T;
   compareAtPrice?: T;
   category?: T;
   length?: T;
   shape?: T;
+  variants?:
+    | T
+    | {
+        sku?: T;
+        length?: T;
+        shape?: T;
+        price?: T;
+        compareAtPrice?: T;
+        gtin?: T;
+        mpn?: T;
+        stock?: T;
+        trackStock?: T;
+        enabled?: T;
+        id?: T;
+      };
   featuredImage?: T;
   gallery?: T;
   status?: T;
@@ -413,6 +544,69 @@ export interface PagesSelect<T extends boolean = true> {
   seoTitle?: T;
   seoDescription?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "orders_select".
+ */
+export interface OrdersSelect<T extends boolean = true> {
+  orderNumber?: T;
+  customerEmail?: T;
+  currency?: T;
+  items?:
+    | T
+    | {
+        product?: T;
+        title?: T;
+        sku?: T;
+        variant?: T;
+        variantId?: T;
+        quantity?: T;
+        unitPrice?: T;
+        id?: T;
+      };
+  shippingAddress?:
+    | T
+    | {
+        fullName?: T;
+        phone?: T;
+        address1?: T;
+        address2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
+      };
+  subtotal?: T;
+  shippingTotal?: T;
+  taxTotal?: T;
+  discountTotal?: T;
+  total?: T;
+  promoCode?: T;
+  paymentProvider?: T;
+  paymentReference?: T;
+  paymentStatus?: T;
+  fulfillmentStatus?: T;
+  trackingNumber?: T;
+  customerNote?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "discounts_select".
+ */
+export interface DiscountsSelect<T extends boolean = true> {
+  code?: T;
+  kind?: T;
+  value?: T;
+  minimumSubtotal?: T;
+  usageLimit?: T;
+  usageCount?: T;
+  expiresAt?: T;
+  active?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -455,6 +649,64 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "store-settings".
+ */
+export interface StoreSetting {
+  id: number;
+  currency: 'USD';
+  /**
+   * Orders at or above this subtotal receive free shipping.
+   */
+  freeShippingThreshold: number;
+  /**
+   * Shipping charged below the free-shipping threshold. Set the actual amount before launch.
+   */
+  flatShippingRate: number;
+  /**
+   * Optional order-value and item-count ranges. The first matching tier is used; free shipping threshold takes priority.
+   */
+  shippingTiers?:
+    | {
+        minimumSubtotal?: number | null;
+        maximumSubtotal?: number | null;
+        minimumItems?: number | null;
+        maximumItems?: number | null;
+        fee: number;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * When enabled, no additional tax is added during checkout.
+   */
+  pricesIncludeTax?: boolean | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "store-settings_select".
+ */
+export interface StoreSettingsSelect<T extends boolean = true> {
+  currency?: T;
+  freeShippingThreshold?: T;
+  flatShippingRate?: T;
+  shippingTiers?:
+    | T
+    | {
+        minimumSubtotal?: T;
+        maximumSubtotal?: T;
+        minimumItems?: T;
+        maximumItems?: T;
+        fee?: T;
+        id?: T;
+      };
+  pricesIncludeTax?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

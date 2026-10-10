@@ -25,6 +25,10 @@ export const Products: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
     { name: 'sku', type: 'text', admin: { position: 'sidebar' } },
+    { name: 'brand', type: 'text', defaultValue: 'Ginny Nana', admin: { position: 'sidebar' } },
+    { name: 'gtin', type: 'text', admin: { position: 'sidebar', description: 'Optional global trade item number. Leave blank if this handmade product has no GTIN.' } },
+    { name: 'mpn', type: 'text', admin: { position: 'sidebar', description: 'Optional manufacturer part number, if the product has one.' } },
+    { name: 'googleProductCategory', type: 'text', admin: { position: 'sidebar', description: 'Optional Google product category for Merchant Center.' } },
     {
       name: 'description',
       type: 'textarea',
@@ -69,6 +73,47 @@ export const Products: CollectionConfig = {
         { label: 'Oval', value: 'oval' },
         { label: 'Almond', value: 'almond' },
         { label: 'Round', value: 'round' },
+      ],
+    },
+    {
+      name: 'variants',
+      type: 'array',
+      labels: { singular: 'Variant', plural: 'Variants' },
+      admin: {
+        description: 'Create one row for each shape and length customers can choose. Leave variant prices blank to use the product price.',
+      },
+      fields: [
+        { name: 'sku', type: 'text', required: true, index: true },
+        {
+          name: 'length',
+          type: 'select',
+          required: true,
+          options: [
+            { label: 'X-Short', value: 'x-short' },
+            { label: 'Short', value: 'short' },
+            { label: 'Medium', value: 'medium' },
+            { label: 'Long', value: 'long' },
+            { label: 'X-Long', value: 'x-long' },
+          ],
+        },
+        {
+          name: 'shape',
+          type: 'select',
+          required: true,
+          options: [
+            { label: 'Square', value: 'square' },
+            { label: 'Oval', value: 'oval' },
+            { label: 'Almond', value: 'almond' },
+            { label: 'Round', value: 'round' },
+          ],
+        },
+        { name: 'price', type: 'number', min: 0 },
+        { name: 'compareAtPrice', type: 'number', min: 0 },
+        { name: 'gtin', type: 'text' },
+        { name: 'mpn', type: 'text' },
+        { name: 'stock', type: 'number', min: 0, defaultValue: 0 },
+        { name: 'trackStock', type: 'checkbox', defaultValue: false },
+        { name: 'enabled', type: 'checkbox', defaultValue: true },
       ],
     },
     {

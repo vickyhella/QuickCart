@@ -40,13 +40,16 @@ const Cart = () => {
                 </tr>
               </thead>
               <tbody>
-                {Object.keys(cartItems).map((itemId) => {
-                  const product = products.find(product => product._id === itemId);
+                {Object.keys(cartItems).map((lineKey) => {
+                  const line = cartItems[lineKey];
+                  const product = products.find(product => product._id === line?.productId);
+                  const variant = product?.variants?.find(item => String(item.id) === line?.variantId);
+                  const unitPrice = Number(variant?.price ?? product?.offerPrice ?? 0);
 
-                  if (!product || cartItems[itemId] <= 0) return null;
+                  if (!product || line?.quantity <= 0) return null;
 
                   return (
-                    <tr key={itemId}>
+                    <tr key={lineKey}>
                       <td className="flex items-center gap-4 py-4 md:px-4 px-1">
                         <div>
                           <div className="rounded-lg overflow-hidden bg-gray-500/10 p-2">
@@ -60,33 +63,35 @@ const Cart = () => {
                           </div>
                           <button
                             className="md:hidden text-xs text-orange-600 mt-1"
-                            onClick={() => updateCartQuantity(product._id, 0)}
+                              onClick={() => updateCartQuantity(lineKey, 0)}
                           >
                             Remove
                           </button>
                         </div>
                         <div className="text-sm hidden md:block">
                           <p className="text-gray-800">{product.name}</p>
-                          <button
+                            <p className="text-gray-800">{product.name}</p>
+                            {(line.length || line.shape) && <p className="text-xs text-gray-500 capitalize mt-1">{[line.length?.replace('-', ' '), line.shape].filter(Boolean).join(' · ')}</p>}
+                            <button
                             className="text-xs text-orange-600 mt-1"
-                            onClick={() => updateCartQuantity(product._id, 0)}
+                              onClick={() => updateCartQuantity(lineKey, 0)}
                           >
                             Remove
                           </button>
                         </div>
                       </td>
-                      <td className="py-4 md:px-4 px-1 text-gray-600">${product.offerPrice}</td>
+                      <td className="py-4 md:px-4 px-1 text-gray-600">${unitPrice.toFixed(2)}</td>
                       <td className="py-4 md:px-4 px-1">
                         <div className="flex items-center md:gap-2 gap-1">
-                          <button onClick={() => updateCartQuantity(product._id, cartItems[itemId] - 1)}>
+                          <button onClick={() => updateCartQuantity(lineKey, line.quantity - 1)}>
                             <Image
                               src={assets.decrease_arrow}
                               alt="decrease_arrow"
                               className="w-4 h-4"
                             />
                           </button>
-                          <input onChange={e => updateCartQuantity(product._id, Number(e.target.value))} type="number" value={cartItems[itemId]} className="w-8 border text-center appearance-none"></input>
-                          <button onClick={() => addToCart(product._id)}>
+                          <input onChange={e => updateCartQuantity(lineKey, Number(e.target.value))} type="number" min="1" value={line.quantity} className="w-8 border text-center appearance-none"></input>
+                          <button onClick={() => updateCartQuantity(lineKey, line.quantity + 1)}>
                             <Image
                               src={assets.increase_arrow}
                               alt="increase_arrow"
@@ -95,7 +100,7 @@ const Cart = () => {
                           </button>
                         </div>
                       </td>
-                      <td className="py-4 md:px-4 px-1 text-gray-600">${(product.offerPrice * cartItems[itemId]).toFixed(2)}</td>
+                      <td className="py-4 md:px-4 px-1 text-gray-600">${(unitPrice * line.quantity).toFixed(2)}</td>
                     </tr>
                   );
                 })}

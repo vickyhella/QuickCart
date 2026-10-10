@@ -225,17 +225,22 @@ export interface Product {
   length?: ('x-short' | 'short' | 'medium' | 'long' | 'x-long') | null;
   shape?: ('square' | 'oval' | 'almond' | 'round') | null;
   /**
-   * Create one row for each shape and length customers can choose. Leave variant prices blank to use the product price.
+   * Create one row for each shape, length, and size combination. Leave variant prices blank to use the product price.
    */
   variants?:
     | {
         sku: string;
         length: 'x-short' | 'short' | 'medium' | 'long' | 'x-long';
         shape: 'square' | 'oval' | 'almond' | 'round';
+        size?: ('xs' | 's' | 'm' | 'l') | null;
         price?: number | null;
         compareAtPrice?: number | null;
         gtin?: string | null;
         mpn?: string | null;
+        /**
+         * Optional image for this exact variant. Falls back to the product image.
+         */
+        image?: (number | null) | Media;
         stock?: number | null;
         trackStock?: boolean | null;
         enabled?: boolean | null;
@@ -516,10 +521,12 @@ export interface ProductsSelect<T extends boolean = true> {
         sku?: T;
         length?: T;
         shape?: T;
+        size?: T;
         price?: T;
         compareAtPrice?: T;
         gtin?: T;
         mpn?: T;
+        image?: T;
         stock?: T;
         trackStock?: T;
         enabled?: T;

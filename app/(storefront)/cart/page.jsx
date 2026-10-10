@@ -54,7 +54,7 @@ const Cart = () => {
                         <div>
                           <div className="rounded-lg overflow-hidden bg-gray-500/10 p-2">
                             <Image
-                              src={product.image[0]}
+                              src={variant?.image?.url || product.image[0]}
                               alt={product.name}
                               className="w-16 h-auto object-cover mix-blend-multiply"
                               width={1280}
@@ -71,7 +71,7 @@ const Cart = () => {
                         <div className="text-sm hidden md:block">
                           <p className="text-gray-800">{product.name}</p>
                             <p className="text-gray-800">{product.name}</p>
-                            {(line.length || line.shape) && <p className="text-xs text-gray-500 capitalize mt-1">{[line.length?.replace('-', ' '), line.shape].filter(Boolean).join(' · ')}</p>}
+                            {(line.length || line.shape || line.size) && <p className="text-xs text-gray-500 capitalize mt-1">{[line.shape, line.length?.replace('-', ' '), line.size?.toUpperCase()].filter(Boolean).join(' · ')}</p>}
                             <button
                             className="text-xs text-orange-600 mt-1"
                               onClick={() => updateCartQuantity(lineKey, 0)}

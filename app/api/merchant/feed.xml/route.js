@@ -34,7 +34,6 @@ export async function GET() {
   const entries = products.flatMap((product) => {
     const image = typeof product.featuredImage === 'object' ? product.featuredImage : null
     if (!image?.url) return []
-    const imageLink = new URL(image.url, siteURL).toString()
     const extraImages = (product.gallery || [])
       .map((item) => typeof item === 'object' ? item?.url : null)
       .filter(Boolean)
@@ -48,7 +47,10 @@ export async function GET() {
       const comparePrice = Number(variant?.compareAtPrice ?? product.compareAtPrice ?? 0)
       const productURL = new URL(`/product/${encodeURIComponent(product.slug || product.id)}/`, siteURL)
       if (variant?.id) productURL.searchParams.set('variant', String(variant.id))
-      const title = `${product.title}${variant ? ` - ${variant.length} ${variant.shape}` : ''}`
+      const variantImage = variant?.image && typeof variant.image === 'object' ? variant.image : null
+      const itemImageLink = new URL(variantImage?.url || image.url, siteURL).toString()
+      const dimensions = variant ? [['shape', variant.shape], ['length', variant.length], ['size', (variant.size || 's').toUpperCase()]].filter(([, value]) => value) : []
+      const title = `${product.title}${variant ? ` - ${[variant.shape, variant.length, (variant.size || 's').toUpperCase()].filter(Boolean).join(' ')}` : ''}`
       const availability = variant?.trackStock && Number(variant.stock || 0) < 1 ? 'out_of_stock' : 'in_stock'
       const gtin = variant?.gtin || product.gtin
       const mpn = variant?.mpn || product.mpn
@@ -58,9 +60,10 @@ export async function GET() {
         <g:id>${text(`${product.id}-${variant?.id || 'default'}`)}</g:id>
         <g:item_group_id>${text(product.id)}</g:item_group_id>
         <g:title>${text(title)}</g:title>
+        ${variant ? `<g:item_group_title>${text(product.title)}</g:item_group_title>` : ''}
         <g:description>${text(product.description)}</g:description>
         <g:link>${text(productURL.toString())}</g:link>
-        <g:image_link>${text(imageLink)}</g:image_link>
+        <g:image_link>${text(itemImageLink)}</g:image_link>
         ${extraImages}
         <g:availability>${availability}</g:availability>
         <g:price>${amount(price)}</g:price>
@@ -72,7 +75,8 @@ export async function GET() {
         ${!gtin && !mpn ? '<g:identifier_exists>false</g:identifier_exists>' : ''}
         ${product.googleProductCategory ? `<g:google_product_category>${text(product.googleProductCategory)}</g:google_product_category>` : ''}
         <g:product_type>${text(product.category || 'press-on-nails')}</g:product_type>
-        ${variant?.length ? `<g:size>${text(variant.length)}</g:size>` : ''}
+        ${variant ? `<g:size>${text((variant.size || 's').toUpperCase())}</g:size>` : ''}
+        ${dimensions.map(([name, value]) => `<g:variant_option><g:name>${text(name)}</g:name><g:value>${text(value)}</g:value></g:variant_option>`).join('')}
       </item>`
     })
   })

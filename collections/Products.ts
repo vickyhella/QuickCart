@@ -90,7 +90,7 @@ export const Products: CollectionConfig = {
       type: 'array',
       labels: { singular: 'Variant', plural: 'Variants' },
       admin: {
-        description: 'Create one row for each shape and length customers can choose. Leave variant prices blank to use the product price.',
+        description: 'Create one row for each shape, length, and size combination. Leave variant prices blank to use the product price.',
       },
       fields: [
         { name: 'sku', type: 'text', required: true, index: true },
@@ -117,10 +117,14 @@ export const Products: CollectionConfig = {
             { label: 'Round', value: 'round' },
           ],
         },
+        { name: 'size', type: 'select', defaultValue: 's', options: [
+          { label: 'XS', value: 'xs' }, { label: 'S', value: 's' }, { label: 'M', value: 'm' }, { label: 'L', value: 'l' },
+        ] },
         { name: 'price', type: 'number', min: 0 },
         { name: 'compareAtPrice', type: 'number', min: 0 },
         { name: 'gtin', type: 'text' },
         { name: 'mpn', type: 'text' },
+        { name: 'image', type: 'upload', relationTo: 'media', admin: { description: 'Optional image for this exact variant. Falls back to the product image.' } },
         { name: 'stock', type: 'number', min: 0, defaultValue: 0 },
         { name: 'trackStock', type: 'checkbox', defaultValue: false },
         { name: 'enabled', type: 'checkbox', defaultValue: true },

@@ -80,9 +80,10 @@ export const AppContextProvider = (props) => {
             variantId: variant?.id ? String(variant.id) : '',
             length: variant?.length || '',
             shape: variant?.shape || '',
+            size: variant?.size || '',
             quantity: 1,
         }
-        const lineKey = `${line.productId}:${line.variantId || `${line.length}-${line.shape}`}`
+        const lineKey = `${line.productId}:${line.variantId || `${line.length}-${line.shape}-${line.size}`}`
         setCartItems((current) => ({
             ...current,
             [lineKey]: {

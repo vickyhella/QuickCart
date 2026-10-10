@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 1000" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="70" y1="60" x2="740" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBF5F1"/><stop offset="1" stop-color="#E9D5CA"/>
+    </linearGradient>
+    <linearGradient id="nail" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#FFF9F6"/><stop offset="1" stop-color="#D7A89B"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#bg)" d="M0 0h800v1000H0z"/>
+  <circle cx="664" cy="145" r="140" fill="#fff" fill-opacity=".25"/>
+  <g transform="rotate(-14 400 500)" stroke="#fff8f3" stroke-width="15">
+    <rect x="182" y="285" width="94" height="286" rx="47" fill="url(#nail)"/>
+    <rect x="294" y="214" width="105" height="336" rx="52" fill="url(#nail)"/>
+    <rect x="418" y="230" width="105" height="320" rx="52" fill="url(#nail)"/>
+    <rect x="540" y="302" width="90" height="265" rx="45" fill="url(#nail)"/>
+  </g>
+  <text x="400" y="795" text-anchor="middle" fill="#8B5E56" font-family="Georgia,serif" font-size="27" letter-spacing="6">GINNY NANA</text>
+  <text x="400" y="840" text-anchor="middle" fill="#9A756D" font-family="Arial,sans-serif" font-size="16" letter-spacing="3">ADD PRODUCT PHOTOS IN ADMIN</text>
+</svg>

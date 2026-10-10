@@ -1,143 +1,62 @@
-"use client"
-import { useEffect, useState } from "react";
-import { assets } from "@/assets/assets";
-import ProductCard from "@/components/ProductCard";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import Image from "next/image";
-import { useParams } from "next/navigation";
-import Loading from "@/components/Loading";
-import { useAppContext } from "@/context/AppContext";
-import React from "react";
+'use client'
 
-const Product = () => {
+import { useEffect, useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { useParams } from 'next/navigation'
+import Navbar from '@/components/Navbar'
+import Footer from '@/components/Footer'
+import ProductCard from '@/components/ProductCard'
+import { useAppContext } from '@/context/AppContext'
 
-    const { id } = useParams();
+export default function ProductPage() {
+  const { id } = useParams()
+  const { products, addToCart, router, currency } = useAppContext()
+  const product = products.find((item) => item._id === String(id))
+  const [mainImage, setMainImage] = useState('')
 
-    const { products, router, addToCart } = useAppContext()
+  useEffect(() => setMainImage(''), [id])
 
-    const [mainImage, setMainImage] = useState(null);
-    const [productData, setProductData] = useState(null);
+  if (!products.length) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><p className="py-32 text-center text-[#786963]">Loading designs…</p><Footer /></main>
+  if (!product) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center"><h1 className="font-serif text-3xl">This design is unavailable</h1><Link href="/all-products" className="inline-block mt-5 underline">Browse all designs</Link></div><Footer /></main>
 
-    const fetchProductData = async () => {
-        const product = products.find(product => product._id === id);
-        setProductData(product);
-    }
+  const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`
 
-    useEffect(() => {
-        fetchProductData();
-    }, [id, products.length])
-
-    return productData ? (<>
-        <Navbar />
-        <div className="px-6 md:px-16 lg:px-32 pt-14 space-y-10">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-16">
-                <div className="px-5 lg:px-16 xl:px-20">
-                    <div className="rounded-lg overflow-hidden bg-gray-500/10 mb-4">
-                        <Image
-                            src={mainImage || productData.image[0]}
-                            alt="alt"
-                            className="w-full h-auto object-cover mix-blend-multiply"
-                            width={1280}
-                            height={720}
-                        />
-                    </div>
-
-                    <div className="grid grid-cols-4 gap-4">
-                        {productData.image.map((image, index) => (
-                            <div
-                                key={index}
-                                onClick={() => setMainImage(image)}
-                                className="cursor-pointer rounded-lg overflow-hidden bg-gray-500/10"
-                            >
-                                <Image
-                                    src={image}
-                                    alt="alt"
-                                    className="w-full h-auto object-cover mix-blend-multiply"
-                                    width={1280}
-                                    height={720}
-                                />
-                            </div>
-
-                        ))}
-                    </div>
-                </div>
-
-                <div className="flex flex-col">
-                    <h1 className="text-3xl font-medium text-gray-800/90 mb-4">
-                        {productData.name}
-                    </h1>
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center gap-0.5">
-                            <Image className="h-4 w-4" src={assets.star_icon} alt="star_icon" />
-                            <Image className="h-4 w-4" src={assets.star_icon} alt="star_icon" />
-                            <Image className="h-4 w-4" src={assets.star_icon} alt="star_icon" />
-                            <Image className="h-4 w-4" src={assets.star_icon} alt="star_icon" />
-                            <Image
-                                className="h-4 w-4"
-                                src={assets.star_dull_icon}
-                                alt="star_dull_icon"
-                            />
-                        </div>
-                        <p>(4.5)</p>
-                    </div>
-                    <p className="text-gray-600 mt-3">
-                        {productData.description}
-                    </p>
-                    <p className="text-3xl font-medium mt-6">
-                        ${productData.offerPrice}
-                        <span className="text-base font-normal text-gray-800/60 line-through ml-2">
-                            ${productData.price}
-                        </span>
-                    </p>
-                    <hr className="bg-gray-600 my-6" />
-                    <div className="overflow-x-auto">
-                        <table className="table-auto border-collapse w-full max-w-72">
-                            <tbody>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Brand</td>
-                                    <td className="text-gray-800/50 ">Generic</td>
-                                </tr>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Color</td>
-                                    <td className="text-gray-800/50 ">Multi</td>
-                                </tr>
-                                <tr>
-                                    <td className="text-gray-600 font-medium">Category</td>
-                                    <td className="text-gray-800/50">
-                                        {productData.category}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div className="flex items-center mt-10 gap-4">
-                        <button onClick={() => addToCart(productData._id)} className="w-full py-3.5 bg-gray-100 text-gray-800/80 hover:bg-gray-200 transition">
-                            Add to Cart
-                        </button>
-                        <button onClick={() => { addToCart(productData._id); router.push('/cart') }} className="w-full py-3.5 bg-orange-500 text-white hover:bg-orange-600 transition">
-                            Buy now
-                        </button>
-                    </div>
-                </div>
+  return (
+    <main className="bg-[#fffdfa] text-[#302522] min-h-screen">
+      <Navbar />
+      <section className="px-5 md:px-12 lg:px-20 py-10 md:py-16">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-14">
+          <div>
+            <div className="aspect-[4/5] bg-[#f5f0ec] rounded-xl overflow-hidden">
+              <Image src={mainImage || product.image[0]} alt={product.name} width={900} height={1125} className="w-full h-full object-cover" priority />
             </div>
-            <div className="flex flex-col items-center">
-                <div className="flex flex-col items-center mb-4 mt-16">
-                    <p className="text-3xl font-medium">Featured <span className="font-medium text-orange-600">Products</span></p>
-                    <div className="w-28 h-0.5 bg-orange-600 mt-2"></div>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 mt-6 pb-14 w-full">
-                    {products.slice(0, 5).map((product, index) => <ProductCard key={index} product={product} />)}
-                </div>
-                <button className="px-8 py-2 mb-16 border rounded text-gray-500/70 hover:bg-slate-50/90 transition">
-                    See more
-                </button>
+            {product.image.length > 1 && <div className="grid grid-cols-5 gap-3 mt-3">{product.image.map((image, index) => <button key={image + index} onClick={() => setMainImage(image)} className="aspect-square rounded-lg overflow-hidden bg-[#f5f0ec]"><Image src={image} alt={`${product.name} view ${index + 1}`} width={180} height={180} className="w-full h-full object-cover" /></button>)}</div>}
+          </div>
+          <div className="md:py-6">
+            <p className="text-xs uppercase tracking-[0.24em] text-[#9a756d]">Handmade press-on nails</p>
+            <h1 className="font-serif text-3xl md:text-4xl mt-3">{product.name}</h1>
+            <div className="flex items-baseline gap-3 mt-5"><span className="text-xl">{money(product.offerPrice)}</span>{product.price > product.offerPrice && <span className="text-[#998f89] line-through">{money(product.price)}</span>}</div>
+            <p className="text-[#6e5c55] leading-7 mt-5 whitespace-pre-line">{product.description}</p>
+            <div className="grid grid-cols-2 gap-4 border-y border-[#e8ded8] py-5 mt-7 text-sm">
+              <div><p className="text-[#998f89]">Length</p><p className="mt-1 capitalize">{product.length?.replace('-', ' ') || 'Varies by set'}</p></div>
+              <div><p className="text-[#998f89]">Shape</p><p className="mt-1 capitalize">{product.shape || 'Varies by set'}</p></div>
+              <div><p className="text-[#998f89]">Set</p><p className="mt-1">Reusable press-on nails</p></div>
+              {product.sku && <div><p className="text-[#998f89]">SKU</p><p className="mt-1">{product.sku}</p></div>}
             </div>
+            <div className="flex gap-3 mt-8">
+              <button onClick={() => addToCart(product._id)} className="flex-1 py-3.5 border border-[#754b43] text-[#754b43] rounded-full hover:bg-[#f8f3ef]">Add to cart</button>
+              <button onClick={() => { addToCart(product._id); router.push('/cart') }} className="flex-1 py-3.5 bg-[#754b43] text-white rounded-full hover:bg-[#5e3c36]">Buy now</button>
+            </div>
+            <p className="text-xs text-[#827873] mt-5">Each set is handmade. Product details and sizing can be updated in the product manager.</p>
+          </div>
         </div>
-        <Footer />
-    </>
-    ) : <Loading />
-};
-
-export default Product;
+      </section>
+      <section className="px-5 md:px-12 lg:px-20 py-12 bg-[#f8f3ef]">
+        <div className="flex items-end justify-between"><h2 className="font-serif text-3xl">You may also like</h2><Link href="/all-products" className="text-sm underline underline-offset-4">Shop all</Link></div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-7 mt-7">{products.filter((item) => item._id !== product._id).slice(0, 4).map((item) => <ProductCard key={item._id} product={item} />)}</div>
+      </section>
+      <Footer />
+    </main>
+  )
+}

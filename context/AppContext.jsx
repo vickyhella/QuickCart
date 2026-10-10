@@ -1,5 +1,5 @@
 'use client'
-import { productsDummyData, userDummyData } from "@/assets/assets";
+import { userDummyData } from "@/assets/assets";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 
@@ -20,7 +20,32 @@ export const AppContextProvider = (props) => {
     const [cartItems, setCartItems] = useState({})
 
     const fetchProductData = async () => {
-        setProducts(productsDummyData)
+        try {
+            const response = await fetch('/api/products?limit=100&depth=1&sort=-createdAt&where[status][equals]=published', { cache: 'no-store' })
+            if (!response.ok) throw new Error('Could not load products')
+            const { docs = [] } = await response.json()
+            setProducts(docs.map((product) => {
+                const featured = product.featuredImage && typeof product.featuredImage === 'object'
+                    ? product.featuredImage.url
+                    : null
+                const gallery = Array.isArray(product.gallery)
+                    ? product.gallery.map((image) => typeof image === 'object' ? image?.url : null)
+                    : []
+                const images = [featured, ...gallery].filter(Boolean)
+                const currentPrice = Number(product.price || 0)
+                return {
+                    ...product,
+                    _id: String(product.id),
+                    name: product.title,
+                    image: images.length ? images : ['/nail-placeholder.svg'],
+                    offerPrice: currentPrice,
+                    price: Number(product.compareAtPrice || currentPrice),
+                }
+            }))
+        } catch (error) {
+            console.error('Product loading failed:', error)
+            setProducts([])
+        }
     }
 
     const fetchUserData = async () => {

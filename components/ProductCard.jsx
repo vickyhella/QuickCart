@@ -1,5 +1,4 @@
 import React from 'react'
-import { assets } from '@/assets/assets'
 import Image from 'next/image';
 import { useAppContext } from '@/context/AppContext';
 
@@ -10,50 +9,27 @@ const ProductCard = ({ product }) => {
     return (
         <div
             onClick={() => { router.push('/product/' + product._id); scrollTo(0, 0) }}
-            className="flex flex-col items-start gap-0.5 max-w-[200px] w-full cursor-pointer"
+            className="flex flex-col items-start gap-2 w-full cursor-pointer group"
         >
-            <div className="cursor-pointer group relative bg-gray-500/10 rounded-lg w-full h-52 flex items-center justify-center">
+            <div className="relative bg-[#f5f0ec] rounded-xl w-full aspect-[4/5] overflow-hidden">
                 <Image
                     src={product.image[0]}
                     alt={product.name}
-                    className="group-hover:scale-105 transition object-cover w-4/5 h-4/5 md:w-full md:h-full"
-                    width={800}
-                    height={800}
+                    className="group-hover:scale-105 transition duration-500 object-cover w-full h-full"
+                    width={720}
+                    height={900}
                 />
-                <button className="absolute top-2 right-2 bg-white p-2 rounded-full shadow-md">
-                    <Image
-                        className="h-3 w-3"
-                        src={assets.heart_icon}
-                        alt="heart_icon"
-                    />
-                </button>
+                {product.isNew && <span className="absolute top-3 left-3 bg-white px-3 py-1 text-[10px] uppercase tracking-widest">New</span>}
+                {product.price > product.offerPrice && <span className="absolute top-3 right-3 bg-[#8b4c4c] text-white px-3 py-1 text-[10px] uppercase tracking-widest">Sale</span>}
             </div>
 
-            <p className="md:text-base font-medium pt-2 w-full truncate">{product.name}</p>
-            <p className="w-full text-xs text-gray-500/70 max-sm:hidden truncate">{product.description}</p>
-            <div className="flex items-center gap-2">
-                <p className="text-xs">{4.5}</p>
-                <div className="flex items-center gap-0.5">
-                    {Array.from({ length: 5 }).map((_, index) => (
-                        <Image
-                            key={index}
-                            className="h-3 w-3"
-                            src={
-                                index < Math.floor(4)
-                                    ? assets.star_icon
-                                    : assets.star_dull_icon
-                            }
-                            alt="star_icon"
-                        />
-                    ))}
+            <div className="w-full pt-1">
+                <p className="font-medium text-[#302522] truncate">{product.name}</p>
+                <p className="text-xs text-[#827873] mt-1">{[product.length, product.shape].filter(Boolean).map((value) => value.replace('-', ' ')).join(' · ') || 'Handmade press-on nails'}</p>
+                <div className="flex items-center gap-2 mt-2 text-sm">
+                    <p className="font-medium">{currency || '$'}{Number(product.offerPrice).toFixed(2)}</p>
+                    {product.price > product.offerPrice && <p className="text-[#998f89] line-through">{currency || '$'}{Number(product.price).toFixed(2)}</p>}
                 </div>
-            </div>
-
-            <div className="flex items-end justify-between w-full mt-1">
-                <p className="text-base font-medium">{currency}{product.offerPrice}</p>
-                <button className=" max-sm:hidden px-4 py-1.5 text-gray-500 border border-gray-500/20 rounded-full text-xs hover:bg-slate-50 transition">
-                    Buy now
-                </button>
             </div>
         </div>
     )

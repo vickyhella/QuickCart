@@ -9,6 +9,7 @@ export const Discounts: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   admin: {
+    group: 'Commerce',
     useAsTitle: 'code',
     defaultColumns: ['code', 'kind', 'value', 'active', 'expiresAt'],
     description: 'Create discount codes for checkout.',

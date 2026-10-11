@@ -11,7 +11,7 @@ export default function RootLayout({ children }) {
   return (
       <html lang="en">
         <body className="font-sans antialiased text-gray-700">
-          <Toaster />
+          <Toaster position="bottom-right" toastOptions={{ duration: 3600 }} />
           <AppContextProvider>
             {children}
           </AppContextProvider>

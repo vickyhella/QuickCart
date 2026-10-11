@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 
 type Product = Record<string, unknown> & { id: string | number }
 type Media = { id: string | number; filename?: string | null; url?: string | null }
@@ -220,25 +221,29 @@ function toPayloadData(row: GridRow, media: Media[]) {
 }
 
 export function ProductBulkEditLink() {
+  const [imageIssues, setImageIssues] = useState<Array<{ id: string; title: string; slot: string; reason: string }> | null>(null)
+  useEffect(() => {
+    fetch('/api/marketing/media-audit', { credentials: 'same-origin' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => { if (data) setImageIssues(data.issues || []) })
+      .catch(() => setImageIssues([]))
+  }, [])
   return (
-    <div style={{ marginBlock: '1rem', display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-      <a className="btn btn--style-primary btn--size-medium" href="/admin/collections/products/bulk-edit/">
-        Open spreadsheet editor
-      </a>
-      <a className="btn btn--style-secondary btn--size-medium" href="/merchant-feed" target="_blank" rel="noreferrer">
-        Preview Merchant Center feed
-      </a>
+    <div style={{ marginBlock: '1rem' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/products/bulk-edit/">Open spreadsheet editor</Link>
+        {imageIssues && imageIssues.length > 0 && <details style={{ alignSelf: 'center' }}>
+          <summary style={{ cursor: 'pointer', color: '#a52d22', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
+          <ul style={{ margin: '8px 0', paddingInlineStart: 20 }}>
+            {imageIssues.map((issue, index) => <li key={`${issue.id}-${issue.slot}-${index}`}>
+              <Link href={`/admin/collections/products/${encodeURIComponent(issue.id)}`}>{issue.title}</Link> — {issue.slot}: {issue.reason}
+            </li>)}
+          </ul>
+        </details>}
+        {imageIssues?.length === 0 && <span style={{ alignSelf: 'center', color: 'var(--theme-success-600)' }}>Images checked: no missing product images.</span>}
+      </div>
     </div>
   )
-}
-
-export function EditVariantsInSpreadsheetButton() {
-  const [href, setHref] = useState('')
-  useEffect(() => {
-    const productId = window.location.pathname.match(/\/admin\/collections\/products\/([^/]+)/)?.[1]
-    if (productId && productId !== 'create') setHref(`/admin/collections/products/bulk-edit/?product=${encodeURIComponent(productId)}`)
-  }, [])
-  return href ? <a className="btn btn--style-secondary btn--size-medium" href={href}>Edit variants in spreadsheet</a> : null
 }
 
 export function ProductBulkEditor() {
@@ -256,6 +261,14 @@ export function ProductBulkEditor() {
   const [variantEditor, setVariantEditor] = useState<{ rowIndex: number; variants: ProductVariant[]; values: { shape: string[]; length: string[]; size: string[] } } | null>(null)
   const [selectedRange, setSelectedRange] = useState<{ startRow: number; startColumn: number; endRow: number; endColumn: number } | null>(null)
   const [isSelecting, setIsSelecting] = useState(false)
+  const [variantDisplay, setVariantDisplay] = useState<'collapsed' | 'expanded'>('collapsed')
+  const [expandedVariants, setExpandedVariants] = useState<Set<string>>(() => new Set())
+  const [filters, setFilters] = useState({ status: '', category: '', shape: '', length: '', color: '', brand: '' })
+
+  useEffect(() => {
+    const saved = window.localStorage.getItem('quickcart-variant-display')
+    if (saved === 'expanded' || saved === 'collapsed') setVariantDisplay(saved)
+  }, [])
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -293,9 +306,40 @@ export function ProductBulkEditor() {
 
   const visibleRows = useMemo(() => {
     const needle = search.trim().toLowerCase()
-    if (!needle) return rows
-    return rows.filter((row) => row.title.toLowerCase().includes(needle) || row.sku.toLowerCase().includes(needle))
-  }, [rows, search])
+    return rows.filter((row) => (!needle || row.title.toLowerCase().includes(needle) || row.sku.toLowerCase().includes(needle))
+      && (!filters.status || row.status === filters.status)
+      && (!filters.category || row.category === filters.category)
+      && (!filters.shape || row.shape.toLowerCase().includes(filters.shape.toLowerCase()))
+      && (!filters.length || row.length.toLowerCase().includes(filters.length.toLowerCase()))
+      && (!filters.color || row.color.toLowerCase().includes(filters.color.toLowerCase()))
+      && (!filters.brand || row.brand.toLowerCase().includes(filters.brand.toLowerCase())))
+  }, [rows, search, filters])
+
+  const setVariantDefault = (value: 'collapsed' | 'expanded') => {
+    setVariantDisplay(value)
+    window.localStorage.setItem('quickcart-variant-display', value)
+    setExpandedVariants(value === 'expanded' ? new Set(rows.filter((row) => { try { return JSON.parse(row.variants || '[]').length > 0 } catch { return false } }).map((row) => row.id)) : new Set())
+  }
+
+  useEffect(() => {
+    if (variantDisplay === 'expanded') setExpandedVariants(new Set(rows.filter((row) => { try { return JSON.parse(row.variants || '[]').length > 0 } catch { return false } }).map((row) => row.id)))
+  }, [rows, variantDisplay])
+
+  const duplicateProduct = async (rowIndex: number) => {
+    const row = rows[rowIndex]
+    if (!row) return
+    try {
+      const data = toPayloadData(row, media)
+      const variants = JSON.parse(row.variants || '[]').map(({ id, ...variant }) => variant)
+      const response = await fetch('/api/products', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, title: `${row.title}-duplicate`, slug: '', sku: '', status: 'draft', variants }) })
+      const result = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(result.errors?.[0]?.message || result.message || `HTTP ${response.status}`)
+      await load()
+      setMessage(`Created ${row.title}-duplicate as a draft.`)
+    } catch (duplicateError) {
+      setError(duplicateError instanceof Error ? duplicateError.message : 'Could not duplicate product.')
+    }
+  }
 
   const updateCell = (rowIndex: number, columnIndex: number, value: string) => {
     const key = columns[columnIndex].key
@@ -303,9 +347,10 @@ export function ProductBulkEditor() {
     setMessage('')
   }
 
-  const uploadMedia = async (file: File) => {
+  const uploadMedia = async (file: File, productID?: string) => {
     const body = new FormData()
     body.append('file', file)
+    if (productID) body.append('product', productID)
     const response = await fetch('/api/media', { method: 'POST', credentials: 'same-origin', body })
     const result = await response.json().catch(() => ({}))
     if (!response.ok) throw new Error(result.errors?.[0]?.message || result.message || 'Image upload failed')
@@ -499,7 +544,7 @@ export function ProductBulkEditor() {
 
   return (
     <main style={{ padding: '2rem clamp(1rem, 3vw, 3rem)' }}>
-      <a href="/admin/collections/products/" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>← Products</a>
+      <Link href="/admin/collections/products/" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>← Products</Link>
       <h1 style={{ marginBlock: '1rem 0.5rem' }}>Product spreadsheet editor</h1>
       <p style={{ maxWidth: 1000, lineHeight: 1.6 }}>
         Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename.
@@ -508,14 +553,23 @@ export function ProductBulkEditor() {
         Variants can be edited in a table per product. Separate multiple gallery images with semicolons. See the Media collection for filenames and IDs.
       </p>
       <div style={toolbarStyle}>
-        <a href="/admin/collections/products/" style={{ ...buttonStyle, textDecoration: 'none' }}>Back to products</a>
-        <a href="/merchant-feed" target="_blank" rel="noreferrer" style={{ ...buttonStyle, textDecoration: 'none' }}>Preview Merchant Center feed</a>
+        <Link href="/admin/collections/products/" style={{ ...buttonStyle, textDecoration: 'none' }}>Back to products</Link>
+        <Link href="/admin/collections/products/marketing" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing</Link>
         <button type="button" onClick={exportTSV} style={buttonStyle} disabled={loading || rows.length === 0}>Export TSV</button>
         <button type="button" onClick={() => void load()} style={buttonStyle} disabled={loading || saving}>Reload</button>
         <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: '#166534', background: '#15803d', color: '#fff' }} disabled={loading || saving || dirtyIDs.size === 0}>
           {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
         </button>
         <input aria-label="Search products on this page" placeholder="Filter this page by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
+        {(['status', 'category', 'shape', 'length', 'color', 'brand'] as const).map((key) => {
+          const options = [...new Set(rows.flatMap((row) => key === 'shape' || key === 'length' ? row[key].split(',').map((value) => value.trim()).filter(Boolean) : row[key] ? [row[key]] : []))].sort()
+          return <select key={key} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: 150 }}><option value="">All {key}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+        })}
+        <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>Variants default
+          <select value={variantDisplay} onChange={(event) => setVariantDefault(event.target.value as 'collapsed' | 'expanded')} style={{ ...inputStyle, width: 130 }}><option value="collapsed">Collapsed</option><option value="expanded">Expanded</option></select>
+        </label>
+        <button type="button" onClick={() => setExpandedVariants(new Set(visibleRows.map((row) => row.id)))} style={buttonStyle}>Expand all variants</button>
+        <button type="button" onClick={() => setExpandedVariants(new Set())} style={buttonStyle}>Collapse all variants</button>
         <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} style={buttonStyle} disabled={loading || saving || dirtyIDs.size > 0 || page <= 1}>Previous</button>
         <span>Page {page} of {totalPages} · {totalProducts} products total</span>
         <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} style={buttonStyle} disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
@@ -528,7 +582,8 @@ export function ProductBulkEditor() {
           <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%', width: 'max-content', fontSize: 13 }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--theme-elevation-100)' }}>
               <tr>
-                <th style={{ padding: '0.65rem', position: 'sticky', left: 0, background: 'var(--theme-elevation-100)', zIndex: 3 }}>#</th>
+                <th style={{ padding: '0.65rem', position: 'sticky', left: 0, minWidth: 64, background: 'var(--theme-elevation-100)', zIndex: 3 }}>Image</th>
+                <th style={{ padding: '0.65rem', position: 'sticky', left: 64, background: 'var(--theme-elevation-100)', zIndex: 3 }}>#</th>
                 {columns.map((column) => <th key={column.key} style={{ minWidth: column.width, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '1px solid var(--theme-elevation-300)' }}>{column.label}</th>)}
               </tr>
             </thead>
@@ -537,9 +592,12 @@ export function ProductBulkEditor() {
                 const rowIndex = rows.indexOf(row)
                 const dirty = dirtyIDs.has(row.id)
                 return (
-                  <tr key={row.id} style={{ background: dirty ? 'var(--theme-elevation-50, rgba(40,120,80,.08))' : undefined }}>
-                    <th style={{ position: 'sticky', left: 0, zIndex: 1, minWidth: 52, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
-                      {dirty ? '● ' : ''}{rowIndex + 1}
+                  <React.Fragment key={row.id}><tr style={{ background: dirty ? 'var(--theme-elevation-50, rgba(40,120,80,.08))' : undefined }}>
+                    <td style={{ position: 'sticky', left: 0, zIndex: 1, width: 64, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
+                      {(() => { const item = media.find((entry) => String(entry.id) === row.featuredImage || entry.filename === row.featuredImage); return <img src={item?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 5 }} /> })()}
+                    </td>
+                    <th style={{ position: 'sticky', left: 64, zIndex: 1, minWidth: 110, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
+                      {dirty ? '● ' : ''}{rowIndex + 1}<button type="button" onClick={() => void duplicateProduct(rowIndex)} style={{ display: 'block', marginTop: 4, fontSize: 10, color: '#6b4252', textDecoration: 'underline' }}>Duplicate</button>
                     </th>
                     {columns.map((column, columnIndex) => (
                       <td key={column.key}
@@ -552,7 +610,7 @@ export function ProductBulkEditor() {
                               {media.map((item) => <option key={item.id} value={String(item.id)}>{item.filename || `Media ${item.id}`}</option>)}
                             </select>
                             <p style={{ margin: '3px 0', fontSize: 11, color: '#4b5563' }}>Ctrl/Cmd-click to select multiple</p>
-                            <input type="file" accept="image/*" multiple aria-label={`Upload gallery images for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const files = [...(input.files || [])]; if (!files.length) return; try { const uploaded = await Promise.all(files.map(uploadMedia)); const current = rows[rowIndex].gallery.split(';').map((value) => value.trim()).filter(Boolean); updateCell(rowIndex, columnIndex, [...new Set([...current, ...uploaded.map((item) => String(item.id))])].join('; ')) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', width: column.width, fontSize: 11 }} />
+                            <input type="file" accept="image/*" multiple aria-label={`Upload gallery images for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const files = [...(input.files || [])]; if (!files.length) return; try { const uploaded = await Promise.all(files.map((file) => uploadMedia(file, row.id))); const current = rows[rowIndex].gallery.split(';').map((value) => value.trim()).filter(Boolean); updateCell(rowIndex, columnIndex, [...new Set([...current, ...uploaded.map((item) => String(item.id))])].join('; ')) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', width: column.width, fontSize: 11 }} />
                           </>
                         ) : column.key === 'variants' ? (
           <div>
@@ -573,7 +631,7 @@ export function ProductBulkEditor() {
                             style={{ ...inputStyle, minWidth: column.width, resize: 'vertical' }}
                           />
                           <label style={{ display: 'block', marginTop: 5, fontSize: 12 }}>Insert uploaded image into Markdown
-                            <input type="file" accept="image/*" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file); if (!uploaded.url) throw new Error('Uploaded image URL is missing'); updateCell(rowIndex, columnIndex, `${row.description}${row.description ? '\n\n' : ''}![${uploaded.filename || 'Product image'}](${uploaded.url})`) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 11 }} />
+                              <input type="file" accept="image/*" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); if (!uploaded.url) throw new Error('Uploaded image URL is missing'); updateCell(rowIndex, columnIndex, `${row.description}${row.description ? '\n\n' : ''}![${uploaded.filename || 'Product image'}](${uploaded.url})`) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 11 }} />
                           </label>
                           </> : <textarea
                             aria-label={`${column.label}, row ${rowIndex + 1}`}
@@ -598,9 +656,9 @@ export function ProductBulkEditor() {
                             {column.key === 'featuredImage' && (() => {
                               const selectedMedia = media.find((item) => String(item.id) === row.featuredImage || item.filename === row.featuredImage)
                               return <>
-                                {selectedMedia?.url && <img src={selectedMedia.url} alt={selectedMedia.filename || 'Selected product image'} style={{ display: 'block', marginTop: 6, maxWidth: 110, maxHeight: 80, objectFit: 'contain' }} />}
+                                <img src={selectedMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={selectedMedia?.filename || 'Selected product image'} style={{ display: 'block', marginTop: 6, maxWidth: 110, maxHeight: 80, objectFit: 'contain' }} />
                                 <label style={{ display: 'block', marginTop: 5, fontSize: 12 }}>Upload
-                                  <input type="file" accept="image/*" aria-label={`Upload image for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file); updateCell(rowIndex, columnIndex, String(uploaded.id)) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 11 }} />
+                                  <input type="file" accept="image/*" aria-label={`Upload image for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); updateCell(rowIndex, columnIndex, String(uploaded.id)) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 11 }} />
                                 </label>
                               </>
                             })()}
@@ -609,6 +667,15 @@ export function ProductBulkEditor() {
                       </td>
                     ))}
                   </tr>
+                  {expandedVariants.has(row.id) && (() => {
+                    let variants: ProductVariant[] = []
+                    try { variants = JSON.parse(row.variants || '[]') } catch { /* invalid JSON is handled by the variant editor */ }
+                    return <tr key={`${row.id}-variants`} style={{ color: '#1f2937', background: '#f8f6f4' }}><td colSpan={columns.length + 2} style={{ padding: 12, color: '#1f2937', background: '#f8f6f4', borderBottom: '1px solid #d6ccc7' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><strong>{row.title} · {variants.length} variants</strong><button type="button" onClick={() => openVariantEditor(rowIndex)} style={buttonStyle}>Edit / copy / paste variants</button></div>
+                      <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', color: '#1f2937', background: '#fff' }}><thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Stock', 'Image'].map((label) => <th key={label} style={{ padding: 6, color: '#1f2937', background: '#f3f4f6', borderBottom: '1px solid #d6ccc7' }}>{label}</th>)}</tr></thead><tbody>{variants.map((variant, index) => { const image = media.find((item) => String(item.id) === mediaID(variant.image) || item.filename === variant.image); return <tr key={variant.id || index} style={{ color: '#1f2937', background: '#fff' }}>{[variant.sku, variant.length, variant.shape, variant.size?.toUpperCase(), variant.price ?? row.price, variant.stock, image?.filename || 'Product image'].map((value, cell) => <td key={cell} style={{ padding: 6, color: '#1f2937', background: '#fff', borderBottom: '1px solid #ebe6e3' }}>{String(value ?? '')}</td>)}</tr> })}</tbody></table></div>
+                    </td></tr>
+                  })()}
+                  </React.Fragment>
                 )
               })}
             </tbody>
@@ -657,7 +724,7 @@ export function ProductBulkEditor() {
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={4} aria-label={`Variant ${index + 1} price`} type="number" min="0" value={variant.price ?? ''} onChange={(event) => edit('price', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={5} aria-label={`Variant ${index + 1} compare at price`} type="number" min="0" value={variant.compareAtPrice ?? ''} onChange={(event) => edit('compareAtPrice', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={6} aria-label={`Variant ${index + 1} stock`} type="number" min="0" value={variant.stock} onChange={(event) => edit('stock', Number(event.target.value))} style={cellInput} /></td>
-                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={7} aria-label={`Variant ${index + 1} image filename or media ID`} list="product-media-options" placeholder="Product image" value={typeof variant.image === 'object' ? String(variant.image?.id || '') : String(variant.image || '')} onChange={(event) => edit('image', event.target.value)} style={{ ...cellInput, minWidth: 190 }} />{variantMedia?.url && <img src={variantMedia.url} alt={variantMedia.filename || `Variant ${index + 1} image`} style={{ display: 'block', marginTop: 4, maxWidth: 52, maxHeight: 52, objectFit: 'cover' }} />}<label style={{ display: 'block', fontSize: 11, marginTop: 4 }}>Upload<input type="file" accept="image/*" aria-label={`Upload image for variant ${index + 1}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file); edit('image', uploaded.id) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: 180, fontSize: 10 }} /></label></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={7} aria-label={`Variant ${index + 1} image filename or media ID`} list="product-media-options" placeholder="Product image" value={typeof variant.image === 'object' ? String(variant.image?.id || '') : String(variant.image || '')} onChange={(event) => edit('image', event.target.value)} style={{ ...cellInput, minWidth: 190 }} /><img src={variantMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={variantMedia?.filename || `Variant ${index + 1} image`} style={{ display: 'block', marginTop: 4, maxWidth: 52, maxHeight: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 11, marginTop: 4 }}>Upload<input type="file" accept="image/*" aria-label={`Upload image for variant ${index + 1}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, rows[variantEditor.rowIndex]?.id); edit('image', uploaded.id) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: 180, fontSize: 10 }} /></label></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={8} aria-label={`Variant ${index + 1} track stock`} type="checkbox" checked={variant.trackStock} onChange={(event) => edit('trackStock', event.target.checked)} /></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={9} aria-label={`Variant ${index + 1} enabled`} type="checkbox" checked={variant.enabled} onChange={(event) => edit('enabled', event.target.checked)} /></td>
                     <td style={{ padding: 5 }}><button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: current.variants.filter((_, itemIndex) => itemIndex !== index) } : current)} style={{ ...buttonStyle, color: '#991b1b' }}>Remove</button></td>

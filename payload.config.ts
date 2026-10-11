@@ -7,12 +7,16 @@ import { s3Storage } from '@payloadcms/storage-s3'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { Media } from './collections/Media'
+import { MediaOriginals } from './collections/MediaOriginals'
+import { ContactMessages } from './collections/ContactMessages'
 import { Discounts } from './collections/Discounts'
 import { Orders } from './collections/Orders'
 import { Pages } from './collections/Pages'
 import { Products } from './collections/Products'
+import { PinterestPosts } from './collections/PinterestPosts'
 import { Users } from './collections/Users'
 import { StoreSettings } from './globals/StoreSettings'
+import { MarketingSettings } from './globals/MarketingSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const databaseAdapter = process.env.DATABASE_URL
@@ -42,14 +46,22 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(path.dirname(filename), 'app/(payload)'),
     },
+    components: {
+      afterNavLinks: ['/components/MarketingNavLink#MarketingNavLink'],
+    },
   },
-  collections: [Users, Media, Products, Pages, Orders, Discounts],
-  globals: [StoreSettings],
+  collections: [Users, Media, MediaOriginals, Products, Pages, ContactMessages, Orders, Discounts, PinterestPosts],
+  globals: [StoreSettings, MarketingSettings],
   plugins: [
     s3Storage({
       enabled: r2Enabled,
       collections: {
         media: {
+          disablePayloadAccessControl: true,
+          generateFileURL: ({ filename, prefix }) =>
+            `${r2PublicURL}/${prefix ? `${prefix}/` : ''}${filename}`,
+        },
+        'media-originals': {
           disablePayloadAccessControl: true,
           generateFileURL: ({ filename, prefix }) =>
             `${r2PublicURL}/${prefix ? `${prefix}/` : ''}${filename}`,
@@ -65,7 +77,9 @@ export default buildConfig({
         endpoint: process.env.R2_ENDPOINT,
         forcePathStyle: true,
       },
-      clientUploads: true,
+      // Uploads must pass through Payload so the media hook can preserve
+      // originals and create optimized WebP derivatives before storage.
+      clientUploads: false,
     }),
   ],
   editor: lexicalEditor(),

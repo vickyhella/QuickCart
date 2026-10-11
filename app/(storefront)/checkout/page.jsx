@@ -6,7 +6,8 @@ import Link from 'next/link'
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
-import { shippingCountries } from '@/lib/countries'
+import { shippingCountries as defaultShippingCountries } from '@/lib/countries'
+import { formatDimension } from '@/lib/format-dimension'
 
 const emptyAddress = { fullName: '', phone: '', address1: '', address2: '', city: '', state: '', postalCode: '', country: 'US' }
 
@@ -20,6 +21,8 @@ export default function CheckoutPage() {
   const [quoteError, setQuoteError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
+  const [shippingCountries, setShippingCountries] = useState(defaultShippingCountries)
+  useEffect(() => { fetch('/api/marketing/countries').then((r) => r.ok ? r.json() : null).then((data) => { if (data?.countries?.length) { setShippingCountries(data.countries); if (!data.countries.some(([code]) => code === address.country)) setAddress((current) => ({ ...current, country: data.countries[0][0] })) } }).catch(() => {}) }, [])
   const symbol = currency || '$'
 
   const lines = useMemo(() => Object.entries(cartItems).flatMap(([lineKey, line]) => {
@@ -129,7 +132,7 @@ export default function CheckoutPage() {
                   </select>
                 </label>
               </div>
-              <p className="text-xs text-[#827873] mt-4">We currently ship to the 33 countries listed above. Shipping uses the same order tiers in every country.</p>
+              <p className="text-xs text-[#827873] mt-4">Shipping availability is based on our current country list. Shipping uses the same order tiers in every country.</p>
             </section>
           </div>
 
@@ -138,10 +141,10 @@ export default function CheckoutPage() {
             <div className="space-y-4 mt-5">
               {lines.map(({ lineKey, line, product, unitPrice }) => <div key={lineKey} className="flex gap-3 text-sm">
                 <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white">
-                  <Image src={product.image[0]} alt={product.name} fill sizes="64px" className="object-cover" />
+                  <Image unoptimized src={product.image[0]} alt={product.name} fill sizes="64px" className="object-cover" />
                   <span className="absolute right-0 top-0 bg-[#754b43] text-white rounded-bl px-1.5 text-xs">{line.quantity}</span>
                 </div>
-                <div className="flex-1"><p>{product.name}</p><p className="text-xs text-[#786963] capitalize mt-1">{[line.length?.replace('-', ' '), line.shape].filter(Boolean).join(' · ')}</p></div>
+                <div className="flex-1"><p>{product.name}</p><p className="text-xs text-[#786963] mt-1">{[formatDimension(line.length), formatDimension(line.shape)].filter(Boolean).join(' · ')}</p></div>
                 <span>{symbol}{(unitPrice * line.quantity).toFixed(2)}</span>
               </div>)}
             </div>

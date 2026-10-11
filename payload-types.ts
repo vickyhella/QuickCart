@@ -69,10 +69,13 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    'media-originals': MediaOriginal;
     products: Product;
     pages: Page;
+    'contact-messages': ContactMessage;
     orders: Order;
     discounts: Discount;
+    'pinterest-posts': PinterestPost;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,10 +85,13 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'media-originals': MediaOriginalsSelect<false> | MediaOriginalsSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
+    'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     discounts: DiscountsSelect<false> | DiscountsSelect<true>;
+    'pinterest-posts': PinterestPostsSelect<false> | PinterestPostsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -97,9 +103,11 @@ export interface Config {
   fallbackLocale: null;
   globals: {
     'store-settings': StoreSetting;
+    'marketing-settings': MarketingSetting;
   };
   globalsSelect: {
     'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
+    'marketing-settings': MarketingSettingsSelect<false> | MarketingSettingsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -156,11 +164,30 @@ export interface User {
   collection: 'users';
 }
 /**
+ * Reusable product images with editable search and accessibility metadata.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "media".
  */
 export interface Media {
   id: number;
+  /**
+   * Human-readable image title. Also useful for search and internal organization.
+   */
+  title?: string | null;
+  /**
+   * Describe the visible image for accessibility and Pinterest catalog metadata.
+   */
+  altText?: string | null;
+  caption?: string | null;
+  /**
+   * Optional product this image belongs to.
+   */
+  product?: (number | null) | Product;
+  /**
+   * Untouched upload retained for future reprocessing.
+   */
+  sourceOriginal?: (number | null) | MediaOriginal;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -172,24 +199,6 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
-  sizes?: {
-    thumbnail?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-    card?: {
-      url?: string | null;
-      width?: number | null;
-      height?: number | null;
-      mimeType?: string | null;
-      filesize?: number | null;
-      filename?: string | null;
-    };
-  };
 }
 /**
  * Manage press-on nail designs, images, prices, and publishing status.
@@ -201,38 +210,6 @@ export interface Product {
   id: number;
   title: string;
   slug: string;
-  sku?: string | null;
-  brand?: string | null;
-  /**
-   * Merchant Center material. Default is ABS Plastic; enter another material when adding a product.
-   */
-  material?: string | null;
-  color?: string | null;
-  gender?: ('female' | 'male' | 'unisex') | null;
-  ageGroup?: ('adult' | 'kids' | 'toddler' | 'infant' | 'newborn') | null;
-  condition?: ('new' | 'used' | 'refurbished') | null;
-  /**
-   * Enable only for sexually suggestive or adult content.
-   */
-  adult?: boolean | null;
-  /**
-   * Only set when the offer bundles multiple identical products.
-   */
-  multipack?: number | null;
-  /**
-   * Optional GTIN. Leave blank when none is assigned.
-   */
-  gtin?: string | null;
-  /**
-   * Optional manufacturer-assigned MPN. Do not invent one; blank outputs identifier_exists=false if GTIN is also absent.
-   */
-  mpn?: string | null;
-  /**
-   * Google product category. Select the closest matching taxonomy category.
-   */
-  googleProductCategory?: string | null;
-  seoTitle?: string | null;
-  seoDescription?: string | null;
   /**
    * Markdown supported, including images via ![alt](https://...). Raw HTML is not enabled.
    */
@@ -244,19 +221,20 @@ export interface Product {
   compareAtPrice?: number | null;
   category: 'press-on-nails' | 'nail-care' | 'accessories' | 'mystery-box';
   /**
-   * Product-level length label. Variant lengths can be added in the spreadsheet variant editor.
+   * Automatically follows the variant lengths (comma separated when multiple).
    */
   length?: string | null;
   /**
-   * Product-level shape label. Variant shapes can be added in the spreadsheet variant editor.
+   * Automatically follows the variant shapes (comma separated when multiple).
    */
   shape?: string | null;
+  sku?: string | null;
   /**
    * Create one row for each shape, length, and size combination. Leave variant prices blank to use the product price.
    */
   variants?:
     | {
-        sku: string;
+        sku?: string | null;
         length: string;
         shape: string;
         size?: ('xs' | 's' | 'm' | 'l') | null;
@@ -276,11 +254,59 @@ export interface Product {
     | null;
   featuredImage?: (number | null) | Media;
   gallery?: (number | Media)[] | null;
+  /**
+   * Search title. Leave blank to use the product name.
+   */
+  seoTitle?: string | null;
+  /**
+   * Search description. Leave blank to use the product description.
+   */
+  seoDescription?: string | null;
+  seoCanonicalUrl?: string | null;
+  seoNoIndex?: boolean | null;
+  brand?: string | null;
+  material?: string | null;
+  color?: string | null;
+  gender?: ('female' | 'male' | 'unisex') | null;
+  ageGroup?: ('adult' | 'kids' | 'toddler' | 'infant' | 'newborn') | null;
+  condition?: ('new' | 'used' | 'refurbished') | null;
+  adult?: boolean | null;
+  multipack?: number | null;
+  /**
+   * Optional GTIN. Leave blank when none is assigned.
+   */
+  gtin?: string | null;
+  /**
+   * Optional manufacturer-assigned MPN. Do not invent one.
+   */
+  mpn?: string | null;
+  googleProductCategory?: string | null;
   status: 'draft' | 'published';
   isNew?: boolean | null;
   isBestSeller?: boolean | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Original image files retained as sources for WebP conversion and future reprocessing.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media-originals".
+ */
+export interface MediaOriginal {
+  id: number;
+  title?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * Edit static pages and store policies. The body supports Markdown.
@@ -302,6 +328,22 @@ export interface Page {
   seoTitle?: string | null;
   seoDescription?: string | null;
   status: 'draft' | 'published';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Messages submitted through the public Contact Us form.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages".
+ */
+export interface ContactMessage {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'new' | 'in-progress' | 'replied';
   updatedAt: string;
   createdAt: string;
 }
@@ -371,6 +413,41 @@ export interface Discount {
   createdAt: string;
 }
 /**
+ * Schedule product and variant Pins. Publishing requires Pinterest API credentials and a public image URL.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pinterest-posts".
+ */
+export interface PinterestPost {
+  id: number;
+  product: number | Product;
+  /**
+   * Optional variant ID. Include it to use that variant image and add a variant link.
+   */
+  variantId?: string | null;
+  /**
+   * Leave blank to use the Pinterest title template in Marketing settings.
+   */
+  title: string;
+  /**
+   * Leave blank to use the Pinterest description template.
+   */
+  description?: string | null;
+  link: string;
+  /**
+   * Must be publicly accessible over HTTPS for Pinterest to fetch.
+   */
+  imageURL: string;
+  imageMedia?: (number | null) | Media;
+  scheduledAt: string;
+  status: 'draft' | 'scheduled' | 'published' | 'failed';
+  pinId?: string | null;
+  publishedAt?: string | null;
+  lastError?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -403,6 +480,10 @@ export interface PayloadLockedDocument {
         value: number | Media;
       } | null)
     | ({
+        relationTo: 'media-originals';
+        value: number | MediaOriginal;
+      } | null)
+    | ({
         relationTo: 'products';
         value: number | Product;
       } | null)
@@ -411,12 +492,20 @@ export interface PayloadLockedDocument {
         value: number | Page;
       } | null)
     | ({
+        relationTo: 'contact-messages';
+        value: number | ContactMessage;
+      } | null)
+    | ({
         relationTo: 'orders';
         value: number | Order;
       } | null)
     | ({
         relationTo: 'discounts';
         value: number | Discount;
+      } | null)
+    | ({
+        relationTo: 'pinterest-posts';
+        value: number | PinterestPost;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -488,6 +577,11 @@ export interface UsersSelect<T extends boolean = true> {
  * via the `definition` "media_select".
  */
 export interface MediaSelect<T extends boolean = true> {
+  title?: T;
+  altText?: T;
+  caption?: T;
+  product?: T;
+  sourceOriginal?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -499,30 +593,24 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
-  sizes?:
-    | T
-    | {
-        thumbnail?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-        card?:
-          | T
-          | {
-              url?: T;
-              width?: T;
-              height?: T;
-              mimeType?: T;
-              filesize?: T;
-              filename?: T;
-            };
-      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media-originals_select".
+ */
+export interface MediaOriginalsSelect<T extends boolean = true> {
+  title?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -531,26 +619,13 @@ export interface MediaSelect<T extends boolean = true> {
 export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
-  sku?: T;
-  brand?: T;
-  material?: T;
-  color?: T;
-  gender?: T;
-  ageGroup?: T;
-  condition?: T;
-  adult?: T;
-  multipack?: T;
-  gtin?: T;
-  mpn?: T;
-  googleProductCategory?: T;
-  seoTitle?: T;
-  seoDescription?: T;
   description?: T;
   price?: T;
   compareAtPrice?: T;
   category?: T;
   length?: T;
   shape?: T;
+  sku?: T;
   variants?:
     | T
     | {
@@ -570,6 +645,21 @@ export interface ProductsSelect<T extends boolean = true> {
       };
   featuredImage?: T;
   gallery?: T;
+  seoTitle?: T;
+  seoDescription?: T;
+  seoCanonicalUrl?: T;
+  seoNoIndex?: T;
+  brand?: T;
+  material?: T;
+  color?: T;
+  gender?: T;
+  ageGroup?: T;
+  condition?: T;
+  adult?: T;
+  multipack?: T;
+  gtin?: T;
+  mpn?: T;
+  googleProductCategory?: T;
   status?: T;
   isNew?: T;
   isBestSeller?: T;
@@ -586,6 +676,19 @@ export interface PagesSelect<T extends boolean = true> {
   body?: T;
   seoTitle?: T;
   seoDescription?: T;
+  status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "contact-messages_select".
+ */
+export interface ContactMessagesSelect<T extends boolean = true> {
+  name?: T;
+  email?: T;
+  subject?: T;
+  message?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -650,6 +753,26 @@ export interface DiscountsSelect<T extends boolean = true> {
   usageCount?: T;
   expiresAt?: T;
   active?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pinterest-posts_select".
+ */
+export interface PinterestPostsSelect<T extends boolean = true> {
+  product?: T;
+  variantId?: T;
+  title?: T;
+  description?: T;
+  link?: T;
+  imageURL?: T;
+  imageMedia?: T;
+  scheduledAt?: T;
+  status?: T;
+  pinId?: T;
+  publishedAt?: T;
+  lastError?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -730,6 +853,90 @@ export interface StoreSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing-settings".
+ */
+export interface MarketingSetting {
+  id: number;
+  /**
+   * Used for checkout availability and GMC feed planning. Keep this in sync with the target countries and shipping services configured in Merchant Center.
+   */
+  availableCountries?:
+    | (
+        | 'US'
+        | 'AU'
+        | 'AT'
+        | 'BH'
+        | 'BE'
+        | 'CA'
+        | 'CL'
+        | 'DK'
+        | 'FR'
+        | 'DE'
+        | 'GR'
+        | 'HK'
+        | 'HU'
+        | 'IE'
+        | 'IL'
+        | 'IT'
+        | 'JP'
+        | 'KW'
+        | 'MX'
+        | 'NL'
+        | 'NZ'
+        | 'NO'
+        | 'PL'
+        | 'RO'
+        | 'SA'
+        | 'SG'
+        | 'SK'
+        | 'ZA'
+        | 'ES'
+        | 'SE'
+        | 'CH'
+        | 'TH'
+        | 'GB'
+      )[]
+    | null;
+  /**
+   * Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {size}.
+   */
+  productTitleTemplate?: string | null;
+  /**
+   * Used when a product SEO description is blank.
+   */
+  productDescriptionTemplate?: string | null;
+  /**
+   * Tokens include {brand}, {productType}, {productName}, {length}, {shape}, and {number}.
+   */
+  imageFilenameTemplate?: string | null;
+  imageTitleTemplate?: string | null;
+  imageAltTemplate?: string | null;
+  imageCaptionTemplate?: string | null;
+  /**
+   * Convert uploaded JPEG and PNG product images to WebP using Sharp.
+   */
+  compressImagesToWebP?: boolean | null;
+  /**
+   * WebP quality from 1 to 100. A value around 80–85 is a practical starting point.
+   */
+  webpQuality?: number | null;
+  /**
+   * Tokens: {brand}, {productName}, {productType}, {length}, {shape}, {size}.
+   */
+  pinterestTitleTemplate?: string | null;
+  /**
+   * Requires PINTEREST_ACCESS_TOKEN and PINTEREST_BOARD_ID in your hosting environment. Cron publishing also requires CRON_SECRET.
+   */
+  pinterestDescriptionTemplate?: string | null;
+  /**
+   * Pinterest publishing setup instructions.
+   */
+  pinterestPublishingSetup?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "store-settings_select".
  */
 export interface StoreSettingsSelect<T extends boolean = true> {
@@ -747,6 +954,27 @@ export interface StoreSettingsSelect<T extends boolean = true> {
         id?: T;
       };
   pricesIncludeTax?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing-settings_select".
+ */
+export interface MarketingSettingsSelect<T extends boolean = true> {
+  availableCountries?: T;
+  productTitleTemplate?: T;
+  productDescriptionTemplate?: T;
+  imageFilenameTemplate?: T;
+  imageTitleTemplate?: T;
+  imageAltTemplate?: T;
+  imageCaptionTemplate?: T;
+  compressImagesToWebP?: T;
+  webpQuality?: T;
+  pinterestTitleTemplate?: T;
+  pinterestDescriptionTemplate?: T;
+  pinterestPublishingSetup?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -10,6 +10,7 @@ export const Pages: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   admin: {
+    group: 'Website',
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', 'status', 'updatedAt'],
     description: 'Edit static pages and store policies. The body supports Markdown.',

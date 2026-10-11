@@ -9,6 +9,7 @@ export const Orders: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   admin: {
+    group: 'Commerce',
     useAsTitle: 'orderNumber',
     defaultColumns: ['orderNumber', 'customerEmail', 'total', 'paymentStatus', 'fulfillmentStatus', 'createdAt'],
     description: 'Customer orders and fulfillment status.',

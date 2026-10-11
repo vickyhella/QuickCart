@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
-import { shippingCountryCodes } from '@/lib/countries'
+import { shippingCountries } from '@/lib/countries'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 const amountText = (value) => roundMoney(value).toFixed(2)
@@ -26,11 +26,14 @@ export async function POST(request) {
     if (!address.fullName || !address.address1 || !address.city || !address.postalCode || !/^[A-Z]{2}$/.test(countryCode)) {
       return NextResponse.json({ error: '请填写收件人、街道、城市、邮编和两位国家代码。' }, { status: 400 })
     }
-    if (!shippingCountryCodes.has(countryCode)) return NextResponse.json({ error: '暂不支持配送到该国家。' }, { status: 400 })
+    if (!shippingCountries.some(([code]) => code === countryCode)) return NextResponse.json({ error: '暂不支持配送到该国家。' }, { status: 400 })
     if (!Array.isArray(body.items) || body.items.length === 0) return NextResponse.json({ error: '购物车为空。' }, { status: 400 })
     if (body.items.length > 40) return NextResponse.json({ error: '购物车商品种类过多。' }, { status: 400 })
 
     const payload = await getPayload({ config })
+    const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
+    const availableCountries = Array.isArray(marketing?.availableCountries) && marketing.availableCountries.length ? marketing.availableCountries : shippingCountries.map(([code]) => code)
+    if (!availableCountries.includes(countryCode)) return NextResponse.json({ error: '暂不配送到该国家。' }, { status: 400 })
     const settings = await payload.findGlobal({ slug: 'store-settings', overrideAccess: true })
     const currency = settings.currency || 'USD'
     const lines = []

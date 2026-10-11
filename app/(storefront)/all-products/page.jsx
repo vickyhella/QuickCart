@@ -22,8 +22,8 @@ export default function AllProducts() {
 
   const visibleProducts = useMemo(() => products.filter((product) => {
     const enabledVariants = (product.variants || []).filter((variant) => variant.enabled !== false)
-    if (filters.length && product.length !== filters.length && !enabledVariants.some((variant) => variant.length === filters.length)) return false
-    if (filters.shape && product.shape !== filters.shape && !enabledVariants.some((variant) => variant.shape === filters.shape)) return false
+    if (filters.length && !String(product.length || '').split(',').map((item) => item.trim()).includes(filters.length) && !enabledVariants.some((variant) => variant.length === filters.length)) return false
+    if (filters.shape && !String(product.shape || '').split(',').map((item) => item.trim()).includes(filters.shape) && !enabledVariants.some((variant) => variant.shape === filters.shape)) return false
     if (filters.sale && !(product.price > product.offerPrice)) return false
     if (filters.isNew && !product.isNew) return false
     return true

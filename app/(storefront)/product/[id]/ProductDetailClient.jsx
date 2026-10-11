@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Image from 'next/image'
+import SafeImage from '@/components/SafeImage'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
@@ -10,6 +10,7 @@ import ProductCard from '@/components/ProductCard'
 import { useAppContext } from '@/context/AppContext'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { formatDimension } from '@/lib/format-dimension'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -69,27 +70,27 @@ export default function ProductPage() {
   return (
     <main className="bg-[#fffdfa] text-[#302522] min-h-screen">
       <Navbar />
-      <section className="px-5 md:px-12 lg:px-20 py-10 md:py-16">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-14">
-          <div>
-            <div className="aspect-[4/5] bg-[#f5f0ec] rounded-xl overflow-hidden">
-              <Image src={mainImage || selectedVariant?.image?.url || product.image[0]} alt={product.name} width={900} height={1125} className="w-full h-full object-cover" priority />
+      <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-10 py-8 sm:py-10 md:py-14">
+        <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] lg:gap-12">
+          <div className="mx-auto w-full max-w-[520px]">
+            <div className="aspect-[4/5] max-h-[650px] bg-[#f5f0ec] rounded-xl overflow-hidden">
+              <SafeImage unoptimized src={mainImage || selectedVariant?.image?.url || product.image[0]} alt={selectedVariant?.image?.altText || product.imageAlt?.[Math.max(0, product.image.indexOf(mainImage || product.image[0]))] || product.name} width={800} height={1000} className="w-full h-full object-contain p-3 sm:p-5" priority sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 520px" />
             </div>
-            {galleryImages.length > 1 && <div className="grid grid-cols-5 gap-3 mt-3">{galleryImages.map((image, index) => <button key={image + index} onClick={() => setMainImage(image)} className="aspect-square rounded-lg overflow-hidden bg-[#f5f0ec]"><Image src={image} alt={`${product.name} view ${index + 1}`} width={180} height={180} className="w-full h-full object-cover" /></button>)}</div>}
+            {galleryImages.length > 1 && <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3 mt-3">{galleryImages.map((image, index) => <button key={image + index} onClick={() => setMainImage(image)} className="aspect-square rounded-lg overflow-hidden bg-[#f5f0ec] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#754b43]"><SafeImage unoptimized src={image} alt={product.imageAlt?.[Math.max(0, product.image.indexOf(image))] || `${product.name} view ${index + 1}`} width={160} height={160} className="w-full h-full object-contain p-1" /></button>)}</div>}
           </div>
-          <div className="md:py-6">
+          <div className="min-w-0 w-full max-w-2xl lg:py-3">
             <p className="text-xs uppercase tracking-[0.24em] text-[#9a756d]">Handmade press-on nails</p>
             <h1 className="font-serif text-3xl md:text-4xl mt-3">{product.name}</h1>
             <div className="flex items-baseline gap-3 mt-5"><span className="text-xl">{money(unitPrice)}</span>{compareAtPrice > unitPrice && <span className="text-[#998f89] line-through">{money(compareAtPrice)}</span>}</div>
-            {variants.length > 0 && <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-7">
+            {variants.length > 0 && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
               <label className="text-sm text-[#6e5c55]">Shape
                 <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2 capitalize" value={selectedShape} onChange={(event) => chooseVariant('shape', event.target.value)}>
-                  {availableShapes.map((shape) => <option key={shape} value={shape}>{shape}</option>)}
+                  {availableShapes.map((shape) => <option key={shape} value={shape}>{formatDimension(shape)}</option>)}
                 </select>
               </label>
               <label className="text-sm text-[#6e5c55]">Length
                 <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2 capitalize" value={selectedLength} onChange={(event) => chooseVariant('length', event.target.value)}>
-                  {availableLengths.map((length) => <option key={length} value={length}>{length.replace('-', ' ')}</option>)}
+                  {availableLengths.map((length) => <option key={length} value={length}>{formatDimension(length)}</option>)}
                 </select>
               </label>
               <label className="text-sm text-[#6e5c55]">Size
@@ -98,22 +99,22 @@ export default function ProductPage() {
                 </select>
               </label>
             </div>}
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full">
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="w-full sm:flex-1 py-3.5 border border-[#754b43] text-[#754b43] rounded-full hover:bg-[#f8f3ef] disabled:opacity-50">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/cart') }} className="w-full sm:flex-1 py-3.5 bg-[#754b43] text-white rounded-full hover:bg-[#5e3c36] disabled:opacity-50">Buy now</button>
+            </div>
             <div className="product-markdown text-[#6e5c55] leading-7 mt-7">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
-                img: ({ src, alt }) => <img src={src || ''} alt={alt || ''} className="my-5 max-h-[36rem] w-auto rounded-lg object-contain" loading="lazy" />,
+                img: ({ src, alt }) => <img src={src || '/nail-placeholder.svg'} alt={alt || ''} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} className="my-5 max-h-[30rem] max-w-full rounded-lg object-contain" loading="lazy" />,
                 a: ({ href, children }) => <a href={href} className="underline underline-offset-2" rel={href?.startsWith('http') ? 'noreferrer' : undefined}>{children}</a>,
               }}>{product.description || ''}</ReactMarkdown>
             </div>
             <div className="grid grid-cols-2 gap-4 border-y border-[#e8ded8] py-5 mt-7 text-sm">
-              <div><p className="text-[#998f89]">Shape</p><p className="mt-1 capitalize">{selectedVariant?.shape || product.shape || (variants.length ? 'Choose above' : 'Varies by set')}</p></div>
-              <div><p className="text-[#998f89]">Length</p><p className="mt-1 capitalize">{selectedVariant?.length?.replace('-', ' ') || product.length?.replace('-', ' ') || (variants.length ? 'Choose above' : 'Varies by set')}</p></div>
+              <div><p className="text-[#998f89]">Shape</p><p className="mt-1">{formatDimension(selectedVariant?.shape || product.shape) || (variants.length ? 'Choose above' : 'Varies by set')}</p></div>
+              <div><p className="text-[#998f89]">Length</p><p className="mt-1">{formatDimension(selectedVariant?.length || product.length) || (variants.length ? 'Choose above' : 'Varies by set')}</p></div>
               <div><p className="text-[#998f89]">Size</p><p className="mt-1 uppercase">{selectedVariant?.size || (variants.length ? 'Choose above' : 'Varies by set')}</p></div>
               <div><p className="text-[#998f89]">Set</p><p className="mt-1">Reusable press-on nails</p></div>
               {product.sku && <div><p className="text-[#998f89]">SKU</p><p className="mt-1">{product.sku}</p></div>}
-            </div>
-            <div className="flex gap-3 mt-8">
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="flex-1 py-3.5 border border-[#754b43] text-[#754b43] rounded-full hover:bg-[#f8f3ef] disabled:opacity-50">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/cart') }} className="flex-1 py-3.5 bg-[#754b43] text-white rounded-full hover:bg-[#5e3c36] disabled:opacity-50">Buy now</button>
             </div>
             <p className="text-xs text-[#827873] mt-5">Each set is handmade. Product details and sizing can be updated in the product manager.</p>
           </div>

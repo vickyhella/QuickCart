@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import SafeImage from '@/components/SafeImage'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
@@ -17,24 +18,34 @@ export default function Home() {
   const { products } = useAppContext()
   const newProducts = products.filter((product) => product.isNew)
   const visibleProducts = newProducts.length ? newProducts : products
+  const heroProduct = products[0]
+  const heroImage = heroProduct?.image?.[0]
 
   return (
-    <main className="bg-[#fffdfa] text-[#302522]">
+    <main className="bg-[#faf7f5] text-[#271d22]">
       <Navbar />
-      <section className="px-5 md:px-12 lg:px-20 pt-8">
-        <div className="relative overflow-hidden rounded-2xl bg-[#f4e9e2] min-h-[430px] md:min-h-[520px] flex items-center">
-          <div className="max-w-2xl px-8 py-16 md:px-16 md:py-24 relative z-10">
-            <p className="text-xs uppercase tracking-[0.28em] text-[#8b5e56]">Ginny Nana · Press-on nails</p>
-            <h1 className="font-serif text-4xl md:text-6xl leading-[1.08] mt-5">A little art for your fingertips.</h1>
-            <p className="text-[#6e5c55] mt-5 max-w-lg leading-7">Natural-looking, reusable press-on nails designed for everyday elegance and made to feel like you.</p>
-            <div className="flex flex-wrap items-center gap-4 mt-8">
-              <Link href="/all-products" className="px-7 py-3 bg-[#754b43] text-white text-sm rounded-full hover:bg-[#5e3c36] transition">Shop the collection</Link>
-              <span className="text-sm text-[#6e5c55]">Free shipping over $50</span>
+      <section className="px-3 sm:px-5 lg:px-8 pt-3 sm:pt-5">
+        <div className="relative isolate min-h-[650px] overflow-hidden rounded-[1.5rem] bg-[#e8d7d1] sm:min-h-[700px] lg:min-h-[740px]">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_76%_39%,#f5e8e2_0%,#dfc3bb_34%,#b78483_75%,#79505f_100%)]" />
+          <div className="absolute -right-24 -top-16 h-[38rem] w-[38rem] rounded-full border border-white/30 sm:right-[-5%] sm:top-[-22%] sm:h-[48rem] sm:w-[48rem]" />
+          <div className="absolute right-[10%] top-[12%] h-[23rem] w-[23rem] rotate-6 overflow-hidden rounded-[48%_48%_8%_8%] border-[10px] border-white/40 bg-[#f9efeb] shadow-[0_35px_90px_rgba(63,27,46,.28)] sm:right-[13%] sm:top-[11%] sm:h-[32rem] sm:w-[26rem]">
+            {heroImage ? <SafeImage unoptimized src={heroImage} alt={heroProduct?.imageAlt?.[0] || heroProduct?.name || 'Ginny Nana press-on nail design'} fill sizes="(max-width: 640px) 72vw, 430px" className="object-cover" priority /> : <div className="h-full w-full bg-[linear-gradient(145deg,#fff7f2_15%,#e6bdb5_54%,#945868)]" />}
+          </div>
+          <div className="absolute right-[3%] top-[42%] hidden h-44 w-36 -rotate-12 overflow-hidden rounded-[45%_45%_8%_8%] border-[7px] border-white/60 bg-[#e9c7bd] shadow-xl sm:block">
+            {products[1]?.image?.[0] && <SafeImage unoptimized src={products[1].image[0]} alt={products[1].imageAlt?.[0] || products[1].name} fill sizes="144px" className="object-cover" />}
+          </div>
+          <div className="relative z-10 flex min-h-[650px] items-end px-6 pb-10 pt-14 sm:min-h-[700px] sm:px-10 sm:pb-14 lg:min-h-[740px] lg:items-center lg:px-16 lg:py-20">
+            <div className="max-w-[610px] rounded-2xl bg-[#fffaf7]/85 p-6 shadow-[0_25px_80px_rgba(50,24,36,.12)] backdrop-blur-md sm:p-10 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0">
+              <p className="text-[10px] uppercase tracking-[0.32em] text-[#794b5d] sm:text-xs">Ginny Nana · Wearable nail art</p>
+              <h1 className="mt-5 max-w-xl font-serif text-[2.8rem] leading-[.98] tracking-[-.04em] sm:text-6xl lg:text-[5.5rem]">A fresh set.<br /><span className="italic text-[#904f68]">A whole new mood.</span></h1>
+              <p className="mt-5 max-w-md text-sm leading-6 text-[#59444c] sm:text-base sm:leading-7">Salon-inspired press-ons, made for your own rhythm. Find the shape, length, and little details that feel like you.</p>
+              <div className="mt-7 flex flex-wrap items-center gap-3 sm:gap-5">
+                <Link href="/all-products" className="rounded-full bg-[#2c1b25] px-7 py-3.5 text-sm text-white transition hover:bg-[#75465c]">Shop the collection <span aria-hidden="true">↗</span></Link>
+                <span className="text-xs uppercase tracking-[0.14em] text-[#654d55]">Free shipping over $50</span>
+              </div>
             </div>
           </div>
-          <div aria-hidden="true" className="hidden md:block absolute right-[-3%] bottom-[-32%] w-[48%] aspect-square rounded-full border border-white/70 bg-[radial-gradient(circle_at_35%_30%,#fff8f3_0,#e8cfc2_48%,#d6b5a5_100%)]" />
-          <div aria-hidden="true" className="hidden md:block absolute right-[10%] top-[18%] w-48 h-64 rotate-[-14deg] rounded-[55%_55%_48%_48%] border-[10px] border-[#f9efeb] bg-gradient-to-b from-[#fff5f0] to-[#d89d91] shadow-xl" />
-          <div aria-hidden="true" className="hidden md:block absolute right-[25%] top-[32%] w-36 h-52 rotate-[12deg] rounded-[55%_55%_48%_48%] border-[9px] border-[#f9efeb] bg-gradient-to-b from-[#fff5f0] to-[#d89d91] shadow-lg" />
+          <span className="absolute bottom-7 right-7 hidden text-[10px] uppercase tracking-[.28em] text-white/90 sm:block">Designed to be noticed</span>
         </div>
       </section>
 
@@ -55,17 +66,17 @@ export default function Home() {
         )}
       </section>
 
-      <section className="bg-[#f8f3ef] px-5 md:px-12 lg:px-20 py-16 md:py-20">
+      <section className="bg-[#261a22] px-5 py-16 text-[#fffaf7] sm:px-8 md:px-12 lg:px-20 md:py-20">
         <div className="max-w-2xl mx-auto text-center">
-          <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">Why press-on nails?</p>
-          <h2 className="font-serif text-3xl md:text-4xl mt-2">Your ritual, made easy</h2>
+            <p className="text-xs uppercase tracking-[0.25em] text-[#d89caf]">Your manicure, your moment</p>
+          <h2 className="font-serif text-3xl md:text-4xl mt-2">Good nails. No appointment.</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
           {values.map(([title, description], index) => (
             <div className="text-center" key={title}>
-              <span className="inline-flex w-10 h-10 rounded-full bg-white items-center justify-center text-[#8b5e56] font-serif">0{index + 1}</span>
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/5 font-serif text-[#efb5c4]">0{index + 1}</span>
               <h3 className="font-medium mt-4">{title}</h3>
-              <p className="text-sm leading-6 text-[#786963] mt-2">{description}</p>
+              <p className="mt-2 text-sm leading-6 text-white/65">{description}</p>
             </div>
           ))}
         </div>

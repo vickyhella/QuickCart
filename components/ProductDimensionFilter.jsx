@@ -1,10 +1,11 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
 import { useAppContext } from '@/context/AppContext'
+import { formatDimension } from '@/lib/format-dimension'
 
 const defaults = {
   length: ['x-short', 'short', 'medium', 'long', 'x-long'],
@@ -17,9 +18,13 @@ export default function ProductDimensionFilter({ dimension }) {
   const label = dimension === 'length' ? 'Length' : 'Shape'
   const options = useMemo(() => [...new Set([
     ...defaults[dimension],
-    ...products.flatMap((product) => [product[dimension], ...(product.variants || []).map((variant) => variant[dimension])].filter(Boolean)),
+    ...products.flatMap((product) => [String(product[dimension] || '').split(',').map((item) => item.trim()), ...(product.variants || []).map((variant) => variant[dimension])].flat().filter(Boolean)),
   ])], [dimension, products])
-  const matching = useMemo(() => products.filter((product) => product[dimension] === selected || (product.variants || []).some((variant) => variant.enabled !== false && variant[dimension] === selected)), [dimension, products, selected])
+  useEffect(() => {
+    const value = new URLSearchParams(window.location.search).get(dimension)
+    if (value && options.includes(value)) setSelected(value)
+  }, [dimension, options])
+  const matching = useMemo(() => products.filter((product) => String(product[dimension] || '').split(',').map((item) => item.trim()).includes(selected) || (product.variants || []).some((variant) => variant.enabled !== false && variant[dimension] === selected)), [dimension, products, selected])
 
   return <main className="min-h-screen bg-[#fffdfa] text-[#302522]">
     <Navbar />
@@ -29,11 +34,11 @@ export default function ProductDimensionFilter({ dimension }) {
       <label className="block max-w-sm mt-7 text-sm text-[#6e5c55]">Choose a {label.toLowerCase()}
         <select value={selected} onChange={(event) => setSelected(event.target.value)} className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-4 py-3 capitalize text-[#302522]">
           <option value="">Select {label.toLowerCase()}</option>
-          {options.map((option) => <option key={option} value={option}>{option.replaceAll('-', ' ')}</option>)}
+          {options.map((option) => <option key={option} value={option}>{formatDimension(option)}</option>)}
         </select>
       </label>
       {selected ? <>
-        <h2 className="font-serif text-2xl mt-9 capitalize">{selected.replaceAll('-', ' ')} designs</h2>
+        <h2 className="font-serif text-2xl mt-9">{formatDimension(selected)} designs</h2>
         {matching.length ? <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-7 mt-6">{matching.map((product) => <ProductCard key={product._id} product={product} />)}</div> : <p className="mt-6 py-12 text-center bg-[#f8f3ef] rounded-xl text-[#786963]">No designs use this {label.toLowerCase()} yet.</p>}
       </> : <p className="mt-8 py-10 text-center bg-[#f8f3ef] rounded-xl text-[#786963]">Select a {label.toLowerCase()} to see matching designs.</p>}
     </section>

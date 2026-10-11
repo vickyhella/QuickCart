@@ -1,17 +1,26 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { shippingCountries } from '@/lib/countries'
+import Link from 'next/link'
 
 export default function MerchantFeedPreviewPage() {
   const [items, setItems] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState(null)
+  const [availableCountries, setAvailableCountries] = useState([])
 
   useEffect(() => {
-    fetch('/api/merchant/feed.xml', { cache: 'no-store' }).then(async (response) => {
-      if (!response.ok) throw new Error('Could not load the Merchant Center feed.')
-      const xml = new DOMParser().parseFromString(await response.text(), 'application/xml')
+    Promise.all([
+      fetch('/api/merchant/feed.xml', { cache: 'no-store' }),
+      fetch('/api/merchant/feed-preview', { cache: 'no-store' }),
+      fetch('/api/marketing/countries', { cache: 'no-store' }),
+    ]).then(async ([feedResponse, statsResponse, countriesResponse]) => {
+      if (!feedResponse.ok) throw new Error('Could not load the Merchant Center feed.')
+      const [feedText, statsResult] = await Promise.all([feedResponse.text(), statsResponse.ok ? statsResponse.json() : Promise.resolve(null)])
+      setStats(statsResult)
+      if (countriesResponse.ok) setAvailableCountries((await countriesResponse.json()).countries || [])
+      const xml = new DOMParser().parseFromString(feedText, 'application/xml')
       const parseError = xml.querySelector('parsererror')
       if (parseError) throw new Error('The feed returned invalid XML.')
       const text = (element, name) => element.getElementsByTagNameNS('http://base.google.com/ns/1.0', name)[0]?.textContent || ''
@@ -27,13 +36,19 @@ export default function MerchantFeedPreviewPage() {
 
   return <main style={{ padding: '32px clamp(16px, 4vw, 56px)', color: '#172033', background: '#f8fafc', minHeight: '100vh' }}>
     <h1 style={{ marginBottom: 8 }}>Google Merchant Center feed</h1>
-    <p style={{ marginTop: 0, color: '#475569' }}>Preview of published products and variants. Feed XML: <a href="/api/merchant/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>/api/merchant/feed.xml</a></p>
+    <p style={{ marginTop: 0, color: '#475569' }}>Preview of published products and variants. Feed URLs: <a href="/api/merchant/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Google Merchant Center XML</a> · <a href="/api/pinterest/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Pinterest catalog XML</a> · <a href="/pinterest-feed" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Pinterest visual preview</a></p>
     <section style={{ marginBlock: 20, padding: 16, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e3a8a' }}>
       <strong>Country targeting</strong>
       <p style={{ marginBlock: 6 }}>The site checkout accepts the countries below. In Merchant Center, add these as target countries on the product data source and configure shipping services with USD rates matching the site’s shared order tiers. Country targeting and shipping services are account settings; they are not attributes stored on each product row in this XML.</p>
-      <p style={{ margin: 0 }}>{shippingCountries.map(([code, name]) => `${name} (${code})`).join(' · ')}</p>
+      <p style={{ margin: 0 }}>{availableCountries.map(([code, name]) => `${name} (${code})`).join(' · ') || 'No available countries configured.'}</p>
     </section>
     {loading ? <p>Loading feed…</p> : error ? <p role="alert" style={{ color: '#b91c1c' }}>{error}</p> : <>
+      {stats && <section style={{ marginBlock: 18, padding: 16, background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8 }}>
+        <strong>Live catalog status</strong>
+        <p style={{ marginBlock: 6 }}>Products: {stats.totalProducts} · Published: {stats.publishedProducts} · Draft: {stats.draftProducts} · Feed items: {stats.feedItems}</p>
+        {stats.feedItems === 0 && <p style={{ marginBottom: 0 }}>A product appears in the feed only after it is published and has an image (a variant image can be used when the product image is empty). <Link href="/admin/collections/products" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Open products</Link></p>}
+        {stats.skippedPublishedProducts?.length > 0 && <ul style={{ marginBottom: 0 }}>{stats.skippedPublishedProducts.map((product) => <li key={product.slug}>{product.title} ({product.slug}): {product.reason}</li>)}</ul>}
+      </section>}
       <p>{items.length} item(s) in feed</p>
       <div style={{ overflowX: 'auto', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1900 }}>
@@ -43,6 +58,7 @@ export default function MerchantFeedPreviewPage() {
             <img src={item.image} alt="" style={{ width: 56, height: 56, objectFit: 'cover' }} />,
           ].map((value, index) => <td key={index} style={{ padding: 10, borderBottom: '1px solid #e2e8f0', verticalAlign: 'middle' }}>{value}</td>)}</tr>)}</tbody>
         </table>
+        {!items.length && <p style={{ padding: 20, color: '#64748b' }}>No feed rows yet. See the live catalog status above for what needs to be published.</p>}
       </div>
     </>}
   </main>

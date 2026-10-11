@@ -5,6 +5,7 @@ import remarkGfm from 'remark-gfm'
 import config from '@/payload.config'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import ContactForm from '@/components/ContactForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -50,6 +51,7 @@ export default async function ContentPage({ params }) {
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{page.body}</ReactMarkdown>
           </div>
         ) : null}
+        {slug === 'contact-us' && <ContactForm />}
       </article>
       <Footer />
     </main>

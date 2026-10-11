@@ -2,14 +2,14 @@ import Link from 'next/link'
 
 export default function Footer() {
   return (
-    <footer className="border-t border-[#eee5df] bg-[#fffdfa] text-[#6e5c55]">
+    <footer className="border-t border-[#3d2b36] bg-[#261a22] text-white/65">
       <div className="grid gap-10 md:grid-cols-3 px-5 md:px-12 lg:px-20 py-12">
         <div>
-          <Link href="/" className="font-serif text-2xl text-[#302522]">ginny nana</Link>
+          <Link href="/" className="font-serif text-2xl text-white">Ginny <span className="italic text-[#e6a6ba]">Nana</span></Link>
           <p className="text-sm leading-6 mt-4 max-w-sm">Natural-looking, reusable press-on nails designed for everyday elegance.</p>
         </div>
         <div>
-          <h2 className="text-sm font-medium text-[#302522]">Explore</h2>
+          <h2 className="text-sm font-medium text-white">Explore</h2>
           <div className="text-sm flex flex-col gap-3 mt-4">
             <Link href="/all-products">All products</Link>
             <Link href="/all-products?isNew=true">New arrivals</Link>
@@ -19,7 +19,7 @@ export default function Footer() {
           </div>
         </div>
         <div>
-          <h2 className="text-sm font-medium text-[#302522]">Customer care</h2>
+          <h2 className="text-sm font-medium text-white">Customer care</h2>
           <div className="text-sm flex flex-col gap-3 mt-4">
             <Link href="/privacy-policy/">Privacy policy</Link>
             <Link href="/terms-conditions/">Terms of service</Link>
@@ -29,7 +29,7 @@ export default function Footer() {
           </div>
         </div>
       </div>
-      <p className="border-t border-[#eee5df] px-5 py-4 text-center text-xs">© {new Date().getFullYear()} Ginny Nana</p>
+      <p className="border-t border-white/10 px-5 py-4 text-center text-xs">© {new Date().getFullYear()} Ginny Nana</p>
     </footer>
   )
 }

@@ -3,6 +3,7 @@ import type { GlobalConfig } from 'payload'
 export const StoreSettings: GlobalConfig = {
   slug: 'store-settings',
   label: 'Store settings',
+  admin: { group: 'Commerce' },
   access: {
     read: ({ req }) => Boolean(req.user),
     update: ({ req }) => Boolean(req.user),

@@ -3,12 +3,14 @@ import React from "react";
 import { assets } from "@/assets/assets";
 import OrderSummary from "@/components/OrderSummary";
 import Image from "next/image";
+import SafeImage from "@/components/SafeImage";
 import Navbar from "@/components/Navbar";
 import { useAppContext } from "@/context/AppContext";
+import { formatDimension } from "@/lib/format-dimension";
 
 const Cart = () => {
 
-  const { products, router, cartItems, addToCart, updateCartQuantity, getCartCount } = useAppContext();
+  const { products, router, cartItems, updateCartQuantity, getCartCount } = useAppContext();
 
   return (
     <>
@@ -53,9 +55,10 @@ const Cart = () => {
                       <td className="flex items-center gap-4 py-4 md:px-4 px-1">
                         <div>
                           <div className="rounded-lg overflow-hidden bg-gray-500/10 p-2">
-                            <Image
+                            <SafeImage
+                              unoptimized
                               src={variant?.image?.url || product.image[0]}
-                              alt={product.name}
+                              alt=""
                               className="w-16 h-auto object-cover mix-blend-multiply"
                               width={1280}
                               height={720}
@@ -69,9 +72,8 @@ const Cart = () => {
                           </button>
                         </div>
                         <div className="text-sm hidden md:block">
-                          <p className="text-gray-800">{product.name}</p>
                             <p className="text-gray-800">{product.name}</p>
-                            {(line.length || line.shape || line.size) && <p className="text-xs text-gray-500 capitalize mt-1">{[line.shape, line.length?.replace('-', ' '), line.size?.toUpperCase()].filter(Boolean).join(' · ')}</p>}
+                            {(line.length || line.shape || line.size) && <p className="text-xs text-gray-500 mt-1">{[formatDimension(line.shape), formatDimension(line.length), line.size?.toUpperCase()].filter(Boolean).join(' · ')}</p>}
                             <button
                             className="text-xs text-orange-600 mt-1"
                               onClick={() => updateCartQuantity(lineKey, 0)}

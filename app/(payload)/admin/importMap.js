@@ -2,11 +2,13 @@ import { GoogleProductCategoryField as GoogleProductCategoryField_5125fd73abe082
 import { ProductBulkEditLink as ProductBulkEditLink_9420406cae87749115868821fce0f84f } from '../components/ProductBulkEditor'
 import { ProductBulkEditor as ProductBulkEditor_9420406cae87749115868821fce0f84f } from '../components/ProductBulkEditor'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24 } from '@payloadcms/storage-s3/client'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
   "/components/GoogleProductCategoryField#GoogleProductCategoryField": GoogleProductCategoryField_5125fd73abe0827af1f5c7a04f2fa7ef,
   "/components/ProductBulkEditor#ProductBulkEditLink": ProductBulkEditLink_9420406cae87749115868821fce0f84f,
   "/components/ProductBulkEditor#ProductBulkEditor": ProductBulkEditor_9420406cae87749115868821fce0f84f,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1,
+  "@payloadcms/storage-s3/client#S3ClientUploadHandler": S3ClientUploadHandler_f97aa6c64367fa259c5bc0567239ef24
 }

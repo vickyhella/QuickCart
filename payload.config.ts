@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { s3Storage } from '@payloadcms/storage-s3'
 import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { Media } from './collections/Media'
@@ -26,6 +27,15 @@ const databaseAdapter = process.env.DATABASE_URL
       },
     })
 
+const r2PublicURL = process.env.R2_PUBLIC_URL?.replace(/\/$/, '')
+const r2Enabled = Boolean(
+  process.env.R2_BUCKET &&
+    process.env.R2_ACCESS_KEY_ID &&
+    process.env.R2_SECRET_ACCESS_KEY &&
+    process.env.R2_ENDPOINT &&
+    r2PublicURL,
+)
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -35,6 +45,29 @@ export default buildConfig({
   },
   collections: [Users, Media, Products, Pages, Orders, Discounts],
   globals: [StoreSettings],
+  plugins: [
+    s3Storage({
+      enabled: r2Enabled,
+      collections: {
+        media: {
+          disablePayloadAccessControl: true,
+          generateFileURL: ({ filename, prefix }) =>
+            `${r2PublicURL}/${prefix ? `${prefix}/` : ''}${filename}`,
+        },
+      },
+      bucket: process.env.R2_BUCKET || '',
+      config: {
+        credentials: {
+          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
+          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+        },
+        region: 'auto',
+        endpoint: process.env.R2_ENDPOINT,
+        forcePathStyle: true,
+      },
+      clientUploads: true,
+    }),
+  ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   db: databaseAdapter,

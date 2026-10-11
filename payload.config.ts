@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
@@ -13,6 +14,17 @@ import { Users } from './collections/Users'
 import { StoreSettings } from './globals/StoreSettings'
 
 const filename = fileURLToPath(import.meta.url)
+const databaseAdapter = process.env.DATABASE_URL
+  ? postgresAdapter({
+      pool: {
+        connectionString: process.env.DATABASE_URL,
+      },
+    })
+  : sqliteAdapter({
+      client: {
+        url: `file:${path.resolve(process.cwd(), 'payload.sqlite')}`,
+      },
+    })
 
 export default buildConfig({
   admin: {
@@ -25,11 +37,7 @@ export default buildConfig({
   globals: [StoreSettings],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
-  db: sqliteAdapter({
-    client: {
-      url: `file:${path.resolve(process.cwd(), 'payload.sqlite')}`,
-    },
-  }),
+  db: databaseAdapter,
   sharp,
   typescript: {
     outputFile: path.resolve(path.dirname(filename), 'payload-types.ts'),

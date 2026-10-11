@@ -87,12 +87,16 @@ export const Products: CollectionConfig = {
     { name: 'multipack', type: 'number', min: 1, admin: { position: 'sidebar', description: 'Only set when the offer bundles multiple identical products.' } },
     { name: 'gtin', type: 'text', admin: { position: 'sidebar', description: 'Optional GTIN. Leave blank when none is assigned.' } },
     { name: 'mpn', type: 'text', admin: { position: 'sidebar', description: 'Optional manufacturer-assigned MPN. Do not invent one; blank outputs identifier_exists=false if GTIN is also absent.' } },
-    { name: 'googleProductCategory', type: 'select', defaultValue: 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails', options: [
-      { label: 'False Nails (recommended)', value: 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails' },
-      { label: 'Nail Care', value: 'Health & Beauty > Personal Care > Cosmetics > Nail Care' },
-      { label: 'Nail Polish', value: 'Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Polish' },
-      { label: 'Cosmetics', value: 'Health & Beauty > Personal Care > Cosmetics' },
-    ], admin: { position: 'sidebar', description: 'Google product category. Select the closest matching taxonomy category.' } },
+    {
+      name: 'googleProductCategory',
+      type: 'text',
+      defaultValue: 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails',
+      admin: {
+        position: 'sidebar',
+        components: { Field: '/components/GoogleProductCategoryField#GoogleProductCategoryField' },
+        description: 'Google product category. Select the closest matching taxonomy category.',
+      },
+    },
     { name: 'seoTitle', type: 'text', admin: { position: 'sidebar' } },
     { name: 'seoDescription', type: 'textarea', admin: { position: 'sidebar' } },
     {

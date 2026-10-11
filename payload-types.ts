@@ -230,14 +230,7 @@ export interface Product {
   /**
    * Google product category. Select the closest matching taxonomy category.
    */
-  googleProductCategory?:
-    | (
-        | 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails'
-        | 'Health & Beauty > Personal Care > Cosmetics > Nail Care'
-        | 'Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Polish'
-        | 'Health & Beauty > Personal Care > Cosmetics'
-      )
-    | null;
+  googleProductCategory?: string | null;
   seoTitle?: string | null;
   seoDescription?: string | null;
   /**

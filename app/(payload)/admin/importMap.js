@@ -4,6 +4,7 @@ import { ProductTitleCell as ProductTitleCell_271e4356fd195c654ba9663b74a95b8d }
 import { ProductSlugField as ProductSlugField_36c2d55279d64603ec421ede181e93e5 } from '../components/ProductSlugField'
 import { ProductVariantsSpreadsheetField as ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d } from '../components/ProductVariantsSpreadsheetField'
 import { ProductThumbnailCell as ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a } from '../components/ProductThumbnailCell'
+import { ProductMediaField as ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e } from '../components/ProductMediaField'
 import { GoogleProductCategoryField as GoogleProductCategoryField_5125fd73abe0827af1f5c7a04f2fa7ef } from '../components/GoogleProductCategoryField'
 import { ProductBulkEditLink as ProductBulkEditLink_9420406cae87749115868821fce0f84f } from '../components/ProductBulkEditor'
 import { ProductDeleteControl as ProductDeleteControl_b55a099709b09a611cd7f9c84729a21e } from '../components/ProductDeleteControl'
@@ -22,6 +23,7 @@ export const importMap = {
   "/components/ProductSlugField#ProductSlugField": ProductSlugField_36c2d55279d64603ec421ede181e93e5,
   "/components/ProductVariantsSpreadsheetField#ProductVariantsSpreadsheetField": ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d,
   "/components/ProductThumbnailCell#ProductThumbnailCell": ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a,
+  "/components/ProductMediaField#ProductMediaField": ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e,
   "/components/GoogleProductCategoryField#GoogleProductCategoryField": GoogleProductCategoryField_5125fd73abe0827af1f5c7a04f2fa7ef,
   "/components/ProductBulkEditor#ProductBulkEditLink": ProductBulkEditLink_9420406cae87749115868821fce0f84f,
   "/components/ProductDeleteControl#ProductDeleteControl": ProductDeleteControl_b55a099709b09a611cd7f9c84729a21e,

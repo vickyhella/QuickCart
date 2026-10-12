@@ -11,6 +11,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const { user } = await payload.auth({ headers: request.headers })
   if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
+  let createdOriginalID: string | number | undefined
+  let mediaUpdated = false
   try {
     const { id } = await context.params
     const formData = await request.formData()
@@ -26,6 +28,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       file: { data: prepared.original, mimetype: prepared.originalMimeType, name: `${Date.now()}-${originalName}`, size: prepared.original.length },
       overrideAccess: true,
     })
+    createdOriginalID = original.id
     const updated = await payload.update({
       collection: 'media',
       id,
@@ -39,8 +42,15 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       file: { data: prepared.output, mimetype: prepared.outputMimeType, name: prepared.outputName, size: prepared.output.length },
       overrideAccess: true,
     })
+    mediaUpdated = true
+    const oldOriginalID = current.sourceOriginal && typeof current.sourceOriginal === 'object' ? current.sourceOriginal.id : current.sourceOriginal
+    if (oldOriginalID && String(oldOriginalID) !== String(original.id)) {
+      const otherUses = await payload.find({ collection: 'media', where: { sourceOriginal: { equals: String(oldOriginalID) } }, limit: 2, depth: 0, overrideAccess: true })
+      if (!otherUses.docs.length) await payload.delete({ collection: 'media-originals', id: oldOriginalID, overrideAccess: true }).catch(() => undefined)
+    }
     return NextResponse.json({ success: true, id: updated.id, filename: updated.filename, url: updated.url })
   } catch (error) {
+    if (!mediaUpdated && createdOriginalID !== undefined) await payload.delete({ collection: 'media-originals', id: createdOriginalID, overrideAccess: true }).catch(() => undefined)
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Could not replace this image.' }, { status: 500 })
   }
 }

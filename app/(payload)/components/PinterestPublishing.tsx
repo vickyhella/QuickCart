@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import Link from 'next/link'
 
 type Product = { id: string; title: string; sku?: string; imageURL: string }
 type Templates = { title: string; description: string }
@@ -63,7 +64,7 @@ export function PinterestPublishing() {
   return <section style={{ marginBlock: 24, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 8 }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <div><h2 style={{ margin: 0 }}>Pinterest publishing</h2><p style={{ margin: '6px 0 0', color: 'var(--theme-elevation-700)' }}>Choose products and a publish time. Titles, descriptions, links, and main images are filled from your product and templates.</p></div>
-      <a className="btn btn--style-primary btn--size-medium" href="/admin/collections/pinterest-posts/">View scheduled publishing posts</a>
+      <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/pinterest-posts/">View scheduled publishing posts</Link>
     </div>
 
     <details style={{ marginTop: 18 }}>

@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 /** Untouched source uploads retained for future WebP reprocessing. */
 export const MediaOriginals: CollectionConfig = {
   slug: 'media-originals',
+  access: { delete: () => false },
   admin: {
     group: 'Catalog',
     useAsTitle: 'filename',

@@ -4,7 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 
 type Product = Record<string, unknown> & { id: string | number }
-type Media = { id: string | number; filename?: string | null; url?: string | null }
+type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
 type ProductVariant = {
   id?: string
   sku: string
@@ -304,6 +304,22 @@ export function ProductBulkEditor() {
     return new Set(rows.filter((row) => JSON.stringify(row) !== JSON.stringify(originalByID.get(row.id))).map((row) => row.id))
   }, [originalRows, rows])
 
+  const pickerMedia = useMemo(() => {
+    const currentIDs = new Set<string>()
+    for (const row of rows) {
+      if (row.featuredImage) currentIDs.add(row.featuredImage)
+      row.gallery.split(';').map((value) => value.trim()).filter(Boolean).forEach((id) => currentIDs.add(id))
+      try {
+        const variants = JSON.parse(row.variants || '[]')
+        if (Array.isArray(variants)) variants.forEach((variant) => {
+          const id = mediaID(variant.image)
+          if (id) currentIDs.add(id)
+        })
+      } catch { /* Keep malformed JSON editable; save reports the validation error. */ }
+    }
+    return media.filter((item) => item.mimeType === 'image/webp' || currentIDs.has(String(item.id)))
+  }, [media, rows])
+
   const visibleRows = useMemo(() => {
     const needle = search.trim().toLowerCase()
     return rows.filter((row) => (!needle || row.title.toLowerCase().includes(needle) || row.sku.toLowerCase().includes(needle))
@@ -348,6 +364,7 @@ export function ProductBulkEditor() {
   }
 
   const uploadMedia = async (file: File, productID?: string) => {
+    setMessage(`Uploading and converting ${file.name}…`)
     const body = new FormData()
     body.append('file', file)
     if (productID) body.append('product', productID)
@@ -356,6 +373,7 @@ export function ProductBulkEditor() {
     if (!response.ok) throw new Error(result.errors?.[0]?.message || result.message || 'Image upload failed')
     const uploaded = result.doc as Media
     setMedia((current) => [uploaded, ...current.filter((item) => String(item.id) !== String(uploaded.id))])
+    setMessage(uploaded.mimeType === 'image/webp' ? `${uploaded.filename || file.name} is ready as WebP.` : `${uploaded.filename || file.name} uploaded in its original format.`)
     return uploaded
   }
 
@@ -607,7 +625,7 @@ export function ProductBulkEditor() {
                         {column.key === 'gallery' ? (
                           <>
                             <select data-row={rowIndex} data-column={columnIndex} multiple aria-label={`Gallery images for ${row.title}`} value={row.gallery.split(';').map((value) => value.trim()).filter(Boolean).map((value) => media.find((item) => String(item.id) === value || item.filename === value)?.id.toString() || value)} onChange={(event) => updateCell(rowIndex, columnIndex, [...event.currentTarget.selectedOptions].map((option) => option.value).join('; '))} style={{ ...inputStyle, minHeight: 96, color: '#111827' }}>
-                              {media.map((item) => <option key={item.id} value={String(item.id)}>{item.filename || `Media ${item.id}`}</option>)}
+                              {pickerMedia.map((item) => <option key={item.id} value={String(item.id)}>{item.filename || `Media ${item.id}`}</option>)}
                             </select>
                             <p style={{ margin: '3px 0', fontSize: 11, color: '#4b5563' }}>Ctrl/Cmd-click to select multiple</p>
                             <input type="file" accept="image/*" multiple aria-label={`Upload gallery images for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const files = [...(input.files || [])]; if (!files.length) return; try { const uploaded = await Promise.all(files.map((file) => uploadMedia(file, row.id))); const current = rows[rowIndex].gallery.split(';').map((value) => value.trim()).filter(Boolean); updateCell(rowIndex, columnIndex, [...new Set([...current, ...uploaded.map((item) => String(item.id))])].join('; ')) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', width: column.width, fontSize: 11 }} />
@@ -681,7 +699,7 @@ export function ProductBulkEditor() {
             </tbody>
           </table>
           <datalist id="product-media-options">
-            {media.map((item) => item.filename ? <option key={item.id} value={item.filename}>{item.filename} (ID {item.id})</option> : null)}
+            {pickerMedia.map((item) => item.filename ? <option key={item.id} value={item.filename}>{item.filename} (ID {item.id})</option> : null)}
           </datalist>
           <datalist id="google-category-options">
             {['Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails', 'Health & Beauty > Personal Care > Cosmetics > Nail Care', 'Health & Beauty > Personal Care > Cosmetics > Nail Care > Nail Polish', 'Health & Beauty > Personal Care > Cosmetics'].map((category) => <option key={category} value={category} />)}

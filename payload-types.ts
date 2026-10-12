@@ -243,7 +243,7 @@ export interface Product {
         gtin?: string | null;
         mpn?: string | null;
         /**
-         * Optional image for this exact variant. Falls back to the product image.
+         * Optional WebP image for this exact variant. Falls back to the product image.
          */
         image?: (number | null) | Media;
         stock?: number | null;

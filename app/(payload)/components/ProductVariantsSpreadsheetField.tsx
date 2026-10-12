@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAllFormFields, useField } from '@payloadcms/ui'
 
-type Media = { id: string | number; filename?: string | null; url?: string | null }
+type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
 type Variant = {
   id?: string
   sku?: string
@@ -87,7 +87,10 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   const productSKU = String(fields.sku?.value || '')
   const productCode = /^\d{4}$/.test(productSKU) ? productSKU : ''
   const featuredImage = imageID(fields.featuredImage?.value)
-  const mediaOptions = useMemo(() => media.filter((item) => item.filename), [media])
+  const mediaOptions = useMemo(() => {
+    const selectedIDs = new Set([featuredImage, ...rows.map((variant) => imageID(variant.image))].filter(Boolean))
+    return media.filter((item) => item.filename && (item.mimeType === 'image/webp' || selectedIDs.has(String(item.id))))
+  }, [featuredImage, media, rows])
 
   useEffect(() => {
     if (!dimensionsInitialized && rows.length) {
@@ -172,6 +175,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   }
 
   const uploadImage = async (file: File, rowIndex: number) => {
+    setMessage(`Uploading and converting ${file.name}…`)
     const variant = rows[rowIndex]
     const extension = file.name.match(/\.[a-z0-9]+$/i)?.[0]?.toLowerCase() || ''
     const nameParts = [
@@ -204,6 +208,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
     const uploaded = result.doc as Media
     setMedia((current) => [uploaded, ...current.filter((item) => String(item.id) !== String(uploaded.id))])
     updateCell(rowIndex, 'image', String(uploaded.id))
+    setMessage(uploaded.mimeType === 'image/webp' ? `${uploaded.filename || file.name} is ready as WebP.` : `${uploaded.filename || file.name} uploaded in its original format.`)
   }
 
   const handlePaste = (event: React.ClipboardEvent<HTMLDivElement>) => {

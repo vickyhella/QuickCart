@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 export function MediaBulkUpload() {
+  const router = useRouter()
   const [dragging, setDragging] = useState(false)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -12,6 +14,7 @@ export function MediaBulkUpload() {
     setBusy(true)
     const failures: string[] = []
     let count = 0
+    let webpCount = 0
     for (const file of Array.from(files)) {
       const form = new FormData()
       form.append('file', file)
@@ -20,13 +23,14 @@ export function MediaBulkUpload() {
         const result = await response.json().catch(() => ({}))
         if (!response.ok) throw new Error(result.errors?.[0]?.message || result.message || `HTTP ${response.status}`)
         count += 1
+        if (result.doc?.mimeType === 'image/webp') webpCount += 1
       } catch (error) {
         failures.push(`${file.name}: ${error instanceof Error ? error.message : 'upload failed'}`)
       }
     }
-    setMessage(`${count} image${count === 1 ? '' : 's'} uploaded.${failures.length ? ` ${failures.length} failed: ${failures.join(' · ')}` : ''}`)
+    setMessage(`${count} image${count === 1 ? '' : 's'} ready; ${webpCount} WebP${count > webpCount ? `, ${count - webpCount} kept in original format` : ''}.${failures.length ? ` ${failures.length} failed: ${failures.join(' · ')}` : ''}`)
     setBusy(false)
-    if (count) window.location.reload()
+    if (count) router.refresh()
   }
 
   return <section style={{ marginBlock: 16, padding: 18, border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 8 }}>

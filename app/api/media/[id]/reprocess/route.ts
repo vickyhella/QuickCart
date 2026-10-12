@@ -27,6 +27,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
   const { user } = await payload.auth({ headers: request.headers })
   if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
+  let newlyCreatedOriginalID: string | number | undefined
   try {
     const { id } = await context.params
     const media = await payload.findByID({ collection: 'media', id, depth: 1, overrideAccess: true })
@@ -64,10 +65,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
         overrideAccess: true,
       })
       originalID = original.id
+      newlyCreatedOriginalID = original.id
     }
 
     const outputName = currentName.replace(/\.(jpe?g|png|heic|heif|webp)$/i, '.webp') || `image-${id}.webp`
-    await payload.update({
+    const updated = await payload.update({
       collection: 'media',
       id,
       data: { sourceOriginal: originalID },
@@ -75,8 +77,9 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       context: { skipMediaOptimization: true },
       overrideAccess: true,
     })
-    return NextResponse.json({ success: true, quality })
+    return NextResponse.json({ success: true, quality, doc: updated })
   } catch (error) {
+    if (newlyCreatedOriginalID !== undefined) await payload.delete({ collection: 'media-originals', id: newlyCreatedOriginalID, overrideAccess: true }).catch(() => undefined)
     console.error('Could not reprocess media from its original source.', error)
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Image reprocessing failed.' }, { status: 500 })
   }

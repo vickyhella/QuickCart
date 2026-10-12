@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  access: { delete: () => false },
   hooks: {
     beforeDelete: [async ({ id, req }) => {
       const scheduledPosts = await req.payload.find({ collection: 'pinterest-posts', where: { imageMedia: { equals: String(id) } }, limit: 10000, pagination: false, depth: 0, overrideAccess: true })

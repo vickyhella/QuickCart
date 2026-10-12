@@ -32,6 +32,21 @@ function summarizeDimension(values: unknown[], order: string[]) {
   return unique.join(', ')
 }
 
+function relationID(value: any): string {
+  return String(value && typeof value === 'object' ? value.id : value ?? '')
+}
+
+function webpPickerFilter(values: unknown[]) {
+  const existingIDs = [...new Set(values.flatMap((value) => {
+    if (Array.isArray(value)) return value.map(relationID).filter(Boolean)
+    const id = relationID(value)
+    return id ? [id] : []
+  }))]
+  return existingIDs.length
+    ? { or: [{ mimeType: { equals: 'image/webp' } }, { id: { in: existingIDs } }] }
+    : { mimeType: { equals: 'image/webp' } }
+}
+
 async function nextProductCode(req: any) {
   const result = await req.payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: true })
   const highest = result.docs.reduce((max, product) => {
@@ -177,7 +192,7 @@ export const Products: CollectionConfig = {
         { name: 'compareAtPrice', type: 'number', min: 0 },
         { name: 'gtin', type: 'text', admin: { hidden: true } },
         { name: 'mpn', type: 'text', admin: { hidden: true } },
-        { name: 'image', type: 'upload', relationTo: 'media', admin: { description: 'Optional image for this exact variant. Falls back to the product image.' } },
+        { name: 'image', type: 'upload', relationTo: 'media', filterOptions: ({ siblingData }) => webpPickerFilter([(siblingData as Record<string, unknown> | undefined)?.image]), admin: { description: 'Optional WebP image for this exact variant. Falls back to the product image.' } },
         { name: 'stock', type: 'number', min: 0, defaultValue: 10 },
         { name: 'trackStock', type: 'checkbox', defaultValue: true },
         { name: 'enabled', type: 'checkbox', defaultValue: true },
@@ -187,8 +202,8 @@ export const Products: CollectionConfig = {
         {
           label: 'Media & SEO',
           fields: [
-            { name: 'featuredImage', type: 'upload', relationTo: 'media', admin: { components: { Cell: '/components/ProductThumbnailCell#ProductThumbnailCell' } } },
-            { name: 'gallery', type: 'upload', relationTo: 'media', hasMany: true },
+            { name: 'featuredImage', type: 'upload', relationTo: 'media', filterOptions: ({ data }) => webpPickerFilter([(data as Record<string, unknown> | undefined)?.featuredImage]), admin: { components: { Field: '/components/ProductMediaField#ProductMediaField', Cell: '/components/ProductThumbnailCell#ProductThumbnailCell' } } },
+            { name: 'gallery', type: 'upload', relationTo: 'media', hasMany: true, filterOptions: ({ data }) => webpPickerFilter([(data as Record<string, unknown> | undefined)?.gallery]), admin: { components: { Field: '/components/ProductMediaField#ProductMediaField' } } },
             { name: 'seoTitle', type: 'text', admin: { description: 'Search title. Leave blank to use the product name.' } },
             { name: 'seoDescription', type: 'textarea', admin: { description: 'Search description. Leave blank to use the product description.' } },
             { name: 'seoCanonicalUrl', type: 'text' },

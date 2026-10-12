@@ -28,12 +28,13 @@ export async function prepareMediaUpload(file: File, quality: number) {
   const clampedQuality = Math.max(1, Math.min(100, Number(quality) || 82))
   const output = await image.webp({ quality: clampedQuality }).toBuffer()
   const outputMetadata = await sharp(output).metadata()
-  if (!outputMetadata.width || !outputMetadata.height || output.length < 100) throw new Error('The converted WebP image is empty.')
+  if (!outputMetadata.width || !outputMetadata.height || output.length === 0) throw new Error('The converted WebP image is empty.')
+  const stem = name.replace(/\.[^.]+$/, '') || `product-image-${Date.now()}`
   return {
     original: source,
     originalMimeType: mimeType || (isHEIC ? 'image/heic' : 'application/octet-stream'),
     output,
     outputMimeType: 'image/webp',
-    outputName: name.replace(/\.(jpe?g|png|avif|tiff?|bmp|heic|heif)$/i, '.webp'),
+    outputName: `${stem}.webp`,
   }
 }

@@ -47,7 +47,10 @@ export default buildConfig({
       baseDir: path.resolve(path.dirname(filename), 'app/(payload)'),
     },
     components: {
-      afterNavLinks: ['/components/MarketingNavLink#MarketingNavLink'],
+      afterNavLinks: ['/components/StudioNavLink#StudioNavLink', '/components/MarketingNavLink#MarketingNavLink'],
+      views: {
+        dashboard: { Component: '/components/AdminDashboard#AdminDashboard' },
+      },
     },
   },
   collections: [Users, Media, MediaOriginals, Products, Pages, ContactMessages, Orders, Discounts, PinterestPosts],

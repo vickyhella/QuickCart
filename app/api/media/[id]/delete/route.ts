@@ -17,6 +17,18 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const media: any = await payload.findByID({ collection: 'media', id, depth: 0, overrideAccess: true })
     const originalID = media.sourceOriginal && typeof media.sourceOriginal === 'object' ? media.sourceOriginal.id : media.sourceOriginal
 
+    const products = await payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: true })
+    const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
+    const references = (products.docs as any[]).filter((product) =>
+      relationID(product.featuredImage) === String(id) ||
+      (Array.isArray(product.gallery) && product.gallery.some((item: any) => relationID(item) === String(id))) ||
+      (Array.isArray(product.variants) && product.variants.some((variant: any) => relationID(variant.image) === String(id))),
+    )
+    const pins = await payload.find({ collection: 'pinterest-posts', where: { imageMedia: { equals: String(id) } }, limit: 10000, pagination: false, depth: 0, overrideAccess: true })
+    if (references.length || media.product || pins.docs.length) {
+      return NextResponse.json({ error: `This image is still linked to ${references.length} product(s), ${pins.docs.length} Pinterest post(s), or a product media record. Remove those references first.` }, { status: 409 })
+    }
+
     if (deleteOriginal && originalID) {
       const references = await payload.find({
         collection: 'media',

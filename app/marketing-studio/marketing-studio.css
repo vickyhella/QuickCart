@@ -1,0 +1,39 @@
+.marketing-studio-publisher {
+  --theme-elevation-200: #e7ddd8;
+  --theme-elevation-700: #766966;
+  --theme-success-500: #548b68;
+}
+
+.marketing-studio-publisher .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e7ddd8;
+  border-radius: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.marketing-studio-publisher .btn--style-primary {
+  border-color: #604a45;
+  background: #604a45;
+  color: white;
+}
+
+.marketing-studio-publisher .btn--style-secondary {
+  background: white;
+  color: #423735;
+}
+
+.marketing-studio-publisher .btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.marketing-studio-publisher input:not([type='checkbox']),
+.marketing-studio-publisher textarea {
+  border: 1px solid #e7ddd8;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.7rem;
+}

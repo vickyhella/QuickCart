@@ -184,6 +184,7 @@ export interface Media {
    * Optional product this image belongs to.
    */
   product?: (number | null) | Product;
+  studioTemporary?: boolean | null;
   /**
    * Untouched upload retained for future reprocessing.
    */
@@ -213,8 +214,9 @@ export interface Product {
   /**
    * Markdown supported, including images via ![alt](https://...). Raw HTML is not enabled.
    */
-  description: string;
-  price: number;
+  description?: string | null;
+  descriptionMode?: ('auto' | 'custom') | null;
+  price?: number | null;
   /**
    * Optional original price, shown crossed out.
    */
@@ -230,6 +232,15 @@ export interface Product {
   shape?: string | null;
   sku?: string | null;
   /**
+   * Internal supplier reference. Hidden from customers and feeds.
+   */
+  supplierSKU?: string | null;
+  /**
+   * Internal supplier purchasing URL. Hidden from customers and feeds.
+   */
+  purchaseURL?: string | null;
+  studioRequestID?: string | null;
+  /**
    * Create one row for each shape, length, and size combination. Leave variant prices blank to use the product price.
    */
   variants?:
@@ -242,6 +253,14 @@ export interface Product {
         compareAtPrice?: number | null;
         gtin?: string | null;
         mpn?: string | null;
+        /**
+         * Internal supplier reference; never exposed publicly.
+         */
+        supplierSKU?: string | null;
+        /**
+         * Internal purchasing URL; never exposed publicly.
+         */
+        purchaseURL?: string | null;
         /**
          * Optional WebP image for this exact variant. Falls back to the product image.
          */
@@ -258,10 +277,12 @@ export interface Product {
    * Search title. Leave blank to use the product name.
    */
   seoTitle?: string | null;
+  seoTitleMode?: ('auto' | 'custom') | null;
   /**
    * Search description. Leave blank to use the product description.
    */
   seoDescription?: string | null;
+  seoDescriptionMode?: ('auto' | 'custom') | null;
   seoCanonicalUrl?: string | null;
   seoNoIndex?: boolean | null;
   brand?: string | null;
@@ -581,6 +602,7 @@ export interface MediaSelect<T extends boolean = true> {
   altText?: T;
   caption?: T;
   product?: T;
+  studioTemporary?: T;
   sourceOriginal?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -620,12 +642,16 @@ export interface ProductsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   description?: T;
+  descriptionMode?: T;
   price?: T;
   compareAtPrice?: T;
   category?: T;
   length?: T;
   shape?: T;
   sku?: T;
+  supplierSKU?: T;
+  purchaseURL?: T;
+  studioRequestID?: T;
   variants?:
     | T
     | {
@@ -637,6 +663,8 @@ export interface ProductsSelect<T extends boolean = true> {
         compareAtPrice?: T;
         gtin?: T;
         mpn?: T;
+        supplierSKU?: T;
+        purchaseURL?: T;
         image?: T;
         stock?: T;
         trackStock?: T;
@@ -646,7 +674,9 @@ export interface ProductsSelect<T extends boolean = true> {
   featuredImage?: T;
   gallery?: T;
   seoTitle?: T;
+  seoTitleMode?: T;
   seoDescription?: T;
+  seoDescriptionMode?: T;
   seoCanonicalUrl?: T;
   seoNoIndex?: T;
   brand?: T;
@@ -898,11 +928,15 @@ export interface MarketingSetting {
       )[]
     | null;
   /**
-   * Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {size}.
+   * Product Studio Auto description template. Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {availableLengthShapeCombinations}, {availableSizes}. Custom descriptions are not changed.
+   */
+  studioDescriptionTemplate?: string | null;
+  /**
+   * Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {size}, {availableLengthShapeCombinations}, {availableSizes}.
    */
   productTitleTemplate?: string | null;
   /**
-   * Used when a product SEO description is blank.
+   * Used when a product SEO description is blank. Tokens include {availableLengthShapeCombinations} and {availableSizes}.
    */
   productDescriptionTemplate?: string | null;
   /**
@@ -913,7 +947,7 @@ export interface MarketingSetting {
   imageAltTemplate?: string | null;
   imageCaptionTemplate?: string | null;
   /**
-   * Convert uploaded JPEG and PNG product images to WebP using Sharp.
+   * Supported static image uploads are always converted to WebP.
    */
   compressImagesToWebP?: boolean | null;
   /**
@@ -964,6 +998,7 @@ export interface StoreSettingsSelect<T extends boolean = true> {
  */
 export interface MarketingSettingsSelect<T extends boolean = true> {
   availableCountries?: T;
+  studioDescriptionTemplate?: T;
   productTitleTemplate?: T;
   productDescriptionTemplate?: T;
   imageFilenameTemplate?: T;

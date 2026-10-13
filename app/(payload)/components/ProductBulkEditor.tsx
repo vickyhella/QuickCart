@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
 
 type Product = Record<string, unknown> & { id: string | number }
 type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
@@ -24,6 +25,8 @@ type ColumnKey =
   | 'title'
   | 'slug'
   | 'sku'
+  | 'supplierSKU'
+  | 'purchaseURL'
   | 'description'
   | 'price'
   | 'compareAtPrice'
@@ -56,6 +59,8 @@ const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?:
   { key: 'title', label: 'Title', width: 190 },
   { key: 'slug', label: 'Slug', width: 180 },
   { key: 'sku', label: 'SKU', width: 140 },
+  { key: 'supplierSKU', label: 'Supplier SKU (admin only)', width: 180 },
+  { key: 'purchaseURL', label: 'Purchase URL (admin only)', width: 260 },
   { key: 'description', label: 'Description', width: 280, multiline: true },
   { key: 'price', label: 'Price', width: 100 },
   { key: 'compareAtPrice', label: 'Compare at price', width: 140 },
@@ -192,6 +197,8 @@ function toPayloadData(row: GridRow, media: Media[]) {
     title: row.title,
     slug: row.slug,
     sku: row.sku || null,
+    supplierSKU: row.supplierSKU || null,
+    purchaseURL: row.purchaseURL || null,
     description: row.description,
     price: Number(row.price),
     compareAtPrice: row.compareAtPrice.trim() ? Number(row.compareAtPrice) : null,
@@ -231,7 +238,7 @@ export function ProductBulkEditLink() {
   return (
     <div style={{ marginBlock: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/products/bulk-edit/">Open spreadsheet editor</Link>
+        <Link className="btn btn--style-primary btn--size-medium" href="/studio/spreadsheet">Open spreadsheet editor</Link>
         {imageIssues && imageIssues.length > 0 && <details style={{ alignSelf: 'center' }}>
           <summary style={{ cursor: 'pointer', color: '#a52d22', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
           <ul style={{ margin: '8px 0', paddingInlineStart: 20 }}>
@@ -246,7 +253,7 @@ export function ProductBulkEditLink() {
   )
 }
 
-export function ProductBulkEditor() {
+export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) {
   const [rows, setRows] = useState<GridRow[]>([])
   const [originalRows, setOriginalRows] = useState<GridRow[]>([])
   const [media, setMedia] = useState<Media[]>([])
@@ -258,7 +265,7 @@ export function ProductBulkEditor() {
   const [search, setSearch] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
-  const [variantEditor, setVariantEditor] = useState<{ rowIndex: number; variants: ProductVariant[]; values: { shape: string[]; length: string[]; size: string[] } } | null>(null)
+  const [variantEditor, setVariantEditor] = useState<{ rowIndex: number; variants: ProductVariant[]; values: { combinations: Array<{ shape: string; length: string }>; size: string[] }; newPair: { shape: string; length: string } } | null>(null)
   const [selectedRange, setSelectedRange] = useState<{ startRow: number; startColumn: number; endRow: number; endColumn: number } | null>(null)
   const [isSelecting, setIsSelecting] = useState(false)
   const [variantDisplay, setVariantDisplay] = useState<'collapsed' | 'expanded'>('collapsed')
@@ -394,11 +401,11 @@ export function ProductBulkEditor() {
         trackStock: Boolean(variant.trackStock ?? true),
         enabled: variant.enabled !== false,
       }))
+      const combinations = uniqueLengthShapePairs(variants)
       setVariantEditor({ rowIndex, variants, values: {
-        shape: [...new Set(variants.map((variant) => variant.shape))].length ? [...new Set(variants.map((variant) => variant.shape))] : ['almond'],
-        length: [...new Set(variants.map((variant) => variant.length))].length ? [...new Set(variants.map((variant) => variant.length))] : ['short'],
+        combinations: combinations.length ? combinations : [{ length: 'short', shape: 'almond' }],
         size: [...new Set(variants.map((variant) => variant.size))].length ? [...new Set(variants.map((variant) => variant.size))].sort((a, b) => ['xs', 's', 'm', 'l'].indexOf(a) - ['xs', 's', 'm', 'l'].indexOf(b)) : ['xs', 's', 'm'],
-      } })
+      }, newPair: { length: 'short', shape: 'almond' } })
       setError('')
     } catch (variantError) {
       setError(`Cannot open variants for ${rows[rowIndex].title}: ${variantError instanceof Error ? variantError.message : 'Invalid JSON'}`)
@@ -415,10 +422,10 @@ export function ProductBulkEditor() {
     if (!variantEditor) return
     const existing = new Map(variantEditor.variants.map((variant) => [`${variant.shape}|${variant.length}|${variant.size}`, variant]))
     const next: ProductVariant[] = []
-    for (const shape of variantEditor.values.shape) for (const length of variantEditor.values.length) for (const size of variantEditor.values.size) {
+    for (const { shape, length } of variantEditor.values.combinations) for (const size of variantEditor.values.size) {
       const key = `${shape}|${length}|${size}`
       next.push(existing.get(key) || {
-        sku: getVariantSKU(rows[variantEditor.rowIndex], shape, length, size, variantEditor.values.shape, variantEditor.values.length),
+        sku: getVariantSKU(rows[variantEditor.rowIndex], shape, length, size, [...new Set(variantEditor.values.combinations.map((pair) => pair.shape))], [...new Set(variantEditor.values.combinations.map((pair) => pair.length))]),
         shape, length, size,
         price: Number(rows[variantEditor.rowIndex]?.price || 0),
         compareAtPrice: rows[variantEditor.rowIndex]?.compareAtPrice ? Number(rows[variantEditor.rowIndex].compareAtPrice) : null,
@@ -562,7 +569,7 @@ export function ProductBulkEditor() {
 
   return (
     <main style={{ padding: '2rem clamp(1rem, 3vw, 3rem)' }}>
-      <Link href="/admin/collections/products/" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>← Products</Link>
+      <Link href={inStudio ? '/studio' : '/admin/collections/products/'} style={{ color: '#1d4ed8', textDecoration: 'underline' }}>← Products</Link>
       <h1 style={{ marginBlock: '1rem 0.5rem' }}>Product spreadsheet editor</h1>
       <p style={{ maxWidth: 1000, lineHeight: 1.6 }}>
         Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename.
@@ -571,8 +578,8 @@ export function ProductBulkEditor() {
         Variants can be edited in a table per product. Separate multiple gallery images with semicolons. See the Media collection for filenames and IDs.
       </p>
       <div style={toolbarStyle}>
-        <Link href="/admin/collections/products/" style={{ ...buttonStyle, textDecoration: 'none' }}>Back to products</Link>
-        <Link href="/admin/collections/products/marketing" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing</Link>
+        <Link href={inStudio ? '/studio' : '/admin/collections/products/'} style={{ ...buttonStyle, textDecoration: 'none' }}>Back to products</Link>
+        {!inStudio && <Link href="/admin/collections/products/marketing" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing</Link>}
         <button type="button" onClick={exportTSV} style={buttonStyle} disabled={loading || rows.length === 0}>Export TSV</button>
         <button type="button" onClick={() => void load()} style={buttonStyle} disabled={loading || saving}>Reload</button>
         <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: '#166534', background: '#15803d', color: '#fff' }} disabled={loading || saving || dirtyIDs.size === 0}>
@@ -710,20 +717,21 @@ export function ProductBulkEditor() {
         <div role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVariantEditor(null) }} style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 20, background: 'rgba(15, 23, 42, 0.58)' }}>
           <section role="dialog" aria-modal="true" aria-labelledby="variant-editor-title" style={{ width: 'min(1200px, 96vw)', maxHeight: '90vh', overflow: 'auto', background: '#fff', color: '#111827', borderRadius: 8, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
             <h2 id="variant-editor-title" style={{ marginTop: 0 }}>Variants — {rows[variantEditor.rowIndex]?.title}</h2>
-            <p style={{ color: '#4b5563' }}>Choose the available options in all three dimensions, then sync combinations. Existing SKU, price, stock and image values are kept for matching combinations. You can paste a tab-separated block from a spreadsheet into the first cell; columns follow the table order.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(180px, 1fr))', gap: 16, marginBlock: 16 }}>
-              {([
-                ['shape', ['square', 'oval', 'almond', 'round']],
-                ['length', ['x-short', 'short', 'medium', 'long', 'x-long']],
-                ['size', ['xs', 's', 'm', 'l']],
-              ] as const).map(([dimension, defaults]) => {
-                const options = [...new Set([...defaults, ...variantEditor.values[dimension]])]
-                return <fieldset key={dimension} style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 12 }}>
-                <legend style={{ paddingInline: 5, fontWeight: 600, textTransform: 'capitalize' }}>{dimension}</legend>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>{options.map((option) => <label key={option} style={{ display: 'inline-flex', gap: 5, alignItems: 'center', textTransform: 'capitalize' }}><input type="checkbox" checked={variantEditor.values[dimension].includes(option)} onChange={(event) => setVariantEditor((current) => current ? { ...current, values: { ...current.values, [dimension]: event.target.checked ? [...current.values[dimension], option] : current.values[dimension].filter((value) => value !== option) } } : current)} />{option.replace('-', ' ')}</label>)}</div>
-                {dimension !== 'size' && <input aria-label={`Add ${dimension} option`} placeholder={`Add ${dimension}, press Enter`} onKeyDown={(event) => { if (event.key !== 'Enter') return; event.preventDefault(); const value = event.currentTarget.value.trim().toLowerCase().replace(/\s+/g, '-'); if (!value) return; setVariantEditor((current) => current ? { ...current, values: { ...current.values, [dimension]: [...new Set([...current.values[dimension], value])] } } : current); event.currentTarget.value = '' }} style={{ ...inputStyle, marginTop: 10, maxWidth: 260 }} />}
+            <p style={{ color: '#4b5563' }}>Select the exact Length + Shape pairs and sizes. Sync keeps existing SKU, price, stock, and image values for matching variants. You can paste tab-separated data into the table below.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBlock: 16 }}>
+              <fieldset style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 12 }}>
+                <legend style={{ paddingInline: 5, fontWeight: 600 }}>Length + Shape combinations</legend>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 12 }}>
+                  <select aria-label="Length" value={variantEditor.newPair.length} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, length: event.target.value } })}>{['x-short', 'short', 'medium', 'long', 'x-long', ...variantEditor.values.combinations.map((pair) => pair.length)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
+                  <select aria-label="Shape" value={variantEditor.newPair.shape} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, shape: event.target.value } })}>{['square', 'oval', 'almond', 'round', ...variantEditor.values.combinations.map((pair) => pair.shape)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
+                  <button type="button" onClick={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: [...new Map([...variantEditor.values.combinations, variantEditor.newPair].map((pair) => [`${pair.length}|${pair.shape}`, pair])).values()] } })}>Add</button>
+                </div>
+                {variantEditor.values.combinations.map((pair) => <label key={`${pair.length}|${pair.shape}`} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 6, textTransform: 'capitalize' }}><input type="checkbox" checked onChange={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: variantEditor.values.combinations.filter((item) => item !== pair) } })} />{pair.length.replace('-', ' ')} {pair.shape}</label>)}
               </fieldset>
-              })}
+              <fieldset style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 12 }}>
+                <legend style={{ paddingInline: 5, fontWeight: 600 }}>Sizes</legend>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>{['xs', 's', 'm', 'l', ...variantEditor.values.size].filter((value, index, all) => all.indexOf(value) === index).map((option) => <label key={option}><input type="checkbox" checked={variantEditor.values.size.includes(option)} onChange={(event) => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, size: event.target.checked ? [...variantEditor.values.size, option] : variantEditor.values.size.filter((value) => value !== option) } })} /> {option.toUpperCase()}</label>)}</div>
+              </fieldset>
             </div>
             <button type="button" onClick={syncVariantCombinations} style={{ ...buttonStyle, marginBottom: 12 }}>Sync combinations &amp; generate SKUs</button>
             <div style={{ overflowX: 'auto' }}>

@@ -1,6 +1,9 @@
+@import './brand-theme.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
 
 * {
     scroll-behavior: smooth;
@@ -17,3 +20,25 @@
 ::-webkit-scrollbar {
   display: none;
 }
+
+html, body { font-family: var(--font-body); }
+
+.product-markdown > :first-child { margin-top: 0; }
+.product-markdown > :last-child { margin-bottom: 0; }
+.product-markdown strong { font-weight: 700; }
+.product-markdown em { font-style: italic; }
+.product-markdown :is(h1, h2, h3, h4) { margin: 1.25em 0 .5em; color: #493c37; font-weight: 600; line-height: 1.3; }
+.product-markdown h1 { font-size: 1.5em; }
+.product-markdown h2 { font-size: 1.25em; }
+.product-markdown h3 { font-size: 1.1em; }
+.product-markdown p, .product-markdown ul, .product-markdown ol, .product-markdown blockquote, .product-markdown pre, .product-markdown table { margin: .75em 0; }
+.product-markdown :is(ul, ol) { padding-left: 1.5em; }
+.product-markdown ul { list-style: disc; }
+.product-markdown ol { list-style: decimal; }
+.product-markdown blockquote { border-left: 3px solid #d8c9c1; padding-left: 1em; color: #766762; }
+.product-markdown code { border-radius: 4px; background: #f2ece8; padding: .1em .3em; }
+.product-markdown pre { overflow-x: auto; border-radius: 8px; background: #f2ece8; padding: 1em; }
+.product-markdown pre code { background: transparent; padding: 0; }
+.product-markdown table { width: 100%; border-collapse: collapse; }
+.product-markdown :is(th, td) { border: 1px solid #e3d9d3; padding: .4em .6em; text-align: left; }
+.product-markdown hr { margin: 1.5em 0; border-color: #e3d9d3; }

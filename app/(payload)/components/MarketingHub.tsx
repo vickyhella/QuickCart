@@ -4,21 +4,37 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { shippingCountries } from '../../../lib/countries'
+import { DEFAULT_PRODUCT_SEO_DESCRIPTION, DEFAULT_PRODUCT_SEO_TITLE, resolveProductSeoTemplates } from '../../../lib/product-seo-templates'
+import { uniqueLengthShapePairs } from '../../../lib/product-dimensions'
+import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '../../../lib/studio-description-template'
 
 type Summary = { feedItems?: number; publishedProducts?: number; skippedPublishedProducts?: Array<{ title: string; reason: string }> }
+type ReprocessableImage = { id: string; filename: string }
 
 export function MarketingHub() {
   const [gmc, setGmc] = useState<Summary | null>(null)
   const [pinterest, setPinterest] = useState<Summary | null>(null)
   const [seo, setSeo] = useState<{ products: Array<Record<string, unknown>>; media: Array<Record<string, unknown>> }>({ products: [], media: [] })
   const [templates, setTemplates] = useState<Record<string, any>>({})
+  const [settingsLoading, setSettingsLoading] = useState(true)
   const [selectedCountries, setSelectedCountries] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+  const [reprocessImages, setReprocessImages] = useState<ReprocessableImage[]>([])
+  const [reprocessQuality, setReprocessQuality] = useState(82)
+  const [reprocessLoading, setReprocessLoading] = useState(false)
+  const [reprocessProgress, setReprocessProgress] = useState<{ done: number; total: number } | null>(null)
+  const [reprocessFailures, setReprocessFailures] = useState<Array<{ id: string; filename: string; error: string }>>([])
   const [saveMessage, setSaveMessage] = useState('')
   const [error, setError] = useState('')
   const searchParams = useSearchParams()
   const [tab, setTab] = useState<'feeds' | 'seo' | 'countries'>('feeds')
+  const descriptionPreview = renderStudioDescription(templates.studioDescriptionTemplate || DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, {
+    brand: 'Ginny Nana', productType: 'press-on nails', productName: 'Example product', length: 'Short', shape: 'Square',
+    availableLengthShapeCombinations: 'Short Square, Medium Almond', availableSizes: 'XS, S, M, L',
+  })
 
   useEffect(() => {
     const requested = searchParams.get('tab')
@@ -32,20 +48,38 @@ export function MarketingHub() {
       fetch('/api/pinterest/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('Pinterest preview unavailable'))),
       fetch('/api/products?limit=100&depth=1&sort=-updatedAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
       fetch('/api/media?limit=100&depth=0&sort=-createdAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
-      fetch('/api/globals/marketing-settings', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : {}),
-    ]).then(([g, p, products, media, settings]) => {
+    ]).then(([g, p, products, media]) => {
       if (active) {
-        const loadedSettings = settings as Record<string, any>
         setGmc(g); setPinterest(p); setSeo({ products: products.docs || [], media: media.docs || [] })
-        setTemplates(loadedSettings || {})
-        const selected: string[] = Array.isArray(loadedSettings?.availableCountries) && loadedSettings.availableCountries.length
-          ? loadedSettings.availableCountries
-          : shippingCountries.map(([code]) => code)
-        setSelectedCountries(selected)
       }
     }).catch((e) => { if (active) setError(e.message || 'Could not load marketing overview.') })
+    fetch('/api/globals/marketing-settings', { credentials: 'same-origin' })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('Could not load saved Marketing settings.')))
+      .then((settings: Record<string, any>) => {
+        if (!active) return
+        const seoTemplates = resolveProductSeoTemplates(settings)
+        setTemplates({ ...settings, productTitleTemplate: seoTemplates.title, productDescriptionTemplate: seoTemplates.description })
+        setSelectedCountries(Array.isArray(settings.availableCountries) && settings.availableCountries.length ? settings.availableCountries : shippingCountries.map(([code]) => code))
+      })
+      .catch((e) => { if (active) setError(e.message || 'Could not load saved Marketing settings.') })
+      .finally(() => { if (active) setSettingsLoading(false) })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (tab !== 'seo') return
+    let active = true
+    setReprocessLoading(true)
+    fetch('/api/marketing/media-reprocessing', { credentials: 'same-origin', cache: 'no-store' })
+      .then(async (response) => {
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Could not inspect existing images.')
+        if (active) { setReprocessImages(result.images || []); setReprocessQuality(result.quality || 82) }
+      })
+      .catch((cause) => { if (active) setSaveMessage(cause instanceof Error ? cause.message : 'Could not inspect existing images.') })
+      .finally(() => { if (active) setReprocessLoading(false) })
+    return () => { active = false }
+  }, [tab])
 
   const saveMarketingSettings = async (values: Record<string, unknown>) => {
     setSaving(true)
@@ -57,10 +91,12 @@ export function MarketingHub() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...templates, availableCountries: selectedCountries, ...values }),
       })
-      if (!response.ok) throw new Error('Could not save Marketing settings. Please check your admin session and try again.')
-      const responseData = await response.json()
+      const responseData = await response.json().catch(() => ({}))
+      if (!response.ok) throw new Error(responseData.errors?.[0]?.message || responseData.error || 'Could not save Marketing settings. Please check your admin session and try again.')
       const saved = responseData.doc || responseData
-      setTemplates(saved || {})
+      setTemplates((current) => ({ ...current, ...(saved || {}), ...values }))
+      const savedQuality = Number(saved?.webpQuality ?? values.webpQuality)
+      if (Number.isFinite(savedQuality) && savedQuality >= 1) setReprocessQuality(savedQuality)
       const countries = Array.isArray(saved?.availableCountries) ? saved.availableCountries : selectedCountries
       setSelectedCountries(countries)
       setSaveMessage('Settings saved.')
@@ -71,8 +107,48 @@ export function MarketingHub() {
     }
   }
 
+  const reprocessExistingImages = async () => {
+    const total = reprocessImages.length
+    const quality = Number(templates.webpQuality ?? 82)
+    if (!Number.isInteger(quality) || quality < 1 || quality > 100) {
+      setSaveMessage('Enter a whole-number image quality from 1 to 100.')
+      return
+    }
+    if (!total || !window.confirm(`Recompress ${total} existing images from their preserved originals at WebP quality ${quality}? This quality will be saved and used for the reprocessing. Product and variant image links will remain in place.`)) return
+    setReprocessProgress({ done: 0, total })
+    setReprocessFailures([])
+    const filenames = new Map(reprocessImages.map((image) => [image.id, image.filename]))
+    const failures: Array<{ id: string; filename: string; error: string }> = []
+    try {
+      for (let start = 0; start < total; start += 10) {
+        const ids = reprocessImages.slice(start, start + 10).map((image) => image.id)
+        const response = await fetch('/api/marketing/media-reprocessing', {
+          method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids, ...(start === 0 ? { quality } : {}) }),
+        })
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Could not reprocess this image batch.')
+        if (start === 0) {
+          setReprocessQuality(quality)
+          setTemplates((current) => ({ ...current, webpQuality: quality }))
+        }
+        for (const entry of result.results || []) {
+          if (!entry.success) failures.push({ id: entry.id, filename: filenames.get(entry.id) || entry.id, error: entry.error || 'Reprocessing failed.' })
+        }
+        setReprocessProgress({ done: Math.min(start + ids.length, total), total })
+        setReprocessFailures([...failures])
+      }
+      setSaveMessage(`Recompressed ${total - failures.length} of ${total} images at quality ${quality}.`)
+      const refreshed = await fetch('/api/marketing/media-reprocessing', { credentials: 'same-origin', cache: 'no-store' }).then((response) => response.json())
+      setReprocessImages(refreshed.images || [])
+    } catch (cause) {
+      setSaveMessage(cause instanceof Error ? cause.message : 'Image reprocessing stopped.')
+    } finally {
+      setReprocessProgress(null)
+    }
+  }
+
   return <main style={{ padding: '32px clamp(20px, 4vw, 56px)', maxWidth: 1320, margin: '0 auto' }}>
-    <p style={{ margin: 0, color: '#d5a4b5', textTransform: 'uppercase', letterSpacing: '.16em', fontSize: 12 }}>Store growth</p>
+    <p style={{ margin: 0, color: 'var(--brand-muted, #766762)', textTransform: 'uppercase', letterSpacing: '.16em', fontSize: 12 }}>Store growth</p>
     <h1 style={{ margin: '8px 0 24px' }}>Marketing</h1>
     {error && <p role="alert">{error}</p>}
     <div role="tablist" aria-label="Marketing sections" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--theme-elevation-200)', marginBottom: 20 }}>
@@ -87,25 +163,40 @@ export function MarketingHub() {
       </section>)}
     </div>
     </>}
-    {tab === 'seo' && <>
+    {tab === 'seo' && (settingsLoading ? <p role="status">Loading saved Marketing settings…</p> : <>
     {(() => {
       const fieldStyle: CSSProperties = { boxSizing: 'border-box', width: '100%', minHeight: 44, padding: '10px 12px', border: '1px solid #c9c4c2', borderRadius: 6, background: '#fff', color: '#261f22', font: 'inherit' }
-      const labelStyle: CSSProperties = { display: 'grid', gap: 8, minWidth: 0, color: 'var(--theme-text, #f5edf0)', fontWeight: 600 }
+      const labelStyle: CSSProperties = { display: 'grid', gap: 8, minWidth: 0, color: 'var(--theme-text, #302522)', fontWeight: 600 }
       const panelStyle: CSSProperties = { padding: '24px clamp(18px, 3vw, 32px)', marginBottom: 18, border: '1px solid var(--theme-elevation-200)', borderRadius: 12, background: 'var(--theme-elevation-0, #fff)' }
       const update = (key: string, value: string | number | boolean) => setTemplates((current) => ({ ...current, [key]: value }))
       return <>
+        <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>Product description template</h2>
+          <p style={{ lineHeight: 1.6 }}>Used by Product Studio when Description is set to Auto. Saving a changed template refreshes Auto fields; Custom descriptions stay unchanged.</p>
+          <label style={labelStyle}>Studio Auto description
+            <textarea rows={7} style={{ ...fieldStyle, minHeight: 180, resize: 'vertical' }} value={templates.studioDescriptionTemplate || DEFAULT_STUDIO_DESCRIPTION_TEMPLATE} onChange={(event) => update('studioDescriptionTemplate', event.target.value)} />
+          </label>
+          <p style={{ marginBottom: 8, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Markdown is supported: headings, **bold**, *italic*, lists, links, and tables.</p>
+          <div aria-label="Description template preview" style={{ marginTop: 12, padding: 16, border: '1px solid var(--theme-elevation-200)', borderRadius: 8, background: 'var(--theme-elevation-50, #faf9f8)' }}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{descriptionPreview}</ReactMarkdown>
+          </div>
+          <p style={{ marginBottom: 0, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{availableLengthShapeCombinations}'}, {'{availableSizes}'}.</p>
+          <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} style={{ marginTop: 14, padding: '10px 16px', border: 0, borderRadius: 6, background: '#74495a', color: '#fff', fontWeight: 600, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Saving…' : 'Save description template'}</button>
+          {saveMessage && <p role="status">{saveMessage}</p>}
+        </section>
+
         <section style={panelStyle}>
           <h2 style={{ marginTop: 0 }}>Product SEO</h2>
           <p style={{ lineHeight: 1.6 }}>Defaults are used when a product has no custom SEO title or description. Edit the patterns here; the content preview below updates as you type.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 20, marginTop: 22 }}>
             <label style={labelStyle}>SEO title pattern
-              <input style={fieldStyle} value={templates.productTitleTemplate || '{brand} {productType} {productName} {length} {shape}'} onChange={(event) => update('productTitleTemplate', event.target.value)} />
+              <input style={fieldStyle} value={templates.productTitleTemplate || DEFAULT_PRODUCT_SEO_TITLE} onChange={(event) => update('productTitleTemplate', event.target.value)} />
             </label>
             <label style={labelStyle}>SEO description pattern
-              <textarea rows={4} style={{ ...fieldStyle, minHeight: 112, resize: 'vertical' }} value={templates.productDescriptionTemplate || '{productName} press-on nails by {brand}.'} onChange={(event) => update('productDescriptionTemplate', event.target.value)} />
+              <textarea rows={4} style={{ ...fieldStyle, minHeight: 112, resize: 'vertical' }} value={templates.productDescriptionTemplate || DEFAULT_PRODUCT_SEO_DESCRIPTION} onChange={(event) => update('productDescriptionTemplate', event.target.value)} />
             </label>
           </div>
-          <p style={{ marginBottom: 0, color: '#d1c4c9', fontSize: 13 }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}.</p>
+          <p style={{ marginBottom: 0, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{availableLengthShapeCombinations}'}, {'{availableSizes}'}.</p>
         </section>
 
         <section style={panelStyle}>
@@ -125,18 +216,18 @@ export function MarketingHub() {
               <input style={fieldStyle} value={templates.imageCaptionTemplate || '{productName} press-on nails by {brand}'} onChange={(event) => update('imageCaptionTemplate', event.target.value)} />
             </label>
           </div>
-          <p style={{ marginBottom: 0, color: '#d1c4c9', fontSize: 13 }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{number}'}.</p>
+          <p style={{ marginBottom: 0, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{number}'}.</p>
         </section>
 
         <section style={panelStyle}>
           <h2 style={{ marginTop: 0 }}>Image compression</h2>
-          <p style={{ lineHeight: 1.6 }}>Keep the original upload as the source and serve a WebP version for faster storefront delivery. HEIC uploads are converted to WebP when the converter is available.</p>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 18, color: '#f5edf0', fontWeight: 600 }}>
-            <input type="checkbox" checked={templates.compressImagesToWebP !== false} onChange={(event) => update('compressImagesToWebP', event.target.checked)} style={{ accentColor: '#c989a0' }} /> Convert supported uploads to WebP
-          </label>
+          <p style={{ lineHeight: 1.6 }}>Supported static images are stored as WebP, with the untouched original kept for reprocessing. Animated and vector images remain in their original format.</p>
           <label style={{ ...labelStyle, maxWidth: 420, marginTop: 20 }}>WebP quality (1–100)
-            <input style={fieldStyle} type="number" min={1} max={100} value={templates.webpQuality || 82} onChange={(event) => update('webpQuality', Number(event.target.value))} />
+            <input style={fieldStyle} type="number" min={1} max={100} step={1} value={templates.webpQuality ?? 82} onChange={(event) => update('webpQuality', event.target.value === '' ? '' : Number(event.target.value))} />
           </label>
+          <p style={{ margin: '14px 0 8px', color: 'var(--brand-muted, #766762)', fontSize: 13 }}>{reprocessLoading ? 'Checking existing media…' : `${reprocessImages.length} existing image${reprocessImages.length === 1 ? '' : 's'} can be rebuilt from preserved originals. The entered quality will be saved when reprocessing starts. Temporary images and GIF/SVG files are excluded.`}</p>
+          <button type="button" disabled={saving || reprocessLoading || Boolean(reprocessProgress) || !reprocessImages.length} onClick={() => void reprocessExistingImages()} style={{ padding: '10px 16px', border: '1px solid #74495a', borderRadius: 6, background: '#fff', color: '#74495a', fontWeight: 600, cursor: 'pointer', opacity: saving || reprocessLoading || reprocessProgress || !reprocessImages.length ? 0.55 : 1 }}>{reprocessProgress ? `Recompressing ${reprocessProgress.done} / ${reprocessProgress.total}…` : `Recompress ${reprocessImages.length} existing images`}</button>
+          {!!reprocessFailures.length && <div role="alert" style={{ marginTop: 12, color: '#8b1e1e', fontSize: 13 }}><strong>{reprocessFailures.length} image(s) failed:</strong><ul>{reprocessFailures.map((failure) => <li key={failure.id}>{failure.filename}: {failure.error}</li>)}</ul></div>}
         </section>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
           <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} style={{ padding: '12px 18px', border: 0, borderRadius: 6, background: '#74495a', color: '#fff', fontWeight: 600, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Saving…' : 'Save SEO & Media settings'}</button>
@@ -148,16 +239,23 @@ export function MarketingHub() {
       <h2>Current SEO content</h2><h3>Products</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}><thead><tr><th>Product</th><th>SEO title</th><th>SEO description</th></tr></thead><tbody>
         {seo.products.map((row) => {
-          const values: Record<string, string> = { brand: String(row.brand || 'Ginny Nana'), productType: String(row.category || 'press-on-nails').replaceAll('-', ' '), productName: String(row.title || ''), length: String(row.length || ''), shape: String(row.shape || ''), size: '' }
-          const render = (template: string) => String(template || '').replace(/\{(brand|productType|productName|length|shape|size)\}/g, (_, token) => values[token] || '').replace(/\s+/g, ' ').trim()
-          return <tr key={String(row.id)}><td><Link href={`/admin/collections/products/${row.id}`} style={{ textDecoration: 'underline' }}>{String(row.title || '')}</Link></td><td>{String(row.seoTitle || '') || render(templates.productTitleTemplate || '{brand} {productType} {productName} {length} {shape}')}</td><td>{String(row.seoDescription || '') || render(templates.productDescriptionTemplate || '{productName} press-on nails by {brand}.')}</td></tr>
+          const variants = Array.isArray(row.variants) ? row.variants.filter((variant: any) => variant?.enabled !== false) : []
+          const combinations = uniqueLengthShapePairs(variants)
+          const sizes = [...new Set(variants.map((variant: any) => String(variant.size || '').toUpperCase()).filter(Boolean))].join(', ')
+          const values: Record<string, string> = {
+            brand: String(row.brand || 'Ginny Nana'), productType: String(row.category || 'press-on-nails').replaceAll('-', ' '), productName: String(row.title || ''),
+            length: [...new Set(combinations.map((combo) => combo.length))].join(', '), shape: [...new Set(combinations.map((combo) => combo.shape))].join(', '), size: sizes,
+            availableLengthShapeCombinations: combinations.map((combo) => `${combo.length} ${combo.shape}`).join(', '), availableSizes: sizes,
+          }
+          const render = (template: string) => String(template || '').replace(/\{(brand|productType|productName|length|shape|size|availableLengthShapeCombinations|availableSizes)\}/g, (_, token) => values[token] || '').replace(/\s+/g, ' ').trim()
+          return <tr key={String(row.id)}><td><Link href={`/admin/collections/products/${row.id}`} style={{ textDecoration: 'underline' }}>{String(row.title || '')}</Link></td><td>{String(row.seoTitle || '') || render(templates.productTitleTemplate || DEFAULT_PRODUCT_SEO_TITLE)}</td><td>{String(row.seoDescription || '') || render(templates.productDescriptionTemplate || DEFAULT_PRODUCT_SEO_DESCRIPTION)}</td></tr>
         })}
       </tbody></table>
       <h3 style={{ marginTop: 24 }}>Media</h3><table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}><thead><tr><th>File</th><th>Title</th><th>Alt text</th><th>Caption</th></tr></thead><tbody>
         {seo.media.map((row) => <tr key={String(row.id)}><td><Link href={`/admin/collections/media/${row.id}`} style={{ textDecoration: 'underline' }}>{String(row.filename || '')}</Link></td><td>{String(row.title || '') || String(templates.imageTitleTemplate || '')}</td><td>{String(row.altText || '') || String(templates.imageAltTemplate || '')}</td><td>{String(row.caption || '') || String(templates.imageCaptionTemplate || '')}</td></tr>)}
       </tbody></table>
     </section>
-    </>}
+    </>)}
     {tab === 'countries' && <section style={{ padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 12 }}>
       <h2>Available countries</h2><p>These countries are enabled for checkout and should match GMC data-source targeting and shipping setup.</p>
       <div style={{ columns: '2 240px', margin: '18px 0' }}>{shippingCountries.map(([code, name]) => <label key={code} style={{ display: 'flex', gap: 8, alignItems: 'center', breakInside: 'avoid', padding: '5px 0' }}><input type="checkbox" checked={selectedCountries.includes(code)} onChange={(event) => setSelectedCountries((current) => event.target.checked ? [...current, code] : current.filter((item) => item !== code))} />{name} ({code})</label>)}</div>

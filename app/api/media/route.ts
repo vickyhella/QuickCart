@@ -91,6 +91,7 @@ export async function POST(request: Request) {
     originalID = original.id
 
     const data: Record<string, unknown> = { sourceOriginal: original.id, title, altText, caption }
+    if (formValue('studioTemporary') === 'true') data.studioTemporary = true
     // Never store a stale or unsaved form value in the relationship. New
     // products receive this relationship after Payload assigns their ID.
     if (product?.id) data.product = product.id

@@ -37,6 +37,8 @@ yarn-error.log*
 /.env.local
 /payload.sqlite*
 /media/
+/public/media/
+/public/media-originals/
 
 # vercel
 .vercel

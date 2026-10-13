@@ -78,6 +78,7 @@ export const Media: CollectionConfig = {
     { name: 'altText', type: 'text', admin: { description: 'Describe the visible image for accessibility and Pinterest catalog metadata.' } },
     { name: 'caption', type: 'textarea', admin: { rows: 3 } },
     { name: 'product', type: 'relationship', relationTo: 'products', admin: { description: 'Optional product this image belongs to.' } },
+    { name: 'studioTemporary', type: 'checkbox', defaultValue: false, admin: { hidden: true } },
     { name: 'sourceOriginal', type: 'relationship', relationTo: 'media-originals', admin: { readOnly: true, description: 'Untouched upload retained for future reprocessing.' } },
   ],
 }

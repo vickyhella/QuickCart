@@ -1,5 +1,4 @@
 'use client'
-import { userDummyData } from "@/assets/assets";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -16,8 +15,6 @@ export const AppContextProvider = (props) => {
     const router = useRouter()
 
     const [products, setProducts] = useState([])
-    const [userData, setUserData] = useState(false)
-    const [isSeller, setIsSeller] = useState(true)
     const [cartItems, setCartItems] = useState({})
     const [cartLoaded, setCartLoaded] = useState(false)
 
@@ -80,10 +77,6 @@ export const AppContextProvider = (props) => {
         }
     }
 
-    const fetchUserData = async () => {
-        setUserData(userDummyData)
-    }
-
     const addToCart = async (itemId, variant) => {
         const line = {
             productId: String(itemId),
@@ -144,14 +137,8 @@ export const AppContextProvider = (props) => {
         fetchProductData()
     }, [])
 
-    useEffect(() => {
-        fetchUserData()
-    }, [])
-
     const value = {
         currency, router,
-        isSeller, setIsSeller,
-        userData, fetchUserData,
         products, fetchProductData,
         cartItems, setCartItems,
         addToCart, updateCartQuantity,

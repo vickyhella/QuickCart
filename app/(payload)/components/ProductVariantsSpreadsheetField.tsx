@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAllFormFields, useField } from '@payloadcms/ui'
+import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
 
 type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
 type Variant = {
@@ -77,7 +78,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   const [fields] = useAllFormFields()
   const rows = Array.isArray(value) ? value : []
   const [media, setMedia] = useState<Media[]>([])
-  const [dimensions, setDimensions] = useState<{ shape: string[]; length: string[]; size: string[] }>({ shape: ['almond'], length: ['short'], size: ['xs', 's', 'm'] })
+  const [dimensions, setDimensions] = useState<{ combinations: Array<{ shape: string; length: string }>; size: string[]; newPair: { shape: string; length: string } }>({ combinations: [{ shape: 'almond', length: 'short' }], size: ['xs', 's', 'm'], newPair: { shape: 'almond', length: 'short' } })
   const [dimensionsInitialized, setDimensionsInitialized] = useState(false)
   const [range, setRange] = useState<CellRange | null>(null)
   const [message, setMessage] = useState('')
@@ -94,10 +95,11 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
 
   useEffect(() => {
     if (!dimensionsInitialized && rows.length) {
+      const combinations = uniqueLengthShapePairs(rows)
       setDimensions({
-        shape: [...new Set(rows.map((row) => row.shape).filter(Boolean))],
-        length: [...new Set(rows.map((row) => row.length).filter(Boolean))],
+        combinations,
         size: [...new Set(rows.map((row) => row.size || 's'))].sort((a, b) => presets.size.indexOf(a) - presets.size.indexOf(b)),
+        newPair: combinations[0] || { shape: 'almond', length: 'short' },
       })
       setDimensionsInitialized(true)
     }
@@ -115,7 +117,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   useEffect(() => {
     const productID = window.location.pathname.match(/\/admin\/collections\/products\/([^/]+)/)?.[1]
     if (productID && productID !== 'create' && productID !== 'bulk-edit') {
-      setSpreadsheetHref(`/admin/collections/products/bulk-edit/?product=${encodeURIComponent(productID)}`)
+      setSpreadsheetHref(`/studio/spreadsheet?product=${encodeURIComponent(productID)}`)
       fetch(`/api/products/${encodeURIComponent(productID)}?depth=0`, { credentials: 'same-origin' })
         .then((response) => response.ok ? response.json() : null)
         .then((product) => {
@@ -156,16 +158,15 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   const syncCombinations = () => {
     const old = new Map(rows.map((variant) => [`${variant.shape}|${variant.length}|${variant.size || 's'}`, variant]))
     const sizes = dimensions.size.length ? dimensions.size : ['xs', 's', 'm']
-    const shapes = dimensions.shape.length ? dimensions.shape : ['almond']
-    const lengths = dimensions.length.length ? dimensions.length : ['short']
+    const combinations = dimensions.combinations
     const lengthCodes: Record<string, string> = { 'x-short': '01', short: '02', medium: '03', long: '04', 'x-long': '05' }
     const shapeCodes: Record<string, string> = { square: '01', oval: '02', almond: '03', round: '04' }
     const sizeCodes: Record<string, string> = { xs: '01', s: '02', m: '03', l: '04' }
     const next: Variant[] = []
-    for (const shape of shapes) for (const length of lengths) for (const size of sizes) {
+    for (const { shape, length } of combinations) for (const size of sizes) {
       const key = `${shape}|${length}|${size}`
       next.push(old.get(key) || {
-        sku: productCode ? `${productCode}-${dimensionCode(length, lengthCodes, lengths)}-${dimensionCode(shape, shapeCodes, shapes)}-${sizeCodes[size] || '02'}` : '',
+        sku: productCode ? `${productCode}-${dimensionCode(length, lengthCodes, [...new Set(combinations.map((pair) => pair.length))])}-${dimensionCode(shape, shapeCodes, [...new Set(combinations.map((pair) => pair.shape))])}-${sizeCodes[size] || '02'}` : '',
         shape, length, size, price: null, compareAtPrice: null,
         image: featuredImage || null, stock: 10, trackStock: true, enabled: true,
       })
@@ -263,18 +264,26 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   return <div style={{ marginBlock: 12 }}>
     {spreadsheetHref && <p style={{ marginBlock: '0 12px' }}><a className="btn btn--style-secondary btn--size-medium" href={spreadsheetHref}>Open this product in the full spreadsheet editor</a></p>}
     <p style={{ margin: '0 0 12px', color: 'var(--theme-elevation-700, #475569)' }}>
-      Select dimensions, sync combinations, then edit or paste a tab-separated range in the table. Matching variants keep their existing SKU, price, stock, and image. New rows use the product image and stock 10 by default.
+      Select exact Length + Shape pairs and sizes, then sync. Matching variants keep their existing SKU, price, stock, and image. New rows use the product image and stock 10 by default.
     </p>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
-      {(['shape', 'length', 'size'] as const).map((dimension) => <fieldset key={dimension} style={{ border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 6, padding: 10, minWidth: 0 }}>
-        <legend style={{ paddingInline: 5, textTransform: 'capitalize', fontWeight: 600 }}>{dimension}</legend>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>{[...new Set([...presets[dimension], ...dimensions[dimension]])].map((option) => <label key={option} style={{ display: 'inline-flex', gap: 4, alignItems: 'center', fontSize: 13, textTransform: 'capitalize' }}><input type="checkbox" disabled={readOnly} checked={dimensions[dimension].includes(option)} onChange={(event) => setDimensions((current) => ({ ...current, [dimension]: event.target.checked ? [...new Set([...current[dimension], option])] : current[dimension].filter((value) => value !== option) }))} />{option.replace('-', ' ')}</label>)}</div>
-        {dimension !== 'size' && <input disabled={readOnly} aria-label={`Add ${dimension}`} placeholder={`Add ${dimension}, press Enter`} onKeyDown={(event) => { if (event.key !== 'Enter') return; event.preventDefault(); const input = event.currentTarget; const option = input.value.trim().toLowerCase().replace(/\s+/g, '-'); if (!option) return; setDimensions((current) => ({ ...current, [dimension]: [...new Set([...current[dimension], option])] })); input.value = '' }} style={{ ...styles.input, marginTop: 8 }} />}
-      </fieldset>)}
+      <fieldset style={{ border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 6, padding: 10, minWidth: 0 }}>
+        <legend style={{ paddingInline: 5, fontWeight: 600 }}>Length + Shape</legend>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 6 }}>
+          <select disabled={readOnly} aria-label="Length" value={dimensions.newPair.length} onChange={(event) => setDimensions((current) => ({ ...current, newPair: { ...current.newPair, length: event.target.value } }))}>{[...new Set([...presets.length, ...dimensions.combinations.map((pair) => pair.length)])].map((value) => <option key={value}>{value}</option>)}</select>
+          <select disabled={readOnly} aria-label="Shape" value={dimensions.newPair.shape} onChange={(event) => setDimensions((current) => ({ ...current, newPair: { ...current.newPair, shape: event.target.value } }))}>{[...new Set([...presets.shape, ...dimensions.combinations.map((pair) => pair.shape)])].map((value) => <option key={value}>{value}</option>)}</select>
+          <button type="button" disabled={readOnly} onClick={() => setDimensions((current) => ({ ...current, combinations: [...new Map([...current.combinations, current.newPair].map((pair) => [`${pair.length}|${pair.shape}`, pair])).values()] }))}>Add</button>
+        </div>
+        {dimensions.combinations.map((pair) => <label key={`${pair.length}|${pair.shape}`} style={{ display: 'flex', gap: 6, marginTop: 7, textTransform: 'capitalize' }}><input type="checkbox" disabled={readOnly} checked onChange={() => setDimensions((current) => ({ ...current, combinations: current.combinations.filter((item) => item !== pair) }))} />{pair.length.replace('-', ' ')} {pair.shape}</label>)}
+      </fieldset>
+      <fieldset style={{ border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 6, padding: 10, minWidth: 0 }}>
+        <legend style={{ paddingInline: 5, fontWeight: 600 }}>Sizes</legend>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>{[...new Set([...presets.size, ...dimensions.size])].map((option) => <label key={option}><input type="checkbox" disabled={readOnly} checked={dimensions.size.includes(option)} onChange={(event) => setDimensions((current) => ({ ...current, size: event.target.checked ? [...current.size, option] : current.size.filter((value) => value !== option) }))} /> {option.toUpperCase()}</label>)}</div>
+      </fieldset>
     </div>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
       <button type="button" disabled={readOnly} onClick={syncCombinations} style={styles.button}>Sync combinations &amp; generate SKUs</button>
-      <button type="button" disabled={readOnly} onClick={() => updateRows([...rows, { sku: '', shape: dimensions.shape[0] || 'almond', length: dimensions.length[0] || 'short', size: dimensions.size[0] || 's', price: null, compareAtPrice: null, image: featuredImage || null, stock: 10, trackStock: true, enabled: true }])} style={styles.button}>+ Add one variant</button>
+      <button type="button" disabled={readOnly} onClick={() => updateRows([...rows, { sku: '', shape: dimensions.combinations[0]?.shape || 'almond', length: dimensions.combinations[0]?.length || 'short', size: dimensions.size[0] || 's', price: null, compareAtPrice: null, image: featuredImage || null, stock: 10, trackStock: true, enabled: true }])} style={styles.button}>+ Add one variant</button>
       <span style={{ color: 'var(--theme-elevation-600, #64748b)', fontSize: 12 }}>{rows.length} variant(s)</span>
     </div>
     {message && <p role="status" style={{ color: 'var(--theme-elevation-700, #475569)', fontSize: 12 }}>{message}</p>}

@@ -6,6 +6,7 @@ import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
 import { useAppContext } from '@/context/AppContext'
 import { formatDimension } from '@/lib/format-dimension'
+import { productDimensionValues, productMatchesDimension } from '@/lib/product-dimensions'
 
 const defaults = {
   length: ['x-short', 'short', 'medium', 'long', 'x-long'],
@@ -17,14 +18,13 @@ export default function ProductDimensionFilter({ dimension }) {
   const [selected, setSelected] = useState('')
   const label = dimension === 'length' ? 'Length' : 'Shape'
   const options = useMemo(() => [...new Set([
-    ...defaults[dimension],
-    ...products.flatMap((product) => [String(product[dimension] || '').split(',').map((item) => item.trim()), ...(product.variants || []).map((variant) => variant[dimension])].flat().filter(Boolean)),
-  ])], [dimension, products])
+    ...productDimensionValues(products, dimension),
+  ])].sort((a, b) => (defaults[dimension].indexOf(a) < 0 ? 99 : defaults[dimension].indexOf(a)) - (defaults[dimension].indexOf(b) < 0 ? 99 : defaults[dimension].indexOf(b)) || a.localeCompare(b)), [dimension, products])
   useEffect(() => {
     const value = new URLSearchParams(window.location.search).get(dimension)
     if (value && options.includes(value)) setSelected(value)
   }, [dimension, options])
-  const matching = useMemo(() => products.filter((product) => String(product[dimension] || '').split(',').map((item) => item.trim()).includes(selected) || (product.variants || []).some((variant) => variant.enabled !== false && variant[dimension] === selected)), [dimension, products, selected])
+  const matching = useMemo(() => products.filter((product) => productMatchesDimension(product, dimension, selected)), [dimension, products, selected])
 
   return <main className="min-h-screen bg-[#fffdfa] text-[#302522]">
     <Navbar />

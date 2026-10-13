@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
@@ -8,6 +8,8 @@ import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
 import { shippingCountries as defaultShippingCountries } from '@/lib/countries'
 import { formatDimension } from '@/lib/format-dimension'
+import PaymentMethods from '@/components/PaymentMethods'
+import PayPalCardButton from '@/components/PayPalCardButton'
 
 const emptyAddress = { fullName: '', phone: '', address1: '', address2: '', city: '', state: '', postalCode: '', country: 'US' }
 
@@ -22,7 +24,10 @@ export default function CheckoutPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [shippingCountries, setShippingCountries] = useState(defaultShippingCountries)
+  const [paypalConfig, setPaypalConfig] = useState(null)
+  const formRef = useRef(null)
   useEffect(() => { fetch('/api/marketing/countries').then((r) => r.ok ? r.json() : null).then((data) => { if (data?.countries?.length) { setShippingCountries(data.countries); if (!data.countries.some(([code]) => code === address.country)) setAddress((current) => ({ ...current, country: data.countries[0][0] })) } }).catch(() => {}) }, [])
+  useEffect(() => { fetch('/api/checkout/paypal-config').then((r) => r.ok ? r.json() : null).then(setPaypalConfig).catch(() => {}) }, [])
   const symbol = currency || '$'
 
   const lines = useMemo(() => Object.entries(cartItems).flatMap(([lineKey, line]) => {
@@ -66,6 +71,20 @@ export default function CheckoutPage() {
     setPromoCode(promoInput.trim().toUpperCase())
   }
 
+  const createCardOrder = async () => {
+    if (!formRef.current?.reportValidity()) throw new Error('Please complete your contact and shipping details.')
+    setError('')
+    const response = await fetch('/api/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, address, promoCode, items: lines.map(({ line }) => line) }),
+    })
+    const result = await response.json()
+    if (!response.ok) throw new Error(result.error || 'Unable to start card payment.')
+    if (!result.orderId) throw new Error('PayPal did not return an order ID.')
+    return result.orderId
+  }
+
   const startPayPal = async (event) => {
     event.preventDefault()
     setError('')
@@ -107,7 +126,7 @@ export default function CheckoutPage() {
       <section className="max-w-6xl mx-auto px-5 md:px-8 py-12">
         <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">Ginny Nana</p>
         <h1 className="font-serif text-4xl mt-2">Checkout</h1>
-        <form onSubmit={startPayPal} className="grid lg:grid-cols-[1fr_380px] gap-10 mt-9">
+        <form ref={formRef} onSubmit={startPayPal} className="grid lg:grid-cols-[1fr_380px] gap-10 mt-9">
           <div className="space-y-8">
             <section className="rounded-xl border border-[#e8ded8] p-5 md:p-7">
               <h2 className="font-serif text-2xl">Contact</h2>
@@ -132,7 +151,11 @@ export default function CheckoutPage() {
                   </select>
                 </label>
               </div>
-              <p className="text-xs text-[#827873] mt-4">Shipping availability is based on our current country list. Shipping uses the same order tiers in every country.</p>
+              <div className="mt-4 rounded-lg bg-[#f8f3ef] p-4 text-sm text-[#6e5c55]">
+                <p className="font-medium text-[#302522]">Shipping details</p>
+                <p className="mt-1">Shipping to {shippingCountries.find(([code]) => code === address.country)?.[1] || address.country}. Rates are based on your order total and quantity; orders over {symbol}{Number(quote?.freeShippingThreshold ?? 50).toFixed(2)} ship free. The current shipping charge is shown in your order summary.</p>
+                <Link href="/shipping-policy/" className="inline-block mt-2 underline underline-offset-2">Read our shipping policy</Link>
+              </div>
             </section>
           </div>
 
@@ -167,6 +190,17 @@ export default function CheckoutPage() {
               {busy ? 'Connecting to PayPal…' : 'Pay with PayPal'}
             </button>
             <p className="text-xs text-center text-[#827873] mt-3">You will be redirected to PayPal to approve payment.</p>
+            {paypalConfig?.cardPaymentsEnabled && paypalConfig.clientId && <>
+              <PayPalCardButton
+                clientId={paypalConfig.clientId}
+                currency={quote?.currency || 'USD'}
+                disabled={busy || !quote || Boolean(quoteError)}
+                createOrder={createCardOrder}
+                onBusy={setBusy}
+                onError={setError}
+              />
+            </>}
+            <PaymentMethods className="justify-center mt-4" />
           </aside>
         </form>
       </section>

@@ -2,6 +2,7 @@ import React from 'react'
 import SafeImage from '@/components/SafeImage'
 import { useAppContext } from '@/context/AppContext';
 import { formatDimension } from '@/lib/format-dimension'
+import { productCardDimensions } from '@/lib/product-dimensions'
 
 const ProductCard = ({ product }) => {
 
@@ -27,7 +28,7 @@ const ProductCard = ({ product }) => {
 
             <div className="w-full pt-1">
                 <p className="font-medium text-[#302522] truncate">{product.name}</p>
-                <p className="text-xs text-[#827873] mt-1">{product.variants?.length ? 'Multiple lengths & shapes' : [product.length, product.shape].filter(Boolean).map(formatDimension).join(' · ') || 'Handmade press-on nails'}</p>
+                <p className="text-xs text-[#827873] mt-1">{productCardDimensions(product).map(formatDimension).join(' · ') || 'Handmade press-on nails'}</p>
                 <div className="flex items-center gap-2 mt-2 text-sm">
                     <p className="font-medium">{currency || '$'}{Number(product.offerPrice).toFixed(2)}</p>
                     {product.price > product.offerPrice && <p className="text-[#998f89] line-through">{currency || '$'}{Number(product.price).toFixed(2)}</p>}

@@ -1,0 +1,71 @@
+:root, html[data-theme='light'] {
+  --accent: #8b5d53;
+  --highlight: #b57d72;
+  --brand-ink: #302522;
+  --brand-surface: #fffdfa;
+  --brand-soft: #f7f3f0;
+  --brand-border: #e7ddd8;
+  --brand-muted: #766762;
+  --background: var(--brand-surface);
+  --foreground: var(--brand-ink);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-body: var(--font-sans);
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
+
+  --theme-bg: var(--brand-surface);
+  --theme-elevation-0: #fffdfa;
+  --theme-elevation-50: #fcfaf9;
+  --theme-elevation-100: #f7f3f0;
+  --theme-elevation-150: #f0e9e5;
+  --theme-elevation-200: #e7ddd8;
+  --theme-elevation-250: #dfd3cd;
+  --theme-elevation-300: #d7cbc5;
+  --theme-elevation-350: #81716a;
+  --theme-elevation-400: #6f5e58;
+  --theme-elevation-450: #6f5e58;
+  --theme-elevation-500: #6f5e58;
+  --theme-elevation-550: #5e4e48;
+  --theme-elevation-600: #4e403b;
+  --theme-elevation-650: #423632;
+  --theme-elevation-700: #392e2a;
+  --theme-elevation-750: #332925;
+  --theme-elevation-800: #302522;
+  --theme-elevation-850: #2b211e;
+  --theme-elevation-900: #261d1a;
+  --theme-elevation-950: #211916;
+  --theme-text: var(--brand-ink);
+  --theme-success-500: var(--accent);
+  --theme-success-600: #754a41;
+  --theme-success-700: #623e36;
+  --theme-input-bg: #fff;
+  --theme-border-color: var(--brand-border);
+}
+
+html, body { color: var(--brand-ink); font-family: var(--font-body); }
+
+.nav a.nav__link { color: var(--brand-ink) !important; }
+.nav a.nav__link:hover, .nav a.nav__link:focus-visible { color: var(--accent) !important; background: var(--brand-soft); }
+.nav a.nav__link:has(.nav__link-indicator) { color: var(--brand-ink) !important; font-weight: 700; }
+.nav .nav-group__toggle { color: var(--brand-ink) !important; font-family: var(--font-body) !important; font-size: 12px !important; font-weight: 700 !important; line-height: 1.4 !important; letter-spacing: .08em; text-transform: uppercase; }
+.nav .nav-group__toggle:hover, .nav .nav-group__toggle:focus-visible { color: var(--accent) !important; }
+.nav .nav-group__label { color: inherit !important; font: inherit !important; }
+.nav .nav-group__content .nav__link { color: var(--brand-ink) !important; font-family: var(--font-body) !important; font-size: 14px !important; font-weight: 400 !important; line-height: 1.5 !important; }
+
+.admin-dashboard-shortcuts { display: grid; gap: 22px; margin-bottom: 28px; }
+.admin-dashboard-shortcuts__section h2 { margin: 0 0 10px; color: var(--brand-ink); font: 700 12px/1.4 var(--font-body); letter-spacing: .08em; text-transform: uppercase; }
+.admin-dashboard-shortcuts__grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 10px; }
+.admin-dashboard-shortcuts__link { display: grid; gap: 5px; min-height: 68px; padding: 12px 14px; border: 1px solid var(--brand-border); border-radius: 8px; background: var(--brand-surface); color: var(--brand-ink); text-decoration: none; cursor: pointer; }
+.admin-dashboard-shortcuts__link strong { font: 600 13px/1.35 var(--font-body); }
+.admin-dashboard-shortcuts__link span { color: var(--brand-muted); font: 400 12px/1.45 var(--font-body); }
+.admin-dashboard-shortcuts__link:hover, .admin-dashboard-shortcuts__link:focus-visible { border-color: var(--highlight); background: var(--brand-soft); color: var(--accent); }
+
+[class~="bg-[#8b5d53]"] { background-color: var(--accent) !important; }
+[class~="text-[#8b5d53]"] { color: var(--accent) !important; }
+[class~="border-[#8b5d53]"] { border-color: var(--accent) !important; }
+[class~="hover:bg-[#754a41]"]:hover { background-color: var(--accent) !important; }
+[class~="focus:border-[#b57d72]"]:focus { border-color: var(--highlight) !important; }
+[class~="bg-[#985c70]"] { background-color: var(--accent) !important; }
+[class~="text-[#985c70]"] { color: var(--accent) !important; }
+[class~="hover:text-[#985c70]"]:hover { color: var(--accent) !important; }
+[class~="bg-[#261a22]"] { background-color: var(--brand-ink) !important; }

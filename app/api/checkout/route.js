@@ -187,7 +187,7 @@ export async function POST(request) {
       })
       const approvalURL = paypalOrder.links?.find((link) => link.rel === 'approve')?.href
       if (!approvalURL) throw new Error('PayPal 没有返回付款链接。')
-      return NextResponse.json({ approvalURL })
+      return NextResponse.json({ approvalURL, orderId: paypalOrder.id })
     } catch (error) {
       await payload.update({ collection: 'orders', id: order.id, data: { paymentStatus: 'failed' }, overrideAccess: true })
       throw error

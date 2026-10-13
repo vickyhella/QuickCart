@@ -11,6 +11,7 @@ import { useAppContext } from '@/context/AppContext'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatDimension } from '@/lib/format-dimension'
+import PaymentMethods from '@/components/PaymentMethods'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -103,6 +104,7 @@ export default function ProductPage() {
               <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="w-full sm:flex-1 py-3.5 border border-[#754b43] text-[#754b43] rounded-full hover:bg-[#f8f3ef] disabled:opacity-50">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
               <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/cart') }} className="w-full sm:flex-1 py-3.5 bg-[#754b43] text-white rounded-full hover:bg-[#5e3c36] disabled:opacity-50">Buy now</button>
             </div>
+            <PaymentMethods className="mt-3" />
             <div className="product-markdown text-[#6e5c55] leading-7 mt-7">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
                 img: ({ src, alt }) => <img src={src || '/nail-placeholder.svg'} alt={alt || ''} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} className="my-5 max-h-[30rem] max-w-full rounded-lg object-contain" loading="lazy" />,
@@ -116,7 +118,6 @@ export default function ProductPage() {
               <div><p className="text-[#998f89]">Set</p><p className="mt-1">Reusable press-on nails</p></div>
               {product.sku && <div><p className="text-[#998f89]">SKU</p><p className="mt-1">{product.sku}</p></div>}
             </div>
-            <p className="text-xs text-[#827873] mt-5">Each set is handmade. Product details and sizing can be updated in the product manager.</p>
           </div>
         </div>
       </section>

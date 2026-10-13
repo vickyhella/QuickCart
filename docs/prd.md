@@ -1,0 +1,688 @@
+# Ginny Nana — Product Studio & Marketing Studio PRD
+
+**Version:** 1.6
+**Project:** [vickyhella/QuickCart](https://github.com/vickyhella/QuickCart)  
+**Tech Stack:** Next.js + Payload CMS + Neon PostgreSQL + Cloudflare R2
+
+---
+
+## 1. 项目目标
+
+优化现有 QuickCart 电商系统的商品管理体验，并将社交媒体自动发布功能从电商核心系统中拆分。
+
+### 核心原则
+
+- 保留现有 QuickCart 商城前端。
+- 保留 Payload CMS 作为商品数据和 API 的核心。
+- 不重新搭建电商系统，不迁移商品数据库。
+- 新增独立的 Product Studio，专注于快速管理商品。
+- 新增独立的 Marketing Studio，管理社交媒体发布。
+- 优先使用成熟的开源组件，避免重复开发。
+- 保持系统轻量、快速、低成本、易维护。
+
+### 实际使用场景
+
+- 每次新增 1–5 款商品。
+- 每款商品通常有 2–5 张图片。
+- 一款商品可能提供多个 Length + Shape 组合。
+- 每个组合通常提供 XS / S / M / L。
+- 商品 Description、SEO、SKU 等尽量自动生成。
+- 尽可能减少页面切换、重复填写和手动操作。
+
+**最终目标：上传图片、输入商品名称和价格、选择规格，即可保存商品草稿。未填写完整的商品也可先保存草稿，补齐后再发布。**
+
+---
+
+## 2. 系统架构
+
+### 2.1 Storefront
+
+保留现有 QuickCart / Next.js 商城前端。
+
+负责：
+
+- 商品展示
+- 商品搜索与筛选
+- 购物车
+- Checkout
+- PayPal 支付
+- 订单创建
+- 商品详情页不向顾客展示后台编辑提示或其他内部管理文案。
+- 商品详情页、购物车和 Checkout 均展示当前支持的支付方式。Checkout 支持 PayPal 付款，并在 PayPal 商户账户获准且启用银行卡支付时提供 PayPal Debit or Credit Card 按钮；卡组织图标仅在启用银行卡支付后展示，且按钮需遵循 PayPal SDK 的买家/商户资格判断。
+- Checkout 展示配送目的国家、按订单规则计算的运费、免邮门槛和配送政策入口；顾客提交订单前可在订单摘要中看到实际运费。
+- PayPal 商户凭据已配置并在账户侧启用卡支付后，设置 `PAYPAL_CARD_PAYMENTS_ENABLED=true`；Checkout 加载 PayPal SDK 卡按钮，并依据 SDK 资格检查决定是否向当前买家显示。该开关关闭时，商品页和购物车不展示 Visa / Mastercard 标识。
+
+不因本项目重建商城前端。
+
+### 2.2 Product Studio
+
+新增独立管理入口：
+
+`/studio`
+
+负责：
+
+- 商品列表
+- 商品列表支持按创建时间排序（最新 / 最早）
+- 快速新增和编辑商品
+- 图片管理
+- Variant 管理
+- Description / SEO 自动生成
+- 商品复制
+- 商品发布
+- 高级 Spreadsheet Editor（支持分页、筛选、TSV 粘贴与批量字段编辑，包含后台供应商信息），入口为 `/studio/spreadsheet`
+- Length + Shape 规格按明确选择的配对生成，避免自动产生未选择的组合
+
+Product Studio 使用现有 Payload API，不直接操作 PostgreSQL 数据表。
+
+保留原 Payload Admin 作为备用管理入口。
+
+Payload Admin 导航应提供 Product Studio、Spreadsheet Editor 和 Marketing Studio 入口；旧 Admin Spreadsheet 路由保留兼容。
+
+### 2.3 Marketing Studio
+
+新增独立管理模块：
+
+`/marketing-studio`
+
+负责：
+
+- Pinterest 自动发布
+- Instagram 自动发布
+- 内容预览
+- 发布排期
+- 发布记录
+- 失败重试
+
+商品数据继续从 Payload 读取。
+
+可使用 n8n 执行定时任务，不要求第一版独立部署第二套 Next.js 服务。
+
+### 2.4 数据与存储
+
+继续使用：
+
+- Payload CMS
+- Neon PostgreSQL
+- Cloudflare R2
+- 现有 Media / MediaOriginals
+- 现有 WebP 转换逻辑
+
+不引入第二套商品数据库或媒体存储。
+
+---
+
+## 3. 开源组件选型
+
+优先评估并复用：
+
+| 组件 | 用途 |
+|---|---|
+| shadcn/ui | 表单、按钮、抽屉、弹窗 |
+| TanStack Table | 商品列表、筛选、分页 |
+| react-dropzone | 图片拖拽上传 |
+| dnd-kit | 图片排序 |
+
+要求：
+
+- 检查项目是否已有同类依赖，避免重复安装。
+- 检查许可证及 Next.js / React 兼容性。
+- 优先复用现有组件。
+- 不为使用新组件而重构无关代码。
+- 暂不引入 Glide Data Grid。
+- 不引入新的 CMS 或 PIM。
+
+### 全局视觉系统
+
+- Storefront 首页、Product Studio、Marketing Studio 和 Payload Admin 使用一致的品牌字体与视觉 tokens。
+- 字体沿用 Storefront 当前使用的字体栈；颜色、背景、边框、圆角和焦点状态通过全局 CSS 变量统一管理，例如 `--accent` 和 `--highlight`。
+- 页面组件引用共享 tokens，不重复硬编码品牌色；修改 token 后，各入口的对应样式同步更新。
+- Payload Admin 保留现有布局结构，同时加载品牌 tokens 并覆盖对应主题变量，使其与 Storefront 和 Studio 视觉一致。
+- 保证文字与控件对比度、键盘焦点和错误状态清晰可辨。
+
+---
+
+## 4. Product Studio
+
+### 4.1 商品列表
+
+展示：
+
+- 商品缩略图
+- 商品名称
+- SKU
+- 价格
+- Variant 数量
+- 发布状态
+- 更新时间
+
+支持：
+
+- 搜索、筛选、排序
+- 服务端分页
+- 快速修改基础价格（未覆盖价格的 Variant 跟随更新）
+- 发布 / 下架
+- 多选商品并批量改为 Draft 或 Published
+- Duplicate Product
+- Quick Add
+- 点击进入商品编辑器
+
+不需要完整的 Excel 式编辑器。
+
+批量状态操作要求：
+
+- 可对已选商品执行批量 Draft / Publish。
+- 批量发布时逐个执行与单商品发布相同的服务端校验；有效商品正常发布，不符合条件的商品保持原状态，并返回逐商品失败原因。
+- 批量下架将已发布商品改为 Draft，使其从商城和商品 Feed 中移除；不得删除商品或 Variant。
+
+### 4.2 Quick Add
+
+使用单页表单，避免多步骤向导。
+
+页面结构：
+
+1. Images
+2. Product Information
+3. Length & Shape
+4. Variants Preview
+5. Advanced Settings（默认折叠）
+
+#### 发布必填字段
+
+- Product Name
+- Base Price
+- 至少一张商品图片
+- 至少一个 Length + Shape 组合
+- 至少一个 Size
+
+Save Draft 和 Save & Add Another 至少需要 Product Name，其余字段可暂缺；草稿不得出现在商城或商品 Feed。Publish 必须在服务端校验上述字段、价格有效性，以及至少一个已启用且库存大于 0 的 Variant。Phase 1A 可先保存不完整草稿，Phase 1B 补齐图片和 Variant 后才能发布。
+
+Advanced Settings 可填写可选的供应商货号和进货 URL。整款商品共用的信息填在商品上；不同规格对应不同货号或链接时，填在相应 Variant 上。这些字段不影响草稿保存或发布。
+
+#### 自动生成字段
+
+- Product SKU
+- Variant SKU
+- Slug
+- Description
+- SEO Title
+- SEO Description
+- 默认商品属性
+- Variant 价格
+- Variant 库存
+- Variant 默认图片
+
+#### 保存按钮
+
+- **Save Draft**
+- **Save & Add Another**
+- **Publish**
+
+新商品默认保存为 Draft。
+
+Publish 必须由用户主动触发，并通过商品数据校验。
+
+编辑已有商品时，点击 Publish 应在一次保存操作中提交表单最新修改、执行发布校验并将商品发布；不要求先单独保存草稿。已保存为 Draft 的商品之后也可直接 Publish。请求失败时保留表单内容，并显示服务端返回的具体错误；若响应不是有效 JSON，也应显示可理解的错误信息，不得只显示 JSON 解析异常。
+
+Save & Add Another 保存当前草稿后，下一张表单沿用分类、Length + Shape 组合和 Size；清空名称、图片、价格、Description / SEO、SKU 和供应商信息。
+
+保存操作需防止重复提交造成重复商品；编辑已有商品时，不能用表单中的旧库存覆盖期间发生的库存变化。Studio 与 Payload Admin 同时修改同一商品时，保存前提示冲突，避免静默覆盖。
+
+### 4.3 Duplicate Product
+
+复制商品时保留：
+
+- 商品分类和通用属性
+- Length + Shape 组合
+- Size
+- 基础价格
+- Variant 价格覆盖值
+- 默认库存规则（新 Variant 库存统一从 10 开始）
+- Description 模板设置
+
+复制商品时重置：
+
+- 商品名称
+- Featured Image
+- Gallery
+- Variant 专属图片
+- Product SKU
+- Variant SKU
+- Product ID / Variant ID
+- Slug
+- Description 内容
+- SEO Title / SEO Description
+- 发布状态（Draft）
+- Description / SEO 的 Custom 状态（复制品统一使用 Auto）
+- 供应商货号和进货 URL
+
+新名称输入后，自动重新生成 Description、SEO 和 Slug。
+
+复制时保留 Variant 组合和价格覆盖值，但新建 Variant ID / SKU，库存不沿用原商品实时库存。
+
+复制操作不得修改原商品。
+
+---
+
+## 5. Description 与 SEO 自动生成
+
+### 5.1 Description 模板
+
+所有 Press-on Nails 商品默认使用统一的英文 Description 模板。
+
+支持变量：
+
+- `{productName}`
+- `{brand}`
+- `{productType}`
+- `{availableLengthShapeCombinations}`
+- `{availableSizes}`
+- `{material}`
+- `{color}`
+
+没有值的字段应自动省略，不显示空占位符。
+
+### 5.2 默认模板
+
+**{productName}**
+
+Discover {productName} by {brand}, a press-on nail style for your everyday look.
+
+**Available Length & Shape combinations:** {availableLengthShapeCombinations}
+
+**Available sizes:** {availableSizes}
+
+Choose your preferred style and size before adding the product to your cart.
+
+### 5.3 编辑规则
+
+支持两种模式：
+
+- **Auto**：根据商品信息自动生成。
+- **Custom**：用户手动修改，保留自定义内容。
+
+Auto 描述模板在 Admin 的 Marketing → SEO & Media → Product description template 中编辑，支持商品名称、品类、Length、Shape、可用规格组合和尺码变量。
+
+- 描述模板及商品自定义描述支持 Markdown（标题、粗体/斜体、列表、链接和表格）；模板编辑器和 Product Studio 提供渲染预览，商品页按 Markdown 渲染。SEO 描述仍作为纯文本元数据处理。
+
+要求：
+
+- 新商品默认使用 Auto。
+- 修改名称、Styles、Sizes 时更新 Auto 预览。
+- 用户手动修改后切换为 Custom。
+- Custom 内容不得被自动覆盖。
+- 提供 Regenerate from Template 按钮。
+- 重新生成自定义内容前需要确认。
+- 修改全局模板后，自动刷新所有明确处于 Auto 模式的商品字段，包括已发布商品；Custom 字段不得覆盖。
+- 旧商品若缺少 Auto / Custom 标记，仅当现有内容与旧模板按该商品数据生成的结果完全一致时，才视为 Auto 并刷新；无法确认来源的内容保留。
+- 已有手动填写的 Description 视为 Custom 并原样保留；清空后若选择 Auto 才重新生成，不能因字段为空而静默覆盖。
+
+### 5.4 SEO
+
+- SEO Title 和 SEO Description 使用独立模板。
+- 默认自动生成，允许手动覆盖。
+- 已有手动填写的 SEO 字段原样保留；清空或切换为 Auto 后才按模板生成，分别记录 Title 和 Description 的覆盖状态。
+- SEO 模板支持 `{availableLengthShapeCombinations}` 和 `{availableSizes}`：前者从已选择且至少有一个启用 Variant 的 Length + Shape 组合生成可读列表，保留实际组合关系；后者列出至少对应一个启用 Variant 的尺码。
+- Length 和 Shape 是独立于商品 Category 的结构化筛选维度；SEO 组合文案由这些维度派生，不增加重复的 Style 字段。
+- `{length}` 和 `{shape}` 从同一组已选择的 Length + Shape 组合派生：分别列出去重后的 Length 和 Shape 值，多值以逗号分隔；不得要求用户重复填写。
+- `{availableLengthShapeCombinations}` 列出实际的 Length + Shape 配对，例如 `Short Square, Medium Oval`。当文案需要表达具体配对时使用此变量；`{length}` 和 `{shape}` 是便于单独提及分类维度的汇总值。
+- 库存暂时为 0 但仍启用的 Variant 不从 SEO 规格列表中移除。
+- 没有对应值的变量应省略，不留下空占位符。
+- 尽量复用现有 Marketing Settings 中的 SEO 模板逻辑。
+- GMC 商品描述应基于真实商品信息，不生成未经确认的材质、功效、配送或包装承诺。
+
+---
+
+## 6. 图片管理
+
+### 6.1 上传
+
+- 支持 HEIC / JPG / PNG / WebP。
+- 支持一次上传多张图片。
+- 自动转换为 WebP。
+- 保留原图用于重新压缩。
+- WebP Quality 用于新上传和手动重新压缩；保存 Quality 不自动改写存量图片。
+- Marketing → SEO & Media 提供“重新压缩存量图片”操作：显示可处理数量，用户确认后分批从保留原图重新生成 WebP，显示进度与逐项失败原因；商品和 Variant 的媒体引用保持不变。
+- 临时图片、没有可用原图的 WebP、动画图片和 SVG 不纳入批量重压缩；非 WebP 且没有原图的静态图片可作为来源，并在重压缩成功后保存原件。
+- 支持的静态图片上传始终转换为 WebP；GIF、SVG 等动画或矢量格式保留原格式，不提供关闭 WebP 转换的开关。
+- 上传后直接显示缩略图。
+- 支持从现有 Media 库搜索、预览并选择已上传图片；选择操作只建立商品关联，不重复上传或复制文件。
+- 显示单张图片上传进度和错误。
+- 支持拖拽排序。
+- 第一张默认作为 Featured Image。
+- 支持手动更换主图。
+- 上传失败时清理该次上传产生的 Media、原图及存储文件，不留下不完整记录。
+- 取消新商品创建时清理本次上传且未被任何商品引用的图片和原图；不得删除已被其他商品引用的媒体。
+- 直接关闭页面等未触发取消操作的情况，由定时清理任务删除超过 24 小时、未关联任何商品或 Variant 的临时图片、原图和存储文件；删除前再次检查引用。
+- 保存商品时如部分图片上传失败，明确列出失败项；成功项可保留在表单中继续重试，但不得将失败项当作已保存图片。
+- 复用现有媒体存储；上传的媒体实体文件不得留在项目源码目录或 Git 工作区。本地开发使用文件系统存储时，存储目录必须被 Git 忽略。
+- 选择已有媒体不应将其标记为临时上传，也不得被新商品取消或临时文件清理任务删除。
+
+复用现有 Media / MediaOriginals 和 R2 存储逻辑。
+
+### 6.2 Variant 图片
+
+- 所有 Variant 默认继承商品主图。
+- 不需要为 XS / S / M / L 重复上传图片。
+- 只有用户主动指定时，才使用 Variant 专属图片。
+- 专属图片优先从商品 Gallery 中选择。
+- 更换商品主图后，未自定义图片的 Variant 自动跟随。
+- 已自定义图片的 Variant 不受影响。
+- 已有 Variant 的手动图片原样保留，不根据其是否等于当前主图推断为继承。
+- 用户清除 Variant 专属图片且不重新指定时，该 Variant 改为继承商品主图；之后更换主图也随之更新。
+- 从商品 Gallery 移除图片仅解除该商品关联；永久删除 Media / 原图前检查所有商品及 Variant 引用，显示引用警告，并禁止删除仍被引用的文件。
+
+**注意：需检查并调整现有 Payload Hook，避免自动将主图永久写入每个 Variant 的图片字段。**
+
+---
+
+## 7. Variant 管理
+
+### 7.1 规格选择
+
+采用：
+
+**Length + Shape 指定组合 → Size → Variants**
+
+例如：
+
+- Short Square
+- Short Oval
+- Medium Oval
+
+不自动生成未选择的 Medium Square。
+
+已选 Length + Shape 组合是唯一规格来源：系统据此生成 Variants，并自动汇总商品级 Length / Shape 筛选值，供 Storefront 的 By Length / By Shape 页面使用。主页筛选只显示至少有一个启用 Variant 的维度值；停用的 Variant 保留在后台，但不作为当前可选筛选结果。商品 Category（如 Press-on Nails、Nail Care）仍是独立分类字段。
+
+### 7.2 Size
+
+默认选择：
+
+- XS
+- S
+- M
+- L
+
+允许用户取消某些 Size。
+
+### 7.3 自动生成
+
+例如：
+
+3 个 Length + Shape 组合 × 4 个 Sizes = 12 个 Variants。
+
+每个 Variant 包含：
+
+- SKU
+- Length
+- Shape
+- Size
+- Price
+- Stock
+- Enabled
+- 可选专属图片
+- 可选供应商货号和进货 URL
+
+### 7.4 默认规则
+
+- 新 Variant 默认库存为 **10**。
+- 默认启用库存追踪。
+- 默认继承商品基础价格。
+- 修改基础价格时，未设置价格覆盖值的 Variant 跟随更新；已手动覆盖的价格保持不变，并可恢复继承。
+- 默认继承商品主图。
+- 支持单独修改价格、库存和图片。
+- 支持批量设置库存。
+- 库存为 0 的 Variant 保留并显示售罄，不允许购买；至少有一个已启用且有库存的 Variant 才能发布商品，暂不支持预售。
+
+### 7.5 编辑已有 Variant
+
+必须：
+
+- 保留已有 Variant ID。
+- 保留已有 SKU。
+- 保留已有价格覆盖值。
+- 保留已有库存。
+- 保留已有专属图片。
+- 只新增缺失组合。
+- 移除组合前显示确认；已有 Variant 改为停用并保留 ID、SKU、价格、库存和图片，重新选回相同组合时恢复原 Variant。
+- 避免破坏已有订单的历史规格信息。
+
+编辑时只提交实际更改的字段；库存更新需检查当前值或版本，避免覆盖购买和其他管理员操作期间的变更。
+
+SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不一致。
+
+---
+
+## 8. Payload 集成与现有代码复用
+
+### 保留
+
+- `collections/Products.ts`
+- `collections/Media.ts`
+- `collections/MediaOriginals.ts`
+- Payload Admin
+- 现有 WebP 转换逻辑
+- Neon / R2 配置
+- 订单、折扣、支付功能
+- GMC / Pinterest Feed 功能
+
+### 新增
+
+- `/studio`
+- 商品列表
+- Quick Add
+- 商品图片管理界面
+- Length + Shape 组合选择器
+- Variant 生成及差异更新逻辑
+- Description 模板生成服务
+- Duplicate Product
+- Product Studio 服务端 API
+
+### 改造
+
+- SKU 生成逻辑
+- Description / SEO 模板逻辑
+- Variant 图片继承逻辑
+- Variant 更新时的数据保留逻辑
+
+### 暂时保留
+
+- `ProductBulkEditor.tsx`
+- `ProductVariantsSpreadsheetField.tsx`
+
+新 Studio 稳定后再考虑移除旧组件。
+
+### 安全要求
+
+- 复用 Payload 管理员认证。
+- 所有写操作在服务端校验权限。
+- 不直接写 Payload 数据表。
+- 不信任浏览器提交的价格、SKU 或商品关联。
+- 批量操作必须有明确的错误反馈。
+- 数据结构修改必须有迁移和回滚方案。
+- 保存和发布接口应防止重复请求造成重复商品或重复发布。
+- 供应商货号和进货 URL 仅供管理员读取和修改；服务端不得在公开商品 API、商城页面、商品 Feed 或顾客订单数据中返回这些字段。
+
+---
+
+## 9. Marketing Studio
+
+### 9.1 目标
+
+将 Pinterest 发布功能从商品管理后台中拆出，并增加 Instagram 自动发布能力。
+
+### 9.2 功能
+
+- 读取 Payload 商品数据。
+- 选择商品和图片。
+- 自动生成可编辑的发布文案。
+- 每条 Pin 默认链接到对应的商城商品详情页；选择 Variant 时保留 Variant 参数。用户显式填写的落地页链接应保留。
+- 内容预览。
+- 设置发布时间。
+- 查看发布状态和历史。
+- 失败重试。
+- 防止重复发布。
+
+### 9.3 技术方案
+
+- 管理界面：`/marketing-studio`
+- 商品数据：Payload API
+- 定时执行：优先评估现有定时任务与 n8n
+- 发布记录：独立的发布计划及执行状态
+
+### 9.4 迁移要求
+
+- 优先复用现有 Pinterest 发布逻辑。
+- 新系统验证成功后，再关闭旧定时任务。
+- 禁止新旧任务同时发布同一内容。
+- Instagram 先验证账号类型、授权和 API 权限，再实现发布。
+- Marketing Studio 不直接修改商品库存、价格或订单。
+
+---
+
+## 10. Commerce Core 稳定性
+
+保留现有 Checkout 和 PayPal 实现，不在 Product Studio 开发中大规模重构。
+
+但需单独检查：
+
+- PayPal Webhook 幂等性。
+- 支付成功与库存扣减的一致性。
+- 并发购买导致的超卖风险。
+- 支付失败、重复回调和重试。
+- 生产环境数据库、R2 和密钥配置。
+
+支付和库存的高风险问题应在正式上线或扩大销售前修复。
+
+---
+
+## 11. 开发计划
+
+### Phase 1A — Product Studio 基础
+
+- `/studio` 入口及认证
+- 商品列表
+- Quick Add 基础表单
+- Description / SEO 自动生成
+- 仅填写名称即可保存 Draft，草稿不进入商城和 Feed
+- Save & Add Another 沿用分类与规格选择并清空其他商品信息
+- 商品创建与草稿状态的针对性测试
+
+**验收：可以在 Studio 中新增并保存商品草稿。**
+
+### Phase 1B — 图片与 Variants
+
+- 多图上传与 WebP
+- 上传失败、取消创建及超时临时图片的清理
+- 图片缩略图及排序
+- Length + Shape 组合选择
+- Size Variant 自动生成
+- 默认库存 10
+- Variant 图片继承
+- Duplicate Product
+- Publish 流程
+- 复制后的新 ID / SKU、图片继承及发布校验测试
+
+**验收：无需进入 Payload Admin，即可连续创建并发布 5 款商品。**
+
+### Phase 2 — 商品编辑完善
+
+- 已有商品编辑
+- Variant 差异更新
+- 数据保留与冲突检查
+- 图片替换
+- 商品列表快速编辑
+- 批量价格 / 库存操作
+- 多选商品后批量设为 Draft / Published，并逐商品报告发布校验结果
+- 编辑商品时一次操作完成保存与发布；失败后保留表单并展示可理解的服务端错误
+- SEO 自动模板按实际启用 Variant 的 Length + Shape 组合和 Size 填充 `{availableLengthShapeCombinations}` / `{availableSizes}`
+- 从现有 Media 库搜索、预览并选择图片
+- 统一 Storefront、Product Studio、Marketing Studio 和 Payload Admin 的品牌字体及全局 CSS tokens
+- Advanced Settings 中的商品级与 Variant 级供应商信息
+- 自动化测试
+- Variant 差异更新、价格继承、停用恢复和并发库存保护测试
+
+**验收：修改规格不会意外重建已有 Variant 或覆盖库存；移除再选回组合可恢复原 Variant。**
+
+### Phase 3 — Marketing Studio
+
+- 独立营销管理界面
+- 迁移 Pinterest 发布
+- 发布队列与状态管理
+- 定时执行与失败重试
+- Instagram API 验证及发布
+
+**验收：营销发布不依赖商品管理后台。**
+
+### Phase 4 — Commerce Core
+
+- PayPal 支付可靠性
+- 库存一致性
+- 并发与重复回调测试
+- 生产环境检查
+- 性能优化
+
+高风险支付问题可根据上线情况提前处理。
+
+### 上线前待办
+
+- [ ] 完成 S2 配置，并确认相关服务与商城的连接正常。
+- [ ] 盘点并迁移 WooCommerce 旧商品：整理商品字段、图片、分类、Length + Shape / Size Variants、价格和库存映射；导入后抽样核对商品详情及购物流程。
+- [ ] 验证 Google Merchant Center（GMC）：检查 Feed 可抓取与处理状态、商品诊断、价格和库存一致性、图片、落地页链接及配送设置；修复拒登和警告后确认商品通过审核。
+- [ ] 验证 Pinterest：确认账号、Board 和发布权限，实际发布测试 Pin，检查图片、文案和商品落地页 URL；Variant Pin 应保留对应 Variant 参数，并确认发布记录与失败重试正常。
+- [ ] 验证 PayPal Sandbox：分别测试 PayPal 付款和符合账户资格时的银行卡付款，并确认成功订单、库存扣减及取消/失败流程。
+- [ ] 完成商城端到端检查：商品页、购物车、结账页、运费与免邮规则、订单创建及订单确认。
+
+---
+
+## 12. Codex 开发约束
+
+1. 开发前先检查现有仓库、依赖和实现。
+2. 先提交简短的代码复用分析与实施计划。
+3. 优先使用成熟开源组件，避免重复开发。
+4. 不引入新的 CMS、PIM 或数据库。
+5. 不重建 QuickCart 商城。
+6. 不删除 Payload Admin。
+7. 不随意替换 Neon、R2 或 PayPal。
+8. 不进行与当前阶段无关的大规模重构。
+9. 每个 Phase 独立实现、测试和验收。
+10. 对商品创建、复制、SKU、Variant 更新、图片继承和发布状态编写测试。
+11. 修改数据库结构前必须说明兼容性、迁移及回滚方案。
+12. 优先保证实际操作效率、加载速度和系统稳定性。
+
+---
+
+## 13. 最终验收标准
+
+Product Studio 完成后，应满足：
+
+- [ ] 每次可以快速创建 1–5 款商品。
+- [ ] 每款可上传 2–5 张图片，自动转换 WebP。
+- [ ] 只填写名称、价格和规格即可保存。
+- [ ] 信息不完整也可保存草稿；草稿不出现在商城或 Feed，发布前必须通过完整校验。
+- [ ] Save & Add Another 只沿用分类和规格选择，不沿用价格、图片或文案。
+- [ ] Description 和 SEO 自动生成，支持手动修改。
+- [ ] 支持指定 Length + Shape 组合。
+- [ ] 自动生成 XS / S / M / L Variants。
+- [ ] 每个新 Variant 默认库存 10。
+- [ ] 缺货 Variant 显示售罄；没有任何有库存的已启用 Variant 时不能发布。
+- [ ] Variant 默认继承商品主图。
+- [ ] Duplicate Product 不影响原商品。
+- [ ] 新商品默认 Draft，手动 Publish。
+- [ ] 修改已有商品不丢失 Variant 数据。
+- [ ] 编辑商品时 Publish 会保存最新修改并在同一操作中发布；错误时保留表单并展示具体原因。
+- [ ] 商品列表支持多选并批量设为 Draft / Published；批量发布逐商品校验并报告失败项。
+- [ ] SEO 自动模板可用 `{availableLengthShapeCombinations}` 展示真实的 Length + Shape 组合，并用 `{availableSizes}` 展示对应启用尺码。
+- [ ] 可搜索、预览并选择 Media 库已有图片；选择时不重复上传，且不被临时图片清理误删。
+- [ ] Storefront、Product Studio、Marketing Studio 和 Payload Admin 使用统一字体和共享品牌 CSS tokens。
+- [ ] 修改基础价格只影响继承价格的 Variant；移除再选回规格可恢复原 Variant。
+- [ ] 已有手动描述、SEO 和 Variant 图片不被自动覆盖；清除专属图片后改为继承主图。
+- [ ] 上传失败或取消创建不留下未引用图片和原图；删除被引用的媒体会提示并阻止。
+- [ ] 超过 24 小时的未关联临时图片及原图会被清理，已被引用的媒体保留。
+- [ ] 上传图片及原图保存在媒体存储中，不会作为未跟踪文件残留在项目源码目录或 Git 工作区；清理前检查所有商品和 Variant 引用。
+- [ ] 重复保存不产生重复商品，并发编辑不静默覆盖库存。
+- [ ] 管理员可记录商品级或 Variant 级供应商货号和进货 URL；公开接口、页面、Feed 与顾客订单不暴露这些字段。
+- [ ] 无需使用原 Payload 商品编辑器即可完成日常上新。
+- [ ] 保留现有商城、支付、商品 Feed 和后台功能。
+
+**项目完成标准：商品维护明显比现有 Payload Admin 更简单、更快，同时不牺牲现有电商系统的稳定性。**

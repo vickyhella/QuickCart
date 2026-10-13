@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { pinterestProductLink } from '../lib/pinterest-product-link'
 
 export const PinterestPosts: CollectionConfig = {
   slug: 'pinterest-posts',
@@ -11,7 +12,7 @@ export const PinterestPosts: CollectionConfig = {
   },
   admin: {
     hidden: false,
-    group: 'Marketing',
+    group: 'Pinterest',
     components: { beforeList: ['/components/PinterestPublishing#PinterestPublishing'] },
     useAsTitle: 'title',
     defaultColumns: ['title', 'product', 'status', 'scheduledAt', 'publishedAt'],
@@ -36,7 +37,7 @@ export const PinterestPosts: CollectionConfig = {
       const apply = (template: string) => template.replace(/\{(brand|productName|productType|length|shape|size)\}/g, (_, key) => values[key as keyof typeof values] || '').replace(/\s+/g, ' ').trim()
       if (!String(data.title || '').trim()) data.title = apply(String(settings.pinterestTitleTemplate || '{productName} {length} {shape} Press-on Nails'))
       if (!String(data.description || '').trim()) data.description = apply(String(settings.pinterestDescriptionTemplate || 'Shop {productName} press-on nails by {brand}. {length} length, {shape} shape.'))
-      if (!String(data.link || '').trim()) data.link = `${String(process.env.NEXT_PUBLIC_SITE_URL || '').replace(/\/$/, '')}/product/${product.slug || product.id}${variant?.id ? `?variant=${encodeURIComponent(String(variant.id))}` : ''}`
+      data.link = pinterestProductLink(product, variant?.id, data.link)
       const media = [variant?.image, product.featuredImage, ...(Array.isArray(product.gallery) ? product.gallery : [])].find((item: any) => item && typeof item === 'object' && item.url)
       if (!data.imageURL) data.imageURL = media?.url || ''
       if (!data.imageMedia) {

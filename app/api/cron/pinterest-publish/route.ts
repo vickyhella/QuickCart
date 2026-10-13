@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { pinterestProductLink } from '@/lib/pinterest-product-link'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -39,7 +40,7 @@ export async function GET(request: Request) {
           board_id: boardID,
           title: String(post.title).slice(0, 100),
           description: String(post.description || '').slice(0, 500),
-          link: String(post.link),
+          link: pinterestProductLink(post.product, post.variantId, post.link),
           media_source: { source_type: 'image_url', url: imageURL, is_standard: true },
         }),
       })

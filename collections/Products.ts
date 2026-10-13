@@ -1,4 +1,7 @@
 import type { CollectionConfig } from 'payload'
+import { hideSupplierDetails } from '@/lib/product-privacy'
+import { productPublishError } from '@/lib/product-validation'
+import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
 
 const lengthCodeMap: Record<string, string> = { 'x-short': '01', short: '02', medium: '03', long: '04', 'x-long': '05' }
 const shapeCodeMap: Record<string, string> = { square: '01', oval: '02', almond: '03', round: '04' }
@@ -59,11 +62,24 @@ async function nextProductCode(req: any) {
 export const Products: CollectionConfig = {
   slug: 'products',
   hooks: {
+    afterRead: [({ doc, req }) => {
+      if (!req.user && doc) return hideSupplierDetails(doc as any)
+      return doc
+    }],
     beforeValidate: [async ({ data, originalDoc, req }) => {
       if (!data) return data
       const marketing = await req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
-      const fillTemplate = (template: string, values: Record<string, string>) => template.replace(/\{(brand|productType|productName|length|shape|size)\}/g, (_, token) => values[token] || '').replace(/\s+/g, ' ').trim()
+      const fillTemplate = (template: string, values: Record<string, string>) => template.replace(/\{(brand|productType|productName|length|shape|size|availableLengthShapeCombinations|availableSizes)\}/g, (_, token) => values[token] || '').replace(/\s+/g, ' ').trim()
       const title = String(data.title ?? originalDoc?.title ?? '')
+      const descriptionMode = data.descriptionMode ?? (originalDoc && data.description !== undefined && data.description !== originalDoc.description
+        ? 'custom'
+        : originalDoc?.descriptionMode ?? (originalDoc?.description ? 'custom' : 'auto'))
+      const seoTitleMode = data.seoTitleMode ?? (originalDoc && data.seoTitle !== undefined && data.seoTitle !== originalDoc.seoTitle
+        ? 'custom'
+        : originalDoc?.seoTitleMode ?? (originalDoc?.seoTitle ? 'custom' : 'auto'))
+      const seoDescriptionMode = data.seoDescriptionMode ?? (originalDoc && data.seoDescription !== undefined && data.seoDescription !== originalDoc.seoDescription
+        ? 'custom'
+        : originalDoc?.seoDescriptionMode ?? (originalDoc?.seoDescription ? 'custom' : 'auto'))
       const oldGeneratedSlug = originalDoc ? slugify(String(originalDoc.title || '')) : ''
       if (title && (!data.slug || !originalDoc || data.slug === oldGeneratedSlug)) {
         const baseSlug = slugify(title) || 'product'
@@ -84,16 +100,28 @@ export const Products: CollectionConfig = {
         data.slug = candidate
       }
       if (!data.category) data.category = 'press-on-nails'
+      const activeDimensions = (Array.isArray(data.variants) ? data.variants : originalDoc?.variants || []).filter((variant: any) => variant.enabled !== false)
+      const dimensions = {
+        length: summarizeDimension(activeDimensions.map((variant: any) => variant.length), lengthOrder),
+        shape: summarizeDimension(activeDimensions.map((variant: any) => variant.shape), shapeOrder),
+        availableLengthShapeCombinations: [...new Set(activeDimensions.map((variant: any) => `${variant.length} ${variant.shape}`))].join(', '),
+        availableSizes: [...new Set(activeDimensions.map((variant: any) => String(variant.size || '').toUpperCase()).filter(Boolean))].join(', '),
+      }
       const templateValues = {
         brand: String(data.brand ?? originalDoc?.brand ?? 'Ginny Nana'),
         productType: String(data.category || originalDoc?.category || 'press-on-nails').replaceAll('-', ' '),
         productName: title,
-        length: String(data.length ?? originalDoc?.length ?? ''),
-        shape: String(data.shape ?? originalDoc?.shape ?? ''),
-        size: '',
+        ...dimensions,
+        size: dimensions.availableSizes,
       }
-      if (!String(data.seoTitle ?? originalDoc?.seoTitle ?? '').trim()) data.seoTitle = fillTemplate(String(marketing?.productTitleTemplate || '{brand} {productType} {productName} {length} {shape}'), templateValues)
-      if (!String(data.seoDescription ?? originalDoc?.seoDescription ?? '').trim()) data.seoDescription = fillTemplate(String(marketing?.productDescriptionTemplate || '{productName} press-on nails by {brand}.'), templateValues)
+      if (descriptionMode === 'auto' && title) {
+        data.description = renderStudioDescription(String(marketing?.studioDescriptionTemplate || DEFAULT_STUDIO_DESCRIPTION_TEMPLATE), templateValues)
+      }
+      if (seoTitleMode === 'auto') data.seoTitle = fillTemplate(String(marketing?.productTitleTemplate || '{brand} {productType} {productName} {availableLengthShapeCombinations}'), templateValues)
+      if (seoDescriptionMode === 'auto') data.seoDescription = fillTemplate(String(marketing?.productDescriptionTemplate || '{productName} press-on nails by {brand}.'), templateValues)
+      data.descriptionMode = descriptionMode
+      data.seoTitleMode = seoTitleMode
+      data.seoDescriptionMode = seoDescriptionMode
       if (!originalDoc) {
         if (!/^\d{4}$/.test(String(data.sku || ''))) data.sku = await nextProductCode(req)
       } else if (!data.sku) data.sku = originalDoc.sku || await nextProductCode(req)
@@ -104,16 +132,19 @@ export const Products: CollectionConfig = {
         data.variants = data.variants.map((variant) => ({
           ...variant,
           sku: variant.sku || `${productCode}-${dimensionCode(String(variant.length || ''), lengthCodeMap, lengths)}-${dimensionCode(String(variant.shape || ''), shapeCodeMap, shapes)}-${sizeCodeMap[String(variant.size || 's')] || '02'}`,
-          price: variant.price ?? data.price,
-          compareAtPrice: variant.compareAtPrice ?? data.compareAtPrice,
+          ...(variant.price === undefined ? {} : { price: variant.price ?? null }),
+          ...(variant.compareAtPrice === undefined ? {} : { compareAtPrice: variant.compareAtPrice ?? null }),
           stock: variant.stock ?? 10,
-          image: variant.image || data.featuredImage,
+          ...(variant.image === undefined ? {} : { image: variant.image || null }),
         }))
       }
-      const variantsForDimensions = Array.isArray(data.variants) ? data.variants : originalDoc?.variants
-      if (Array.isArray(variantsForDimensions)) {
-        data.length = summarizeDimension(variantsForDimensions.map((variant) => variant.length), lengthOrder)
-        data.shape = summarizeDimension(variantsForDimensions.map((variant) => variant.shape), shapeOrder)
+      data.length = dimensions.length
+      data.shape = dimensions.shape
+      const product = { ...originalDoc, ...data }
+      if (product.status === 'published') {
+        const hasImage = Boolean(relationID(product.featuredImage) || (Array.isArray(product.gallery) && product.gallery.some((image) => relationID(image))))
+        const message = productPublishError({ title: product.title, price: product.price, hasImage, variants: product.variants })
+        if (message) throw new Error(message)
       }
       return data
     }],
@@ -157,8 +188,9 @@ export const Products: CollectionConfig = {
           fields: [
             { name: 'title', type: 'text', required: true, admin: { components: { Cell: '/components/ProductTitleCell#ProductTitleCell' } } },
             { name: 'slug', type: 'text', required: true, unique: true, index: true, admin: { components: { Field: '/components/ProductSlugField#ProductSlugField' } } },
-            { name: 'description', type: 'textarea', required: true, admin: { rows: 8, description: 'Markdown supported, including images via ![alt](https://...). Raw HTML is not enabled.' } },
-            { name: 'price', type: 'number', required: true, min: 0 },
+            { name: 'description', type: 'textarea', admin: { rows: 8, description: 'Markdown supported, including images via ![alt](https://...). Raw HTML is not enabled.' } },
+            { name: 'descriptionMode', type: 'select', defaultValue: 'auto', options: [{ label: 'Auto', value: 'auto' }, { label: 'Custom', value: 'custom' }], admin: { hidden: true } },
+            { name: 'price', type: 'number', min: 0 },
             { name: 'compareAtPrice', type: 'number', min: 0, admin: { description: 'Optional original price, shown crossed out.' } },
             { name: 'category', type: 'select', required: true, defaultValue: 'press-on-nails', options: [
               { label: 'Press-on Nails', value: 'press-on-nails' },
@@ -169,6 +201,9 @@ export const Products: CollectionConfig = {
             { name: 'length', type: 'text', admin: { readOnly: true, description: 'Automatically follows the variant lengths (comma separated when multiple).' } },
             { name: 'shape', type: 'text', admin: { readOnly: true, description: 'Automatically follows the variant shapes (comma separated when multiple).' } },
             { name: 'sku', type: 'text', admin: { position: 'sidebar' } },
+            { name: 'supplierSKU', type: 'text', admin: { position: 'sidebar', description: 'Internal supplier reference. Hidden from customers and feeds.' } },
+            { name: 'purchaseURL', type: 'text', admin: { position: 'sidebar', description: 'Internal supplier purchasing URL. Hidden from customers and feeds.' } },
+            { name: 'studioRequestID', type: 'text', unique: true, admin: { hidden: true } },
           ],
         },
         {
@@ -192,6 +227,8 @@ export const Products: CollectionConfig = {
         { name: 'compareAtPrice', type: 'number', min: 0 },
         { name: 'gtin', type: 'text', admin: { hidden: true } },
         { name: 'mpn', type: 'text', admin: { hidden: true } },
+        { name: 'supplierSKU', type: 'text', admin: { description: 'Internal supplier reference; never exposed publicly.' } },
+        { name: 'purchaseURL', type: 'text', admin: { description: 'Internal purchasing URL; never exposed publicly.' } },
         { name: 'image', type: 'upload', relationTo: 'media', filterOptions: ({ siblingData }) => webpPickerFilter([(siblingData as Record<string, unknown> | undefined)?.image]), admin: { description: 'Optional WebP image for this exact variant. Falls back to the product image.' } },
         { name: 'stock', type: 'number', min: 0, defaultValue: 10 },
         { name: 'trackStock', type: 'checkbox', defaultValue: true },
@@ -205,7 +242,9 @@ export const Products: CollectionConfig = {
             { name: 'featuredImage', type: 'upload', relationTo: 'media', filterOptions: ({ data }) => webpPickerFilter([(data as Record<string, unknown> | undefined)?.featuredImage]), admin: { components: { Field: '/components/ProductMediaField#ProductMediaField', Cell: '/components/ProductThumbnailCell#ProductThumbnailCell' } } },
             { name: 'gallery', type: 'upload', relationTo: 'media', hasMany: true, filterOptions: ({ data }) => webpPickerFilter([(data as Record<string, unknown> | undefined)?.gallery]), admin: { components: { Field: '/components/ProductMediaField#ProductMediaField' } } },
             { name: 'seoTitle', type: 'text', admin: { description: 'Search title. Leave blank to use the product name.' } },
+            { name: 'seoTitleMode', type: 'select', defaultValue: 'auto', options: [{ label: 'Auto', value: 'auto' }, { label: 'Custom', value: 'custom' }], admin: { hidden: true } },
             { name: 'seoDescription', type: 'textarea', admin: { description: 'Search description. Leave blank to use the product description.' } },
+            { name: 'seoDescriptionMode', type: 'select', defaultValue: 'auto', options: [{ label: 'Auto', value: 'auto' }, { label: 'Custom', value: 'custom' }], admin: { hidden: true } },
             { name: 'seoCanonicalUrl', type: 'text' },
             { name: 'seoNoIndex', type: 'checkbox', defaultValue: false },
           ],

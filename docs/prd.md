@@ -626,7 +626,7 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 
 ### 上线前待办
 
-- [ ] 完成 S2 配置，并确认相关服务与商城的连接正常。
+- [ ] 完成 Cloudflare R2 配置：创建存储桶和仅限该 bucket 的 Object Read & Write API Token，将 bucket、endpoint、Access Key ID、Secret Access Key 和公开访问 URL 配入部署环境变量；测试上传、图片访问、替换和删除。开发阶段可先用 `r2.dev`，正式上线前绑定自定义媒体域名并更新 `R2_PUBLIC_URL`。
 - [ ] 盘点并迁移 WooCommerce 旧商品：整理商品字段、图片、分类、Length + Shape / Size Variants、价格和库存映射；导入后抽样核对商品详情及购物流程。
 - [ ] 验证 Google Merchant Center（GMC）：检查 Feed 可抓取与处理状态、商品诊断、价格和库存一致性、图片、落地页链接及配送设置；修复拒登和警告后确认商品通过审核。
 - [ ] 验证 Pinterest：确认账号、Board 和发布权限，实际发布测试 Pin，检查图片、文案和商品落地页 URL；Variant Pin 应保留对应 Variant 参数，并确认发布记录与失败重试正常。

@@ -189,6 +189,7 @@ export interface Media {
    * Untouched upload retained for future reprocessing.
    */
   sourceOriginal?: (number | null) | MediaOriginal;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -317,6 +318,7 @@ export interface Product {
 export interface MediaOriginal {
   id: number;
   title?: string | null;
+  _objectKey?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -604,6 +606,7 @@ export interface MediaSelect<T extends boolean = true> {
   product?: T;
   studioTemporary?: T;
   sourceOriginal?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -622,6 +625,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface MediaOriginalsSelect<T extends boolean = true> {
   title?: T;
+  _objectKey?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;

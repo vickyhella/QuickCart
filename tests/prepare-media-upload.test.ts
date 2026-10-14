@@ -17,6 +17,14 @@ test('converts JPEG/PNG source bytes to a WebP and preserves the exact original'
   assert.deepEqual(await sharp(prepared.output).metadata().then(({ format }) => format), 'webp')
 })
 
+test('keeps the existing filename when preparing a replacement image', async () => {
+  const source = await sharp({ create: { width: 24, height: 18, channels: 3, background: '#a64b72' } }).png().toBuffer()
+  const prepared = await prepareMediaUpload(asFile('replacement.png', 'image/png', source), 78, 'existing-product-image.webp')
+
+  assert.equal(prepared.outputName, 'existing-product-image.webp')
+  assert.equal(prepared.outputMimeType, 'image/webp')
+})
+
 test('keeps existing WebP bytes without re-encoding', async () => {
   const source = await sharp({ create: { width: 16, height: 16, channels: 3, background: '#243f5a' } }).webp({ quality: 80 }).toBuffer()
   const prepared = await prepareMediaUpload(asFile('Already.webp', 'image/webp', source), 40)

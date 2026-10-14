@@ -20,7 +20,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     if (!(file instanceof File) || !file.size) return NextResponse.json({ error: 'Choose a replacement image.' }, { status: 400 })
     const current: any = await payload.findByID({ collection: 'media', id, depth: 0, overrideAccess: true })
     const marketing: any = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
-    const prepared = await prepareMediaUpload(file, Number(marketing?.webpQuality || 82))
+    const prepared = await prepareMediaUpload(file, Number(marketing?.webpQuality || 82), current.filename)
     const originalName = file.name || `replacement-${Date.now()}`
     const original = await payload.create({
       collection: 'media-originals',
@@ -41,6 +41,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       },
       file: { data: prepared.output, mimetype: prepared.outputMimeType, name: prepared.outputName, size: prepared.output.length },
       overrideAccess: true,
+      overwriteExistingFiles: true,
+      context: { skipMediaMetadata: true },
     })
     mediaUpdated = true
     const oldOriginalID = current.sourceOriginal && typeof current.sourceOriginal === 'object' ? current.sourceOriginal.id : current.sourceOriginal

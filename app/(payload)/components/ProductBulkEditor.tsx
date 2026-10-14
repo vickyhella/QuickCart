@@ -238,7 +238,7 @@ export function ProductBulkEditLink() {
   return (
     <div style={{ marginBlock: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <Link className="btn btn--style-primary btn--size-medium" href="/studio/spreadsheet">Open spreadsheet editor</Link>
+        <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/products/spreadsheet">Open spreadsheet editor</Link>
         {imageIssues && imageIssues.length > 0 && <details style={{ alignSelf: 'center' }}>
           <summary style={{ cursor: 'pointer', color: '#a52d22', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
           <ul style={{ margin: '8px 0', paddingInlineStart: 20 }}>
@@ -569,7 +569,6 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
 
   return (
     <main style={{ padding: '2rem clamp(1rem, 3vw, 3rem)' }}>
-      <Link href={inStudio ? '/studio' : '/admin/collections/products/'} style={{ color: '#1d4ed8', textDecoration: 'underline' }}>← Products</Link>
       <h1 style={{ marginBlock: '1rem 0.5rem' }}>Product spreadsheet editor</h1>
       <p style={{ maxWidth: 1000, lineHeight: 1.6 }}>
         Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename.
@@ -578,8 +577,8 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
         Variants can be edited in a table per product. Separate multiple gallery images with semicolons. See the Media collection for filenames and IDs.
       </p>
       <div style={toolbarStyle}>
-        <Link href={inStudio ? '/studio' : '/admin/collections/products/'} style={{ ...buttonStyle, textDecoration: 'none' }}>Back to products</Link>
-        {!inStudio && <Link href="/admin/collections/products/marketing" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing</Link>}
+        <Link href={inStudio ? '/admin/collections/products/studio' : '/admin/collections/products/'} style={{ ...buttonStyle, textDecoration: 'none' }}>{inStudio ? '← Product Studio' : '← Products'}</Link>
+        {!inStudio && <Link href="/admin/collections/marketing/studio?tab=seo" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing Studio</Link>}
         <button type="button" onClick={exportTSV} style={buttonStyle} disabled={loading || rows.length === 0}>Export TSV</button>
         <button type="button" onClick={() => void load()} style={buttonStyle} disabled={loading || saving}>Reload</button>
         <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: '#166534', background: '#15803d', color: '#fff' }} disabled={loading || saving || dirtyIDs.size === 0}>

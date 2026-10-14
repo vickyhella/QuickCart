@@ -3,13 +3,14 @@ import path from 'node:path'
 import sharp from 'sharp'
 import heicConvert from 'heic-convert'
 import { uniqueOriginalFilename } from './media-filenames'
+import { getEnvironmentVariable } from './environment-config'
 
 export class ReprocessMediaError extends Error {
   status = 409
 }
 
 async function readStoredImage(collection: 'media' | 'media-originals', doc: any): Promise<Buffer> {
-  const publicURL = process.env.R2_PUBLIC_URL?.replace(/\/$/, '')
+  const publicURL = getEnvironmentVariable('R2_PUBLIC_URL')?.replace(/\/$/, '')
   const url = String(doc.url || '')
   if (publicURL && url.startsWith(`${publicURL}/`)) {
     const response = await fetch(url)

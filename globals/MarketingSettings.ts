@@ -29,19 +29,16 @@ export const MarketingSettings: GlobalConfig = {
   },
   fields: [
     {
+      name: 'availableCountries',
+      type: 'select',
+      hasMany: true,
+      defaultValue: ['US', ...shippingCountries.filter(([code]) => code !== 'US').map(([code]) => code)],
+      options: shippingCountries.map(([value, label]) => ({ value, label: `${label} (${value})` })),
+      admin: { hidden: true, description: 'Legacy storage. Country settings are managed from Store settings.' },
+    },
+    {
       type: 'tabs',
       tabs: [
-        {
-          label: 'Countries',
-          fields: [{
-            name: 'availableCountries',
-            type: 'select',
-            hasMany: true,
-            defaultValue: ['US', ...shippingCountries.filter(([code]) => code !== 'US').map(([code]) => code)],
-            options: shippingCountries.map(([value, label]) => ({ value, label: `${label} (${value})` })),
-            admin: { description: 'Used for checkout availability and GMC feed planning. Keep this in sync with the target countries and shipping services configured in Merchant Center.' },
-          }],
-        },
         {
           label: 'SEO & Media',
           fields: [

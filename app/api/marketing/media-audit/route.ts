@@ -3,13 +3,14 @@ import path from 'node:path'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getEnvironmentVariable } from '@/lib/environment-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 async function imageExists(image: any): Promise<boolean | null> {
   if (!image || typeof image !== 'object' || !image.url) return false
-  const publicURL = process.env.R2_PUBLIC_URL?.replace(/\/$/, '')
+  const publicURL = getEnvironmentVariable('R2_PUBLIC_URL')?.replace(/\/$/, '')
   if (publicURL && String(image.url).startsWith(`${publicURL}/`)) {
     try {
       const response = await fetch(image.url, { method: 'HEAD', signal: AbortSignal.timeout(4000), cache: 'no-store' })

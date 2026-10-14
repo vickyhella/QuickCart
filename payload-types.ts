@@ -68,11 +68,12 @@ export interface Config {
   blocks: {};
   collections: {
     users: User;
+    'contact-messages': ContactMessage;
+    products: Product;
     media: Media;
     'media-originals': MediaOriginal;
-    products: Product;
+    marketing: Marketing;
     pages: Page;
-    'contact-messages': ContactMessage;
     orders: Order;
     discounts: Discount;
     'pinterest-posts': PinterestPost;
@@ -84,11 +85,12 @@ export interface Config {
   collectionsJoins: {};
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
+    'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
+    products: ProductsSelect<false> | ProductsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'media-originals': MediaOriginalsSelect<false> | MediaOriginalsSelect<true>;
-    products: ProductsSelect<false> | ProductsSelect<true>;
+    marketing: MarketingSelect<false> | MarketingSelect<true>;
     pages: PagesSelect<false> | PagesSelect<true>;
-    'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
     discounts: DiscountsSelect<false> | DiscountsSelect<true>;
     'pinterest-posts': PinterestPostsSelect<false> | PinterestPostsSelect<true>;
@@ -164,43 +166,20 @@ export interface User {
   collection: 'users';
 }
 /**
- * Reusable product images with editable search and accessibility metadata.
+ * Messages submitted through the public Contact Us form.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media".
+ * via the `definition` "contact-messages".
  */
-export interface Media {
+export interface ContactMessage {
   id: number;
-  /**
-   * Human-readable image title. Also useful for search and internal organization.
-   */
-  title?: string | null;
-  /**
-   * Describe the visible image for accessibility and Pinterest catalog metadata.
-   */
-  altText?: string | null;
-  caption?: string | null;
-  /**
-   * Optional product this image belongs to.
-   */
-  product?: (number | null) | Product;
-  studioTemporary?: boolean | null;
-  /**
-   * Untouched upload retained for future reprocessing.
-   */
-  sourceOriginal?: (number | null) | MediaOriginal;
-  _objectKey?: string | null;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  status: 'new' | 'in-progress' | 'replied';
   updatedAt: string;
   createdAt: string;
-  url?: string | null;
-  thumbnailURL?: string | null;
-  filename?: string | null;
-  mimeType?: string | null;
-  filesize?: number | null;
-  width?: number | null;
-  height?: number | null;
-  focalX?: number | null;
-  focalY?: number | null;
 }
 /**
  * Manage press-on nail designs, images, prices, and publishing status.
@@ -310,15 +289,31 @@ export interface Product {
   createdAt: string;
 }
 /**
- * Original image files retained as sources for WebP conversion and future reprocessing.
+ * Reusable product images with editable search and accessibility metadata.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media-originals".
+ * via the `definition` "media".
  */
-export interface MediaOriginal {
+export interface Media {
   id: number;
+  /**
+   * Human-readable image title. Also useful for search and internal organization.
+   */
   title?: string | null;
-  _objectKey?: string | null;
+  /**
+   * Describe the visible image for accessibility and Pinterest catalog metadata.
+   */
+  altText?: string | null;
+  caption?: string | null;
+  /**
+   * Optional product this image belongs to.
+   */
+  product?: (number | null) | Product;
+  studioTemporary?: boolean | null;
+  /**
+   * Untouched upload retained for future reprocessing.
+   */
+  sourceOriginal?: (number | null) | MediaOriginal;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -330,6 +325,36 @@ export interface MediaOriginal {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+}
+/**
+ * Original image files retained as sources for WebP conversion and future reprocessing.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media-originals".
+ */
+export interface MediaOriginal {
+  id: number;
+  title?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing".
+ */
+export interface Marketing {
+  id: number;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * Edit static pages and store policies. The body supports Markdown.
@@ -351,22 +376,6 @@ export interface Page {
   seoTitle?: string | null;
   seoDescription?: string | null;
   status: 'draft' | 'published';
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * Messages submitted through the public Contact Us form.
- *
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "contact-messages".
- */
-export interface ContactMessage {
-  id: number;
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  status: 'new' | 'in-progress' | 'replied';
   updatedAt: string;
   createdAt: string;
 }
@@ -499,6 +508,14 @@ export interface PayloadLockedDocument {
         value: number | User;
       } | null)
     | ({
+        relationTo: 'contact-messages';
+        value: number | ContactMessage;
+      } | null)
+    | ({
+        relationTo: 'products';
+        value: number | Product;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -507,16 +524,12 @@ export interface PayloadLockedDocument {
         value: number | MediaOriginal;
       } | null)
     | ({
-        relationTo: 'products';
-        value: number | Product;
+        relationTo: 'marketing';
+        value: number | Marketing;
       } | null)
     | ({
         relationTo: 'pages';
         value: number | Page;
-      } | null)
-    | ({
-        relationTo: 'contact-messages';
-        value: number | ContactMessage;
       } | null)
     | ({
         relationTo: 'orders';
@@ -597,46 +610,16 @@ export interface UsersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media_select".
+ * via the `definition` "contact-messages_select".
  */
-export interface MediaSelect<T extends boolean = true> {
-  title?: T;
-  altText?: T;
-  caption?: T;
-  product?: T;
-  studioTemporary?: T;
-  sourceOriginal?: T;
-  _objectKey?: T;
+export interface ContactMessagesSelect<T extends boolean = true> {
+  name?: T;
+  email?: T;
+  subject?: T;
+  message?: T;
+  status?: T;
   updatedAt?: T;
   createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "media-originals_select".
- */
-export interface MediaOriginalsSelect<T extends boolean = true> {
-  title?: T;
-  _objectKey?: T;
-  updatedAt?: T;
-  createdAt?: T;
-  url?: T;
-  thumbnailURL?: T;
-  filename?: T;
-  mimeType?: T;
-  filesize?: T;
-  width?: T;
-  height?: T;
-  focalX?: T;
-  focalY?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -702,6 +685,55 @@ export interface ProductsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media_select".
+ */
+export interface MediaSelect<T extends boolean = true> {
+  title?: T;
+  altText?: T;
+  caption?: T;
+  product?: T;
+  studioTemporary?: T;
+  sourceOriginal?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "media-originals_select".
+ */
+export interface MediaOriginalsSelect<T extends boolean = true> {
+  title?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "marketing_select".
+ */
+export interface MarketingSelect<T extends boolean = true> {
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages_select".
  */
 export interface PagesSelect<T extends boolean = true> {
@@ -710,19 +742,6 @@ export interface PagesSelect<T extends boolean = true> {
   body?: T;
   seoTitle?: T;
   seoDescription?: T;
-  status?: T;
-  updatedAt?: T;
-  createdAt?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "contact-messages_select".
- */
-export interface ContactMessagesSelect<T extends boolean = true> {
-  name?: T;
-  email?: T;
-  subject?: T;
-  message?: T;
   status?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -882,6 +901,46 @@ export interface StoreSetting {
    * When enabled, no additional tax is added during checkout.
    */
   pricesIncludeTax?: boolean | null;
+  /**
+   * Countries available at checkout. This also controls the country scope shown in product feeds.
+   */
+  availableCountries?:
+    | (
+        | 'US'
+        | 'AU'
+        | 'AT'
+        | 'BH'
+        | 'BE'
+        | 'CA'
+        | 'CL'
+        | 'DK'
+        | 'FR'
+        | 'DE'
+        | 'GR'
+        | 'HK'
+        | 'HU'
+        | 'IE'
+        | 'IL'
+        | 'IT'
+        | 'JP'
+        | 'KW'
+        | 'MX'
+        | 'NL'
+        | 'NZ'
+        | 'NO'
+        | 'PL'
+        | 'RO'
+        | 'SA'
+        | 'SG'
+        | 'SK'
+        | 'ZA'
+        | 'ES'
+        | 'SE'
+        | 'CH'
+        | 'TH'
+        | 'GB'
+      )[]
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -892,7 +951,7 @@ export interface StoreSetting {
 export interface MarketingSetting {
   id: number;
   /**
-   * Used for checkout availability and GMC feed planning. Keep this in sync with the target countries and shipping services configured in Merchant Center.
+   * Legacy storage. Country settings are managed from Store settings.
    */
   availableCountries?:
     | (
@@ -992,6 +1051,7 @@ export interface StoreSettingsSelect<T extends boolean = true> {
         id?: T;
       };
   pricesIncludeTax?: T;
+  availableCountries?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

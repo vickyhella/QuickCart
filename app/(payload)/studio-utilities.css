@@ -1,0 +1,14 @@
+@tailwind utilities;
+
+:where(.product-studio, .marketing-studio) button {
+  appearance: none;
+  background-color: transparent;
+  background-image: none;
+  border-width: 0;
+  border-style: solid;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+  padding: 0;
+}

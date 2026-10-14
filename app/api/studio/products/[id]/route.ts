@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { mergeProductVariants } from '@/lib/merge-product-variants'
 import { productPublishError } from '@/lib/product-validation'
 import { resolveStudioProductMedia } from '@/lib/studio-product-media'
+import { getEnvironmentVariable } from '@/lib/environment-config'
 
 const error = (message: string, status = 400) => Response.json({ error: message }, { status })
 const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
@@ -23,7 +24,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const sizes = [...new Set(active.map((variant: any) => String(variant.size || 's')))]
     const media = [product.featuredImage, ...(Array.isArray(product.gallery) ? product.gallery : []), ...variants.map((variant: any) => variant.image)]
       .filter((item: any) => item && typeof item === 'object')
-    const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: process.env.R2_PUBLIC_URL, requestURL: request.url })
+    const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: getEnvironmentVariable('R2_PUBLIC_URL'), requestURL: request.url })
     return Response.json({
       id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: product.price ?? '', status: product.status,
       supplierSKU: product.supplierSKU || '', purchaseURL: product.purchaseURL || '',

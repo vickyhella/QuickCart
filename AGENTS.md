@@ -5,8 +5,8 @@
 - Project: Ginny Nana ecommerce website
 - Stack: Next.js 15, React 19, Payload CMS 3, PostgreSQL (Neon), Cloudflare R2.
 - Existing storefront, Payload Admin, checkout, and PayPal integration must be preserved.
-- Product Studio: `/studio`
-- Marketing Studio: `/marketing-studio`
+- Product Studio: `/admin/collections/products/studio`
+- Marketing Studio: `/admin/collections/marketing/studio`
 - Product Studio PRD: `docs/product-studio-prd.md`
 
 ## Development Principles

@@ -11,9 +11,10 @@ export const PinterestPosts: CollectionConfig = {
     delete: ({ req }) => Boolean(req.user),
   },
   admin: {
-    hidden: false,
-    group: 'Pinterest',
-    components: { beforeList: ['/components/PinterestPublishing#PinterestPublishing'] },
+    group: false,
+    components: {
+      beforeList: ['/components/PinterestPublishing#PinterestPublishing'],
+    },
     useAsTitle: 'title',
     defaultColumns: ['title', 'product', 'status', 'scheduledAt', 'publishedAt'],
     description: 'Schedule product and variant Pins. Publishing requires Pinterest API credentials and a public image URL.',

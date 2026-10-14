@@ -48,7 +48,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 
 const inputClass = 'w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522] outline-none transition focus:border-[#b57d72] focus:ring-2 focus:ring-[#b57d72]/15'
 
-export default function ProductStudio({ userEmail }: { userEmail: string }) {
+export default function ProductStudio() {
   const requestID = useRef('')
   const [products, setProducts] = useState<ProductRow[]>([])
   const [page, setPage] = useState(1)
@@ -300,23 +300,9 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#f7f3f0] text-[#302522]">
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <aside className="hidden w-64 shrink-0 border-r border-[#eee5e0] bg-white p-7 lg:flex lg:flex-col">
-          <Link href="/studio" className="font-serif text-2xl tracking-tight">Ginny Nana</Link>
-          <p className="mt-1 text-[10px] uppercase tracking-[0.25em] text-[#a17e74]">Product Studio</p>
-          <nav className="mt-12 space-y-2 text-sm">
-            <a className="flex items-center gap-3 rounded-xl bg-[#f7efeb] px-4 py-3 font-medium text-[#8b5d53]" href="#products"><span>▦</span> Products</a>
-            <Link className="flex items-center gap-3 rounded-xl px-4 py-3 text-[#7c6c67] hover:bg-[#faf7f5]" href="/studio/spreadsheet"><span>▤</span> Spreadsheet editor</Link>
-            <Link className="flex items-center gap-3 rounded-xl px-4 py-3 text-[#7c6c67] hover:bg-[#faf7f5]" href="/admin/collections/products/"><span>↗</span> Payload Admin</Link>
-          </nav>
-          <div className="mt-auto rounded-2xl bg-[#faf7f5] p-4">
-            <p className="text-[11px] uppercase tracking-[0.16em] text-[#9a827b]">Signed in</p>
-            <p className="mt-2 truncate text-sm font-medium">{userEmail}</p>
-          </div>
-        </aside>
-
-        <div className="min-w-0 flex-1 px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
+    <main className="product-studio min-h-screen bg-[#f7f3f0] font-sans text-base antialiased text-[#302522]">
+      <div className="mx-auto min-h-screen max-w-[1600px]">
+        <div className="min-w-0 px-5 py-7 sm:px-8 lg:px-10 lg:py-10">
           <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-[0.22em] text-[#a17e74]">Catalog workspace</p>
@@ -324,16 +310,14 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
               <p className="mt-2 text-sm text-[#887974]">Manage your product drafts and catalog.</p>
             </div>
             <div className="flex items-center gap-3">
-              <Link href="/" className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-xs text-[#806e68] hover:bg-white">Storefront homepage ↗</Link>
               <span className="rounded-full border border-[#e7ddd8] bg-white px-3 py-2 text-xs text-[#806e68]">{totalDocs} products</span>
-              <Link href="/admin/logout/" className="text-sm text-[#806e68] hover:text-[#302522]">Sign out</Link>
             </div>
           </header>
 
           {error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
           {notice && <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
 
-          <div className="grid items-start gap-7 2xl:grid-cols-[minmax(0,1fr)_390px]">
+          <div className="grid items-start gap-7">
             <section id="products" className="overflow-hidden rounded-2xl border border-[#eee5e0] bg-white shadow-[0_8px_30px_rgba(74,50,42,0.035)]">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#f0e9e5] px-5 py-5 sm:px-7">
                 <div>
@@ -367,7 +351,7 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
                           <td className="px-4 py-4">{product.price == null ? '—' : `$${Number(product.price).toFixed(2)}`}</td>
                           <td className="px-4 py-4 text-[#766762]">{product.variantCount}</td>
                           <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${product.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-[#f5efec] text-[#8b5d53]'}`}>{product.status === 'published' ? 'Published' : 'Draft'}</span></td>
-                          <td className="px-6 py-4 text-xs text-[#897a75]">{new Date(product.updatedAt).toLocaleDateString()}</td><td className="px-3 py-4"><div className="flex gap-2"><button type="button" onClick={() => void editProduct(product.id)} className="text-xs text-[#8b5d53] hover:underline">Edit</button><button type="button" onClick={() => void duplicateProduct(product.id)} className="text-xs text-[#8b5d53] hover:underline">Duplicate</button></div></td>
+                          <td className="px-6 py-4 text-xs text-[#897a75]">{new Date(product.updatedAt).toLocaleDateString()}</td><td className="px-3 py-4"><div className="flex gap-2"><button type="button" onClick={() => void editProduct(product.id)} className="appearance-none border-0 bg-transparent px-0 py-0 text-sm font-medium text-[#8b5d53] hover:underline" style={{ backgroundColor: 'transparent', color: '#8b5d53' }}>Edit</button><button type="button" onClick={() => void duplicateProduct(product.id)} className="appearance-none border-0 bg-transparent px-0 py-0 text-sm font-medium text-[#8b5d53] hover:underline" style={{ backgroundColor: 'transparent', color: '#8b5d53' }}>Duplicate</button></div></td>
                         </tr>)}
                   </tbody>
                 </table>

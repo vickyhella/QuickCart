@@ -5,11 +5,11 @@ export const MediaOriginals: CollectionConfig = {
   slug: 'media-originals',
   access: { delete: () => false },
   admin: {
-    group: 'Catalog',
+    group: false,
     useAsTitle: 'filename',
     defaultColumns: ['filename', 'mimeType', 'filesize', 'createdAt'],
     description: 'Original image files retained as sources for WebP conversion and future reprocessing.',
-    components: { beforeList: ['/components/OriginalsCleanup#OriginalsCleanup'] },
+    components: { beforeList: ['/components/MediaWorkspaceTabs#MediaWorkspaceTabs', '/components/OriginalsCleanup#OriginalsCleanup'] },
   },
   upload: {
     staticDir: 'public/media-originals',

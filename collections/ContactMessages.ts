@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 export const ContactMessages: CollectionConfig = {
   slug: 'contact-messages',
+  labels: { singular: 'Contact form', plural: 'Contact forms' },
   admin: {
     group: 'Store',
     useAsTitle: 'name',

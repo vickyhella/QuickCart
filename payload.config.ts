@@ -8,6 +8,7 @@ import { buildConfig } from 'payload'
 import sharp from 'sharp'
 import { Media } from './collections/Media'
 import { MediaOriginals } from './collections/MediaOriginals'
+import { MarketingWorkspace } from './collections/MarketingWorkspace'
 import { ContactMessages } from './collections/ContactMessages'
 import { Discounts } from './collections/Discounts'
 import { Orders } from './collections/Orders'
@@ -17,27 +18,30 @@ import { PinterestPosts } from './collections/PinterestPosts'
 import { Users } from './collections/Users'
 import { StoreSettings } from './globals/StoreSettings'
 import { MarketingSettings } from './globals/MarketingSettings'
+import { getEnvironmentVariable, getRuntimeEnvironment } from './lib/environment-config'
 
 const filename = fileURLToPath(import.meta.url)
-const databaseAdapter = process.env.DATABASE_URL
+const runtimeEnvironment = getRuntimeEnvironment()
+const databaseURL = getEnvironmentVariable('DATABASE_URL')
+const databaseAdapter = databaseURL
   ? postgresAdapter({
       pool: {
-        connectionString: process.env.DATABASE_URL,
+        connectionString: databaseURL,
       },
     })
   : sqliteAdapter({
       client: {
-        url: `file:${path.resolve(process.cwd(), 'payload.sqlite')}`,
+        url: `file:${path.resolve(process.cwd(), `payload-${runtimeEnvironment}.sqlite`)}`,
       },
     })
 
-const r2PublicURL = process.env.R2_PUBLIC_URL?.replace(/\/$/, '')
+const r2Bucket = getEnvironmentVariable('R2_BUCKET')
+const r2Endpoint = getEnvironmentVariable('R2_ENDPOINT')
+const r2AccessKeyID = getEnvironmentVariable('R2_ACCESS_KEY_ID')
+const r2SecretAccessKey = getEnvironmentVariable('R2_SECRET_ACCESS_KEY')
+const r2PublicURL = getEnvironmentVariable('R2_PUBLIC_URL')?.replace(/\/$/, '')
 const r2Enabled = Boolean(
-  process.env.R2_BUCKET &&
-    process.env.R2_ACCESS_KEY_ID &&
-    process.env.R2_SECRET_ACCESS_KEY &&
-    process.env.R2_ENDPOINT &&
-    r2PublicURL,
+  r2Bucket && r2AccessKeyID && r2SecretAccessKey && r2Endpoint && r2PublicURL,
 )
 
 export default buildConfig({
@@ -48,13 +52,13 @@ export default buildConfig({
     },
     components: {
       actions: ['/components/StorefrontHomeAction#StorefrontHomeAction'],
-      afterNavLinks: ['/components/StudioNavLink#StudioNavLink', '/components/MarketingNavLink#MarketingNavLink'],
+      beforeNavLinks: ['/components/StudioNavLink#StudioNavLink'],
       views: {
         dashboard: { Component: '/components/AdminDashboard#AdminDashboard' },
       },
     },
   },
-  collections: [Users, Media, MediaOriginals, Products, Pages, ContactMessages, Orders, Discounts, PinterestPosts],
+  collections: [Users, ContactMessages, Products, Media, MediaOriginals, MarketingWorkspace, Pages, Orders, Discounts, PinterestPosts],
   globals: [StoreSettings, MarketingSettings],
   plugins: [
     s3Storage({
@@ -71,14 +75,14 @@ export default buildConfig({
             `${r2PublicURL}/${prefix ? `${prefix}/` : ''}${filename}`,
         },
       },
-      bucket: process.env.R2_BUCKET || '',
+      bucket: r2Bucket || '',
       config: {
         credentials: {
-          accessKeyId: process.env.R2_ACCESS_KEY_ID || '',
-          secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || '',
+          accessKeyId: r2AccessKeyID || '',
+          secretAccessKey: r2SecretAccessKey || '',
         },
         region: 'auto',
-        endpoint: process.env.R2_ENDPOINT,
+        endpoint: r2Endpoint,
         forcePathStyle: true,
       },
       // Uploads must pass through Payload so the media hook can preserve
@@ -87,7 +91,7 @@ export default buildConfig({
     }),
   ],
   editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || '',
+  secret: getEnvironmentVariable('PAYLOAD_SECRET') || process.env.PAYLOAD_SECRET || '',
   db: databaseAdapter,
   sharp,
   typescript: {

@@ -1,5 +1,7 @@
 import type { ServerFunctionClient } from 'payload'
 import '@payloadcms/next/css'
+import './studio-utilities.css'
+import '../marketing-studio/marketing-studio.css'
 import './brand-theme'
 import config from '@payload-config'
 import {

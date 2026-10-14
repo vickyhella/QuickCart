@@ -1,30 +1,39 @@
-export const studioLinks = [
-  { label: 'Product Studio', href: '/studio', description: 'Create, edit, and publish products.' },
-  { label: 'Spreadsheet Editor', href: '/studio/spreadsheet', description: 'Review and update product and variant data in bulk.' },
-  { label: 'Marketing Studio', href: '/marketing-studio', description: 'Prepare and schedule Pinterest posts.' },
+export const adminHomeLink = { label: 'Admin home', href: '/admin' } as const
+
+export function isMediaNavigationActive(pathname: string) {
+  return pathname === '/admin/collections/media' ||
+    pathname.startsWith('/admin/collections/media/') ||
+    pathname === '/admin/collections/media-originals' ||
+    pathname.startsWith('/admin/collections/media-originals/')
+}
+
+export const mediaWorkspaceTabs = [
+  { label: 'Media', href: '/admin/collections/media', matches: (path: string) => path === '/admin/collections/media' },
+  { label: 'Media Originals', href: '/admin/collections/media-originals', matches: (path: string) => path === '/admin/collections/media-originals' },
+  { label: 'Image compression', href: '/admin/collections/media/compression', matches: (path: string) => path === '/admin/collections/media/compression' },
+  { label: 'Image names & metadata', href: '/admin/collections/media/metadata', matches: (path: string) => path === '/admin/collections/media/metadata' },
 ] as const
 
-export const storeFeedLinks = [
-  { label: 'Feeds', tab: 'feeds', href: '/admin/collections/products/marketing?tab=feeds', description: 'Preview Google Merchant Center and Pinterest product feeds.' },
-  { label: 'SEO & Media', tab: 'seo', href: '/admin/collections/products/marketing?tab=seo', description: 'Manage product templates, image metadata, and compression.' },
-  { label: 'Countries', tab: 'countries', href: '/admin/collections/products/marketing?tab=countries', description: 'Set countries available for checkout and feed targeting.' },
+export const studioLinks = [
+  { label: 'Product Studio', href: '/admin/collections/products/studio', description: 'Create, edit, and publish products.' },
+  { label: 'Marketing Studio', href: '/admin/collections/marketing/studio', description: 'Manage Pinterest, SEO, and product feeds.' },
+  { label: 'Spreadsheet Editor', href: '/admin/collections/products/spreadsheet', description: 'Review and update product and variant data in bulk.' },
 ] as const
 
 export const adminDashboardSections = [
-  { title: 'Studios', links: studioLinks },
+  { title: 'Studio', links: studioLinks },
   {
     title: 'Store',
     links: [
       { label: 'Users', href: '/admin/collections/users', description: 'Manage administrator accounts and access.' },
-      { label: 'Contact messages', href: '/admin/collections/contact-messages', description: 'Review customer questions submitted through the store.' },
+      { label: 'Contact forms', href: '/admin/collections/contact-messages', description: 'Review messages submitted through the storefront contact form.' },
     ],
   },
   {
     title: 'Catalog',
     links: [
-      { label: 'Media', href: '/admin/collections/media', description: 'Manage product images and their search metadata.' },
-      { label: 'Media originals', href: '/admin/collections/media-originals', description: 'View source images preserved for future reprocessing.' },
       { label: 'Products', href: '/admin/collections/products', description: 'Maintain products, variants, prices, and publishing status.' },
+      { label: 'Media', href: '/admin/collections/media', description: 'Manage images, originals, compression, filenames, and metadata.' },
     ],
   },
   {
@@ -38,14 +47,7 @@ export const adminDashboardSections = [
     links: [
       { label: 'Orders', href: '/admin/collections/orders', description: 'Review customer payments and fulfillment.' },
       { label: 'Discounts', href: '/admin/collections/discounts', description: 'Create and manage checkout discount codes.' },
-      { label: 'Store settings', href: '/admin/globals/store-settings', description: 'Configure currency, shipping, and tax behavior.' },
+      { label: 'Store settings', href: '/admin/globals/store-settings', description: 'Configure currency, shipping, tax behavior, and checkout countries.' },
     ],
   },
-  {
-    title: 'Pinterest',
-    links: [
-      { label: 'Publishing posts', href: '/admin/collections/pinterest-posts', description: 'Schedule and review product Pins.' },
-    ],
-  },
-  { title: 'Store & Feeds', links: storeFeedLinks },
 ] as const

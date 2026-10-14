@@ -166,14 +166,14 @@ export const Products: CollectionConfig = {
       beforeList: ['/components/ProductBulkEditor#ProductBulkEditLink'],
       edit: { beforeDocumentControls: ['/components/ProductDeleteControl#ProductDeleteControl'] },
       views: {
-        bulkEdit: {
-          Component: '/components/ProductBulkEditor#ProductBulkEditor',
-          path: '/bulk-edit',
+        studio: {
+          Component: '/components/ProductStudioView#ProductStudioView',
+          path: '/studio',
           exact: true,
         },
-        marketing: {
-          Component: '/components/MarketingHub#MarketingHub',
-          path: '/marketing',
+        spreadsheet: {
+          Component: '/components/ProductSpreadsheetView#ProductSpreadsheetView',
+          path: '/spreadsheet',
           exact: true,
         },
       },

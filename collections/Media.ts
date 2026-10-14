@@ -1,8 +1,24 @@
 import type { CollectionConfig } from 'payload'
+import { getPublishedProductMediaIDs } from '@/lib/public-product-media'
 
 export const Media: CollectionConfig = {
   slug: 'media',
-  access: { delete: () => false },
+  access: {
+    read: async ({ req }) => {
+      if (req.user) return true
+      const { docs } = await req.payload.find({
+        collection: 'products',
+        where: { status: { equals: 'published' } },
+        limit: 10000,
+        pagination: false,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const ids = getPublishedProductMediaIDs(docs)
+      return ids.length ? { id: { in: ids } } : false
+    },
+    delete: () => false,
+  },
   hooks: {
     beforeDelete: [async ({ id, req }) => {
       const scheduledPosts = await req.payload.find({ collection: 'pinterest-posts', where: { imageMedia: { equals: String(id) } }, limit: 10000, pagination: false, depth: 0, overrideAccess: true })
@@ -65,7 +81,19 @@ export const Media: CollectionConfig = {
     defaultColumns: ['filename', 'title', 'altText', 'createdAt'],
     description: 'Reusable product images with editable search and accessibility metadata.',
     components: {
-      beforeList: ['/components/MediaBulkUpload#MediaBulkUpload'],
+      beforeList: ['/components/MediaWorkspaceTabs#MediaWorkspaceTabs', '/components/MediaBulkUpload#MediaBulkUpload'],
+      views: {
+        compression: {
+          Component: '/components/MediaToolsView#MediaCompressionView',
+          path: '/compression',
+          exact: true,
+        },
+        metadata: {
+          Component: '/components/MediaToolsView#MediaMetadataView',
+          path: '/metadata',
+          exact: true,
+        },
+      },
       edit: { beforeDocumentControls: ['/components/MediaReprocessButton#MediaReprocessButton'] },
     },
   },

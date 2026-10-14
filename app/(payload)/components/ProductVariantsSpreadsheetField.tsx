@@ -117,7 +117,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   useEffect(() => {
     const productID = window.location.pathname.match(/\/admin\/collections\/products\/([^/]+)/)?.[1]
     if (productID && productID !== 'create' && productID !== 'bulk-edit') {
-      setSpreadsheetHref(`/studio/spreadsheet?product=${encodeURIComponent(productID)}`)
+      setSpreadsheetHref(`/admin/collections/products/spreadsheet?product=${encodeURIComponent(productID)}`)
       fetch(`/api/products/${encodeURIComponent(productID)}?depth=0`, { credentials: 'same-origin' })
         .then((response) => response.ok ? response.json() : null)
         .then((product) => {

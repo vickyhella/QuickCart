@@ -1,8 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import Link from 'next/link'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { PinterestPublishing } from '../(payload)/components/PinterestPublishing'
+import { MarketingHub } from '../(payload)/components/MarketingHub'
+
+export const marketingStudioTabs = [
+  { id: 'pinterest', label: 'Pinterest' },
+  { id: 'seo', label: 'SEO' },
+  { id: 'feeds', label: 'Feeds' },
+] as const
+
+type MarketingTab = typeof marketingStudioTabs[number]['id']
 
 type PublishingPost = {
   id: string
@@ -26,6 +35,9 @@ const statusLabels: Record<PublishingPost['status'], string> = {
 const cardStyle = { border: '1px solid #e7ddd8', borderRadius: 16, background: 'white' }
 
 export default function MarketingStudio() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [tab, setTab] = useState<MarketingTab>('pinterest')
   const [posts, setPosts] = useState<PublishingPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -47,7 +59,17 @@ export default function MarketingStudio() {
     }
   }, [])
 
-  useEffect(() => { void refresh() }, [refresh])
+  useEffect(() => {
+    const requested = searchParams.get('tab')
+    if (marketingStudioTabs.some(({ id }) => id === requested)) setTab(requested as MarketingTab)
+  }, [searchParams])
+
+  useEffect(() => { if (tab === 'pinterest') void refresh() }, [refresh, tab])
+
+  const selectTab = (next: MarketingTab) => {
+    setTab(next)
+    router.replace(`/admin/collections/marketing/studio?tab=${next}`, { scroll: false })
+  }
 
   async function updatePost(post: PublishingPost, action: 'retry' | 'cancel') {
     setBusyID(post.id)
@@ -75,19 +97,19 @@ export default function MarketingStudio() {
     return result
   }, { draft: 0, scheduled: 0, published: 0, failed: 0 })
 
-  return <main className="mx-auto min-h-screen max-w-6xl px-5 py-10 md:px-8">
+  return <main className="marketing-studio mx-auto min-h-screen max-w-6xl px-5 py-10 font-sans text-base antialiased text-[#302522] md:px-8">
     <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <Link href="/studio" className="text-sm text-[#8b625a] hover:underline">← Product Studio</Link>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Marketing Studio</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Marketing Studio</h1>
         <p className="mt-2 text-sm text-[#766966]">Schedule Pinterest posts and track publishing status.</p>
-      </div>
-      <div className="flex flex-wrap items-center gap-2">
-        <Link href="/" className="rounded-lg border border-[#e7ddd8] px-4 py-2 text-sm hover:bg-white">Storefront homepage ↗</Link>
-        <a href="/api/pinterest/feed.xml" className="rounded-lg border border-[#e7ddd8] px-4 py-2 text-sm hover:bg-white">Pinterest catalog feed</a>
       </div>
     </header>
 
+    <div role="tablist" aria-label="Marketing Studio sections" className="mb-8 flex gap-2 border-b border-[#e7ddd8]">
+      {marketingStudioTabs.map((item) => <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => selectTab(item.id)} className="border-0 border-b-2 bg-transparent px-4 py-3 text-sm" style={{ borderBottomColor: tab === item.id ? 'var(--accent)' : 'transparent', color: tab === item.id ? 'var(--theme-text)' : 'var(--theme-elevation-700)', fontWeight: tab === item.id ? 600 : 400 }}>{item.label}</button>)}
+    </div>
+
+    {tab === 'pinterest' && <>
     <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
       {(['scheduled', 'published', 'failed', 'draft'] as const).map((status) => <div key={status} className="p-4" style={cardStyle}>
         <div className="text-sm text-[#766966]">{statusLabels[status]}</div><div className="mt-1 text-2xl font-semibold">{counts[status]}</div>
@@ -120,7 +142,9 @@ export default function MarketingStudio() {
         </article>)}
       </div> : <p className="p-5 text-sm text-[#766966]">No publishing posts yet.</p>}
     </section>
+    </>}
 
-    <p className="mt-6 text-xs text-[#766966]">Instagram publishing is not connected yet. Add an eligible Instagram account and API credentials before enabling it.</p>
+    {tab === 'seo' && <MarketingHub section="seo" />}
+    {tab === 'feeds' && <MarketingHub section="feeds" />}
   </main>
 }

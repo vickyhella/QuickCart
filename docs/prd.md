@@ -56,9 +56,9 @@
 
 ### 2.2 Product Studio
 
-新增独立管理入口：
+在 Payload Admin 内提供独立 Studio 页面：
 
-`/studio`
+`/admin/collections/products/studio`
 
 负责：
 
@@ -70,24 +70,24 @@
 - Description / SEO 自动生成
 - 商品复制
 - 商品发布
-- 高级 Spreadsheet Editor（支持分页、筛选、TSV 粘贴与批量字段编辑，包含后台供应商信息），入口为 `/studio/spreadsheet`
+- 高级 Spreadsheet Editor（支持分页、筛选、TSV 粘贴与批量字段编辑，包含后台供应商信息），入口为 `/admin/collections/products/spreadsheet`
 - Length + Shape 规格按明确选择的配对生成，避免自动产生未选择的组合
 
 Product Studio 使用现有 Payload API，不直接操作 PostgreSQL 数据表。
 
-保留原 Payload Admin 作为备用管理入口。
+所有管理页面使用同一套 Payload Admin 外框、唯一左侧导航和顶栏。Product Studio、Marketing Studio 与 Spreadsheet Editor 保留各自已经验证的主体界面和业务逻辑，仅通过 Admin 内的入口访问；开发阶段不保留旧独立页面或兼容重定向。
 
-Payload Admin 导航应提供 Product Studio、Spreadsheet Editor 和 Marketing Studio 入口；旧 Admin Spreadsheet 路由保留兼容。
+左侧导航与 Dashboard 卡片使用相同的分组、项目和顺序：Studio（Product Studio、Marketing Studio、Spreadsheet Editor）；Store（Users、Contact forms）；Catalog（Products、Media）；Website（Pages）；Commerce（Orders、Discounts、Store settings）。Marketing Studio 使用 `/admin/collections/marketing/studio`，不挂在 Pinterest Posts 下；Media 内含 Media、Media Originals、Image compression、Image names & metadata 四个标签；Store settings 内把 Countries 作为底部配置项展示。Publishing posts、Media Originals、Marketing settings 等底层 collection/global 保留数据和原生管理能力，但不再作为重复的独立侧栏分组。
 
-Payload Admin、Product Studio 和 Marketing Studio 顶部均提供直达 Storefront 首页的链接。Admin Dashboard 的 Studios 卡片组置顶，包含 Product Studio、Marketing Studio 和 Spreadsheet Editor。
+重复功能优先使用已验证的 Product Studio、Marketing Studio 和现有媒体工作流，不复制或重写其商品保存、Pinterest 发布、图片转换与压缩逻辑。Payload Admin 顶栏在用户图标左侧并排提供 Admin home 和 Storefront homepage；所有 Admin 页面共用这两个入口，不重复显示跳转。
 
 Product Studio 的 Supplier information 默认展开。
 
 ### 2.3 Marketing Studio
 
-新增独立管理模块：
+在 Payload Admin 内提供独立管理页面：
 
-`/marketing-studio`
+`/admin/collections/marketing/studio`
 
 负责：
 
@@ -307,7 +307,7 @@ Choose your preferred style and size before adding the product to your cart.
 - **Auto**：根据商品信息自动生成。
 - **Custom**：用户手动修改，保留自定义内容。
 
-Auto 描述模板在 Admin 的 Marketing → SEO & Media → Product description template 中编辑，支持商品名称、品类、Length、Shape、可用规格组合和尺码变量。
+Auto 描述模板在 Admin → Studio → Marketing Studio → SEO 标签的 Product description template 中编辑，支持商品名称、品类、Length、Shape、可用规格组合和尺码变量。
 
 - 描述模板及商品自定义描述支持 Markdown（标题、粗体/斜体、列表、链接和表格）；模板编辑器和 Product Studio 提供渲染预览，商品页按 Markdown 渲染。SEO 描述仍作为纯文本元数据处理。
 
@@ -350,9 +350,10 @@ Auto 描述模板在 Admin 的 Marketing → SEO & Media → Product description
 - Studio 新增或编辑商品时上传的图片，文件名使用当时表单中的商品名称和 Marketing 文件名模板；Supplier SKU 不进入图片文件名。
 - 原图文件名沿用压缩图的名称基底并添加 `-original` 后缀，便于在 R2 中配对管理。
 - R2 中替换 WebP 或原图时复用稳定对象 key，不触发部署；替换原图后可从该原图重新生成 WebP，商品图片公共 URL 保持不变。
+- 验证记录（2026-10-14）：覆盖 R2 中的 original 后，在后台重新压缩可生成并显示替换后的图片。
 - 已有关联图片不因商品改名而自动搬移 R2 对象或修改公共 URL；需要通过明确的媒体替换流程更新，避免断开商品、Variant、Feed 和 Pin 引用。
 - WebP Quality 用于新上传和手动重新压缩；保存 Quality 不自动改写存量图片。
-- Marketing → SEO & Media 提供“重新压缩存量图片”操作：显示可处理数量，用户确认后分批从保留原图重新生成 WebP，显示进度与逐项失败原因；商品和 Variant 的媒体引用保持不变。
+- Catalog → Media → Image compression 提供“重新压缩存量图片”操作：显示可处理数量，用户确认后分批从保留原图重新生成 WebP，显示进度与逐项失败原因；商品和 Variant 的媒体引用保持不变。
 - 临时图片、没有可用原图的 WebP、动画图片和 SVG 不纳入批量重压缩；非 WebP 且没有原图的静态图片可作为来源，并在重压缩成功后保存原件。
 - 支持的静态图片上传始终转换为 WebP；GIF、SVG 等动画或矢量格式保留原格式，不提供关闭 WebP 转换的开关。
 - 上传后直接显示缩略图。
@@ -494,12 +495,14 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 - Payload Admin
 - 现有 WebP 转换逻辑
 - Neon / R2 配置
+- 开发、Preview 和 Production 必须使用独立数据库配置；本地未配置开发数据库时使用 Git 忽略的 SQLite 文件。
+- 开发与 Preview 使用独立 R2 bucket/凭据；未配置时本地媒体只写入 Git 忽略的本地媒体目录，不回退使用 Production R2。
 - 订单、折扣、支付功能
 - GMC / Pinterest Feed 功能
 
 ### 新增
 
-- `/studio`
+- `/admin/collections/products/studio`
 - 商品列表
 - Quick Add
 - 商品图片管理界面
@@ -556,7 +559,7 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 
 ### 9.3 技术方案
 
-- 管理界面：`/marketing-studio`
+- 管理界面：`/admin/collections/marketing/studio`
 - 商品数据：Payload API
 - 定时执行：优先评估现有定时任务与 n8n
 - 发布记录：独立的发布计划及执行状态
@@ -591,7 +594,7 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 
 ### Phase 1A — Product Studio 基础
 
-- `/studio` 入口及认证
+- `/admin/collections/products/studio` Product collection 自定义 view（由 Payload Admin 统一认证）
 - 商品列表
 - Quick Add 基础表单
 - Description / SEO 自动生成
@@ -614,7 +617,7 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 - Publish 流程
 - 复制后的新 ID / SKU、图片继承及发布校验测试
 
-**验收：无需进入 Payload Admin，即可连续创建并发布 5 款商品。**
+**验收：无需进入 Payload 原生商品编辑页面，即可在 Product Studio 连续创建并发布 5 款商品。**
 
 ### Phase 2 — 商品编辑完善
 
@@ -658,6 +661,7 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 ### 上线前待办
 
 - [ ] 完成 Cloudflare R2 配置：创建存储桶和仅限该 bucket 的 Object Read & Write API Token，将 bucket、endpoint、Access Key ID、Secret Access Key 和公开访问 URL 配入部署环境变量；测试上传、图片访问、替换和删除。开发阶段可先用 `r2.dev`，正式上线前绑定自定义媒体域名并更新 `R2_PUBLIC_URL`。
+- [ ] 环境隔离验收：本地 `DATABASE_URL_DEVELOPMENT` / SQLite 与 `R2_*_DEVELOPMENT`、Vercel Preview 的 `*_PREVIEW` 均不读取 Production 数据库或 R2；验证本地上传、替换、删除和重新压缩不会改动 Production 文件及引用。
 - [ ] 盘点并迁移 WooCommerce 旧商品：整理商品字段、图片、分类、Length + Shape / Size Variants、价格和库存映射；导入后抽样核对商品详情及购物流程。
 - [ ] 验证 Google Merchant Center（GMC）：检查 Feed 可抓取与处理状态、商品诊断、价格和库存一致性、图片、落地页链接及配送设置；修复拒登和警告后确认商品通过审核。
 - [ ] 验证 Pinterest：确认账号、Board 和发布权限，实际发布测试 Pin，检查图片、文案和商品落地页 URL；Variant Pin 应保留对应 Variant 参数，并确认发布记录与失败重试正常。

@@ -47,6 +47,7 @@ export default buildConfig({
       baseDir: path.resolve(path.dirname(filename), 'app/(payload)'),
     },
     components: {
+      actions: ['/components/StorefrontHomeAction#StorefrontHomeAction'],
       afterNavLinks: ['/components/StudioNavLink#StudioNavLink', '/components/MarketingNavLink#MarketingNavLink'],
       views: {
         dashboard: { Component: '/components/AdminDashboard#AdminDashboard' },

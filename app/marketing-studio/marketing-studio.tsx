@@ -82,7 +82,10 @@ export default function MarketingStudio() {
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Marketing Studio</h1>
         <p className="mt-2 text-sm text-[#766966]">Schedule Pinterest posts and track publishing status.</p>
       </div>
-      <a href="/api/pinterest/feed.xml" className="rounded-lg border border-[#e7ddd8] px-4 py-2 text-sm hover:bg-white">Pinterest catalog feed</a>
+      <div className="flex flex-wrap items-center gap-2">
+        <Link href="/" className="rounded-lg border border-[#e7ddd8] px-4 py-2 text-sm hover:bg-white">Storefront homepage ↗</Link>
+        <a href="/api/pinterest/feed.xml" className="rounded-lg border border-[#e7ddd8] px-4 py-2 text-sm hover:bg-white">Pinterest catalog feed</a>
+      </div>
     </header>
 
     <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { prepareMediaUpload } from '@/lib/prepare-media-upload'
+import { uniqueOriginalFilename } from '@/lib/media-filenames'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -22,10 +23,11 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const marketing: any = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
     const prepared = await prepareMediaUpload(file, Number(marketing?.webpQuality || 82), current.filename)
     const originalName = file.name || `replacement-${Date.now()}`
+    const originalFilename = await uniqueOriginalFilename(payload, current.filename, originalName)
     const original = await payload.create({
       collection: 'media-originals',
-      data: { title: `Original source: ${originalName}` },
-      file: { data: prepared.original, mimetype: prepared.originalMimeType, name: `${Date.now()}-${originalName}`, size: prepared.original.length },
+      data: { title: `Original source: ${current.filename}` },
+      file: { data: prepared.original, mimetype: prepared.originalMimeType, name: originalFilename, size: prepared.original.length },
       overrideAccess: true,
     })
     createdOriginalID = original.id

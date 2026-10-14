@@ -9,6 +9,7 @@ export const MediaOriginals: CollectionConfig = {
     useAsTitle: 'filename',
     defaultColumns: ['filename', 'mimeType', 'filesize', 'createdAt'],
     description: 'Original image files retained as sources for WebP conversion and future reprocessing.',
+    components: { beforeList: ['/components/OriginalsCleanup#OriginalsCleanup'] },
   },
   upload: {
     staticDir: 'public/media-originals',

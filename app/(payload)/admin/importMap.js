@@ -1,5 +1,6 @@
 import { MediaBulkUpload as MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f } from '../components/MediaBulkUpload'
 import { MediaReprocessButton as MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7 } from '../components/MediaReprocessButton'
+import { OriginalsCleanup as OriginalsCleanup_8ee34e0bbdf97614b2a688b17b57f836 } from '../components/OriginalsCleanup'
 import { ProductTitleCell as ProductTitleCell_271e4356fd195c654ba9663b74a95b8d } from '../components/ProductTitleCell'
 import { ProductSlugField as ProductSlugField_36c2d55279d64603ec421ede181e93e5 } from '../components/ProductSlugField'
 import { ProductVariantsSpreadsheetField as ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d } from '../components/ProductVariantsSpreadsheetField'
@@ -11,6 +12,7 @@ import { ProductDeleteControl as ProductDeleteControl_b55a099709b09a611cd7f9c847
 import { ProductBulkEditor as ProductBulkEditor_9420406cae87749115868821fce0f84f } from '../components/ProductBulkEditor'
 import { MarketingHub as MarketingHub_8a7497e9e144c33453cbf0c3aa58ae0d } from '../components/MarketingHub'
 import { PinterestPublishing as PinterestPublishing_27a57dad575eb919d00754f09cec5d83 } from '../components/PinterestPublishing'
+import { StorefrontHomeAction as StorefrontHomeAction_cbc9200bb77880a9b4ebe1053d304c39 } from '../components/StorefrontHomeAction'
 import { StudioNavLink as StudioNavLink_82da4bf386bde16554597b0aa0981201 } from '../components/StudioNavLink'
 import { MarketingNavLink as MarketingNavLink_695abb3c7dd8d1b42afcb27f5b4ef92d } from '../components/MarketingNavLink'
 import { AdminDashboard as AdminDashboard_23ec33776346719f737fb9ed0745e7e8 } from '../components/AdminDashboard'
@@ -21,6 +23,7 @@ import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc056
 export const importMap = {
   "/components/MediaBulkUpload#MediaBulkUpload": MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f,
   "/components/MediaReprocessButton#MediaReprocessButton": MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7,
+  "/components/OriginalsCleanup#OriginalsCleanup": OriginalsCleanup_8ee34e0bbdf97614b2a688b17b57f836,
   "/components/ProductTitleCell#ProductTitleCell": ProductTitleCell_271e4356fd195c654ba9663b74a95b8d,
   "/components/ProductSlugField#ProductSlugField": ProductSlugField_36c2d55279d64603ec421ede181e93e5,
   "/components/ProductVariantsSpreadsheetField#ProductVariantsSpreadsheetField": ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d,
@@ -32,6 +35,7 @@ export const importMap = {
   "/components/ProductBulkEditor#ProductBulkEditor": ProductBulkEditor_9420406cae87749115868821fce0f84f,
   "/components/MarketingHub#MarketingHub": MarketingHub_8a7497e9e144c33453cbf0c3aa58ae0d,
   "/components/PinterestPublishing#PinterestPublishing": PinterestPublishing_27a57dad575eb919d00754f09cec5d83,
+  "/components/StorefrontHomeAction#StorefrontHomeAction": StorefrontHomeAction_cbc9200bb77880a9b4ebe1053d304c39,
   "/components/StudioNavLink#StudioNavLink": StudioNavLink_82da4bf386bde16554597b0aa0981201,
   "/components/MarketingNavLink#MarketingNavLink": MarketingNavLink_695abb3c7dd8d1b42afcb27f5b4ef92d,
   "/components/AdminDashboard#AdminDashboard": AdminDashboard_23ec33776346719f737fb9ed0745e7e8,

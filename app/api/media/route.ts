@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { NextResponse } from 'next/server'
 import config from '@/payload.config'
 import { prepareMediaUpload } from '@/lib/prepare-media-upload'
+import { uniqueOriginalFilename } from '@/lib/media-filenames'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -50,8 +51,8 @@ export async function POST(request: Request) {
     const product = productValue ? await payload.findByID({ collection: 'products', id: String(productValue), depth: 0, overrideAccess: true }).catch(() => null) : null
     const values = {
       brand: String(product?.brand || 'Ginny Nana'),
-      productType: String(product?.category || 'press-on-nails').replaceAll('-', ' '),
-      productName: String(product?.title || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') || 'Product image'),
+      productType: String((formValue('studioTemporary') === 'true' && formValue('studioProductType')) || product?.category || 'press-on-nails').replaceAll('-', ' '),
+      productName: String((formValue('studioTemporary') === 'true' && formValue('studioProductName')) || product?.title || file.name.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ') || 'Product image'),
       length: String(product?.length || ''),
       shape: String(product?.shape || ''),
       size: '',
@@ -82,10 +83,11 @@ export async function POST(request: Request) {
     if (!outputName) throw new Error('Could not generate a unique image filename.')
 
     stage = 'saving original image'
+    const originalFilename = await uniqueOriginalFilename(payload, outputName, originalName)
     const original = await payload.create({
       collection: 'media-originals',
-      data: { title: `Original source: ${originalName}` },
-      file: { data: prepared.original, mimetype: prepared.originalMimeType, name: `${Date.now()}-${originalName}`, size: prepared.original.length },
+      data: { title: `Original source: ${outputName}` },
+      file: { data: prepared.original, mimetype: prepared.originalMimeType, name: originalFilename, size: prepared.original.length },
       overrideAccess: true,
     })
     originalID = original.id

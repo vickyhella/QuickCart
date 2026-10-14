@@ -2,6 +2,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { mergeProductVariants } from '@/lib/merge-product-variants'
 import { productPublishError } from '@/lib/product-validation'
+import { resolveStudioProductMedia } from '@/lib/studio-product-media'
 
 const error = (message: string, status = 400) => Response.json({ error: message }, { status })
 const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
@@ -20,12 +21,14 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const active = variants.filter((variant: any) => variant.enabled !== false)
     const combinations = [...new Map(active.map((variant: any) => [`${variant.length}|${variant.shape}`, { length: variant.length, shape: variant.shape }])).values()]
     const sizes = [...new Set(active.map((variant: any) => String(variant.size || 's')))]
-    const media = [product.featuredImage, ...(Array.isArray(product.gallery) ? product.gallery : []), ...variants.map((variant: any) => variant.image)].filter(Boolean).map((item: any) => typeof item === 'object' ? item : null).filter(Boolean)
+    const media = [product.featuredImage, ...(Array.isArray(product.gallery) ? product.gallery : []), ...variants.map((variant: any) => variant.image)]
+      .filter((item: any) => item && typeof item === 'object')
+    const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: process.env.R2_PUBLIC_URL, requestURL: request.url })
     return Response.json({
       id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: product.price ?? '', status: product.status,
       supplierSKU: product.supplierSKU || '', purchaseURL: product.purchaseURL || '',
       descriptionMode: product.descriptionMode || 'auto', description: product.description || '', seoTitleMode: product.seoTitleMode || 'auto', seoTitle: product.seoTitle || '', seoDescriptionMode: product.seoDescriptionMode || 'auto', seoDescription: product.seoDescription || '',
-      media: [...new Map(media.map((item: any) => [String(item.id), { id: item.id, url: item.url, name: item.filename || item.title || 'Product image', existing: true }])).values()],
+      media: resolvedMedia.media.map((item) => ({ ...item, existing: true })), unavailableMediaCount: resolvedMedia.unavailableCount,
       combinations, sizes, variants: variants.map((variant: any) => ({ key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: variant.price ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', purchaseURL: variant.purchaseURL || '' })),
     })
   } catch {

@@ -1,6 +1,6 @@
 # Ginny Nana — Product Studio & Marketing Studio PRD
 
-**Version:** 1.6
+**Version:** 1.8
 **Project:** [vickyhella/QuickCart](https://github.com/vickyhella/QuickCart)  
 **Tech Stack:** Next.js + Payload CMS + Neon PostgreSQL + Cloudflare R2
 
@@ -78,6 +78,10 @@ Product Studio 使用现有 Payload API，不直接操作 PostgreSQL 数据表�
 保留原 Payload Admin 作为备用管理入口。
 
 Payload Admin 导航应提供 Product Studio、Spreadsheet Editor 和 Marketing Studio 入口；旧 Admin Spreadsheet 路由保留兼容。
+
+Payload Admin、Product Studio 和 Marketing Studio 顶部均提供直达 Storefront 首页的链接。Admin Dashboard 的 Studios 卡片组置顶，包含 Product Studio、Marketing Studio 和 Spreadsheet Editor。
+
+Product Studio 的 Supplier information 默认展开。
 
 ### 2.3 Marketing Studio
 
@@ -226,6 +230,8 @@ Publish 必须由用户主动触发，并通过商品数据校验。
 
 Save & Add Another 保存当前草稿后，下一张表单沿用分类、Length + Shape 组合和 Size；清空名称、图片、价格、Description / SEO、SKU 和供应商信息。
 
+商品草稿、商品修改或发布保存成功后，Studio 页面右下角显示短暂成功提示；失败时继续在页面显示具体错误。
+
 保存操作需防止重复提交造成重复商品；编辑已有商品时，不能用表单中的旧库存覆盖期间发生的库存变化。Studio 与 Payload Admin 同时修改同一商品时，保存前提示冲突，避免静默覆盖。
 
 ### 4.3 Duplicate Product
@@ -341,13 +347,19 @@ Auto 描述模板在 Admin 的 Marketing → SEO & Media → Product description
 - 支持一次上传多张图片。
 - 自动转换为 WebP。
 - 保留原图用于重新压缩。
+- Studio 新增或编辑商品时上传的图片，文件名使用当时表单中的商品名称和 Marketing 文件名模板；Supplier SKU 不进入图片文件名。
+- 原图文件名沿用压缩图的名称基底并添加 `-original` 后缀，便于在 R2 中配对管理。
+- R2 中替换 WebP 或原图时复用稳定对象 key，不触发部署；替换原图后可从该原图重新生成 WebP，商品图片公共 URL 保持不变。
+- 已有关联图片不因商品改名而自动搬移 R2 对象或修改公共 URL；需要通过明确的媒体替换流程更新，避免断开商品、Variant、Feed 和 Pin 引用。
 - WebP Quality 用于新上传和手动重新压缩；保存 Quality 不自动改写存量图片。
 - Marketing → SEO & Media 提供“重新压缩存量图片”操作：显示可处理数量，用户确认后分批从保留原图重新生成 WebP，显示进度与逐项失败原因；商品和 Variant 的媒体引用保持不变。
 - 临时图片、没有可用原图的 WebP、动画图片和 SVG 不纳入批量重压缩；非 WebP 且没有原图的静态图片可作为来源，并在重压缩成功后保存原件。
 - 支持的静态图片上传始终转换为 WebP；GIF、SVG 等动画或矢量格式保留原格式，不提供关闭 WebP 转换的开关。
 - 上传后直接显示缩略图。
 - 支持从现有 Media 库搜索、预览并选择已上传图片；选择操作只建立商品关联，不重复上传或复制文件。
+- 编辑商品时，图片引用需归一到当前启用的媒体存储并按对象 URL 去重；缺失对象和非 WebP 旧引用从编辑表单排除并提示，保存后解除这些失效关联。短暂的存储网络错误不作为缺失处理。
 - 显示单张图片上传进度和错误。
+- Studio 商品图片区域提供拖拽上传框；支持将多张图片直接拖入，并复用现有上传、转换和失败清理流程。
 - 支持拖拽排序。
 - 第一张默认作为 Featured Image。
 - 支持手动更换主图。
@@ -375,6 +387,25 @@ Auto 描述模板在 Admin 的 Marketing → SEO & Media → Product description
 **注意：需检查并调整现有 Payload Hook，避免自动将主图永久写入每个 Variant 的图片字段。**
 
 ---
+
+### 6.3 R2 文件组织
+
+- Supplier SKU 属于后台信息，不得写入公开图片文件名或 URL；若需要按 Supplier SKU 分组，应通过后台映射显示，R2 对象 key 保持不含原始供应商信息。
+- R2 内的 WebP 与原图使用可配对的稳定命名；通过 R2 覆盖原图后，后台重新压缩流程读取更新后的原图并覆盖原 WebP key。
+
+待评估想法（暂不纳入当前实现和验收）：
+
+- 后台媒体库可配置虚拟层级顺序，例如 Supplier SKU → 商品名称，或商品名称 → Supplier SKU；若实现，不移动或改写现有 R2 对象、公共 URL 或商品 / Variant 媒体引用。
+- 仅将 originals 保存在管理员本地存储，压缩图片仍存 R2。评估前继续将 originals 保存在当前媒体存储中，确保线上重新压缩流程能够读取。
+
+### 6.4 原图批量清理
+
+- Payload Admin 的 Media Originals 列表支持批量清理原图，并显示 WebP 引用检查结果。
+- 系统通过 `sourceOriginal` 找到对应 WebP；若 WebP 被商品主图、Gallery、Variant 或 Pinterest Pin 使用，则将该原图标记为已引用，并显示具体商品或 Pin 名称。Media 记录自身的 `product` 辅助关系不能单独作为引用依据。
+- 默认仅删除未被使用 WebP 引用的原图；已引用原图保留，并显示关联数量和对象名称。部分被引用时，清理未引用原图并报告保留数量。
+- 勾选明确的风险确认后，才允许删除已引用 WebP 对应的原图；确认说明 WebP 和商品展示仍保留，但之后无法从该原图重新压缩。
+- 删除只移除原图文件和 Media Originals 记录，并清除对应 WebP 的 `sourceOriginal` 关系；不得删除 WebP、商品、Variant、Pin 或其媒体引用。
+- 执行删除时在服务端重新检查引用，逐项报告成功和失败；不提供绕过该检查的 Payload 原图直接删除入口。
 
 ## 7. Variant 管理
 

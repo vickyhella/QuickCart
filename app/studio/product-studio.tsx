@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import toast from 'react-hot-toast'
 import { readJSONResponse } from '@/lib/read-json-response'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
 
@@ -78,6 +79,7 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
   const [seoDescription, setSeoDescription] = useState('')
   const [images, setImages] = useState<StudioImage[]>([])
   const [uploading, setUploading] = useState(false)
+  const [imageDropActive, setImageDropActive] = useState(false)
   const [length, setLength] = useState('medium')
   const [shape, setShape] = useState('almond')
   const [combinations, setCombinations] = useState<{ length: string; shape: string }[]>([])
@@ -173,7 +175,9 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
       setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
       setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
       if (wasEditing) { setCombinations([]); setSizes(['xs', 's', 'm', 'l']) }
-      setNotice(action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.')
+      const successMessage = action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.'
+      setNotice(successMessage)
+      toast.success(successMessage)
       setPage(1)
       const params = new URLSearchParams({ page: '1', status, sort })
       if (search.trim()) params.set('search', search.trim())
@@ -197,7 +201,7 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
     const failures: string[] = []
     try {
       for (const file of Array.from(files)) {
-        const form = new FormData(); form.set('file', file); form.set('studioTemporary', 'true')
+        const form = new FormData(); form.set('file', file); form.set('studioTemporary', 'true'); form.set('studioProductName', title.trim()); form.set('studioProductType', category)
         try {
           const response = await fetch('/api/media', { method: 'POST', body: form })
           const data = await response.json()
@@ -260,7 +264,7 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
     setSupplierSKU(data.supplierSKU); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
     setImages(data.media); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(prices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
     document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
-    setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.`)
+    setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
   }
 
   async function bulkUpdate() {
@@ -320,6 +324,7 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
               <p className="mt-2 text-sm text-[#887974]">Manage your product drafts and catalog.</p>
             </div>
             <div className="flex items-center gap-3">
+              <Link href="/" className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-xs text-[#806e68] hover:bg-white">Storefront homepage ↗</Link>
               <span className="rounded-full border border-[#e7ddd8] bg-white px-3 py-2 text-xs text-[#806e68]">{totalDocs} products</span>
               <Link href="/admin/logout/" className="text-sm text-[#806e68] hover:text-[#302522]">Sign out</Link>
             </div>
@@ -385,7 +390,7 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
                   <div><FieldLabel>Base price</FieldLabel><div className="relative"><span className="absolute left-3 top-3 text-sm text-[#9a8882]">$</span><input className={`${inputClass} pl-7`} type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Optional" /></div></div>
                 </div>
 
-                <details className="rounded-xl border border-[#eee5e0] px-4 py-3">
+                <details open className="rounded-xl border border-[#eee5e0] px-4 py-3">
                   <summary className="cursor-pointer text-sm font-medium">Supplier information <span className="text-xs font-normal text-[#968680]">(admin only)</span></summary>
                   <div className="mt-3 space-y-3"><div><FieldLabel>Supplier SKU</FieldLabel><input className={inputClass} value={supplierSKU} onChange={(event) => setSupplierSKU(event.target.value)} placeholder="Internal supplier reference" /></div><div><FieldLabel>Purchase URL</FieldLabel><input className={inputClass} type="url" value={purchaseURL} onChange={(event) => setPurchaseURL(event.target.value)} placeholder="https://supplier.example/item" /></div><p className="text-[11px] text-[#968680]">Not shown on the storefront, feeds, or customer order data.</p></div>
                 </details>
@@ -393,7 +398,10 @@ export default function ProductStudio({ userEmail }: { userEmail: string }) {
                 <div className="border-t border-[#f0e9e5] pt-5">
                   <FieldLabel>Product images <span className="text-xs font-normal text-[#968680]">{images.length} uploaded · first image is featured</span></FieldLabel>
                   <button type="button" onClick={() => { setLibrarySelected([]); setLibraryOpen(true) }} className="mb-3 rounded-lg border border-[#e7ddd8] px-3 py-2 text-xs font-medium text-[#8b5d53]">Choose existing images</button>
-                  <input aria-label="Upload product images" type="file" accept="image/heic,image/heif,image/jpeg,image/png,image/webp,.heic,.heif" multiple disabled={uploading} onChange={(event) => { void uploadImages(event.target.files); event.currentTarget.value = '' }} className="block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-[#f5efec] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#8b5d53]" />
+                  <div onDragEnter={(event) => { event.preventDefault(); if (!uploading) setImageDropActive(true) }} onDragOver={(event) => { event.preventDefault() }} onDragLeave={(event) => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setImageDropActive(false) }} onDrop={(event) => { event.preventDefault(); setImageDropActive(false); if (!uploading) void uploadImages(event.dataTransfer.files) }} className={`rounded-xl border border-dashed p-4 transition ${imageDropActive ? 'border-[#8b5d53] bg-[#f5efec]' : 'border-[#d9c9c2] bg-[#fcfaf9]'} ${uploading ? 'opacity-60' : ''}`}>
+                    <p className="mb-2 text-xs text-[#766762]">Drag and drop images here, or choose files</p>
+                    <input aria-label="Upload product images" type="file" accept="image/heic,image/heif,image/jpeg,image/png,image/webp,.heic,.heif" multiple disabled={uploading} onChange={(event) => { void uploadImages(event.target.files); event.currentTarget.value = '' }} className="block w-full text-xs file:mr-3 file:rounded-lg file:border-0 file:bg-[#f5efec] file:px-3 file:py-2 file:text-xs file:font-medium file:text-[#8b5d53]" />
+                  </div>
                   {uploading && <p className="mt-2 text-xs text-[#887974]">Uploading and converting images…</p>}
                   <div className="mt-3 grid grid-cols-4 gap-2">{images.map((image, index) => <div key={image.id} className="relative aspect-square overflow-hidden rounded-lg bg-[#f7f1ee]"><Image src={image.url} alt={image.name} fill unoptimized sizes="80px" className="object-cover" /><span className="absolute bottom-1 left-1 rounded bg-black/60 px-1.5 py-0.5 text-[10px] text-white">{index === 0 ? 'Featured' : index + 1}</span><div className="absolute right-1 top-1 flex gap-1"><button type="button" aria-label="Move image earlier" disabled={index === 0} onClick={() => moveImage(index, -1)} className="rounded bg-white/90 px-1.5 text-xs disabled:opacity-40">←</button><button type="button" aria-label="Move image later" disabled={index === images.length - 1} onClick={() => moveImage(index, 1)} className="rounded bg-white/90 px-1.5 text-xs disabled:opacity-40">→</button><button type="button" aria-label={`Remove ${image.name}`} onClick={() => void removeImage(image)} className="rounded bg-white/90 px-1.5 text-xs text-red-700">×</button></div></div>)}</div>
                 </div>

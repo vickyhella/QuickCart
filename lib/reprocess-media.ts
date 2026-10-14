@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import sharp from 'sharp'
 import heicConvert from 'heic-convert'
+import { uniqueOriginalFilename } from './media-filenames'
 
 export class ReprocessMediaError extends Error {
   status = 409
@@ -60,20 +61,22 @@ export async function reprocessMediaFromOriginal(payload: any, id: string) {
     const outputMetadata = await sharp(webp).metadata()
     if (!outputMetadata.width || !outputMetadata.height || webp.length < 100) throw new Error('The converted WebP image is empty.')
 
+    const currentName = String(media.filename || '')
+    const outputName = currentName.replace(/\.(jpe?g|png|heic|heif|webp)$/i, '.webp') || `image-${id}.webp`
+
     let originalID = linkedSource?.id
     if (!originalID) {
+      const originalFilename = await uniqueOriginalFilename(payload, outputName, sourceName)
       const original = await payload.create({
         collection: 'media-originals',
-        data: { title: `Original source: ${sourceName}` },
-        file: { data: sourceData, mimetype: sourceMime || 'application/octet-stream', name: `${Date.now()}-${sourceName}`, size: sourceData.length },
+        data: { title: `Original source: ${outputName}` },
+        file: { data: sourceData, mimetype: sourceMime || 'application/octet-stream', name: originalFilename, size: sourceData.length },
         overrideAccess: true,
       })
       originalID = original.id
       newlyCreatedOriginalID = original.id
     }
 
-    const currentName = String(media.filename || '')
-    const outputName = currentName.replace(/\.(jpe?g|png|heic|heif|webp)$/i, '.webp') || `image-${id}.webp`
     const updated = await payload.update({
       collection: 'media', id,
       data: { sourceOriginal: originalID },

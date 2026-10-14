@@ -11,6 +11,7 @@ export const storeFeedLinks = [
 ] as const
 
 export const adminDashboardSections = [
+  { title: 'Studios', links: studioLinks },
   {
     title: 'Store',
     links: [
@@ -46,6 +47,5 @@ export const adminDashboardSections = [
       { label: 'Publishing posts', href: '/admin/collections/pinterest-posts', description: 'Schedule and review product Pins.' },
     ],
   },
-  { title: 'Studios', links: studioLinks },
   { title: 'Store & Feeds', links: storeFeedLinks },
 ] as const

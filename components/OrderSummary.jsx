@@ -2,11 +2,14 @@
 
 import { useAppContext } from "@/context/AppContext";
 import PaymentMethods from "@/components/PaymentMethods";
+import useCartShippingQuote from "@/hooks/useCartShippingQuote";
 
 export default function OrderSummary() {
     const { currency, router, getCartCount, getCartAmount } = useAppContext();
     const symbol = currency || "$";
     const subtotal = getCartAmount();
+    const { quote, error } = useCartShippingQuote();
+    const shipping = quote ? (quote.shippingTotal ? `${symbol}${quote.shippingTotal.toFixed(2)}` : "Free") : error ? "Calculated at checkout" : "Calculating…";
 
     return (
         <aside className="w-full md:w-96 bg-[#f8f3ef] p-5 rounded-xl h-fit">
@@ -24,9 +27,10 @@ export default function OrderSummary() {
                     </span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-[#6e5c55]">Shipping</span>
-                    <span>Calculated at checkout</span>
+                    <span className="text-[#6e5c55]">Shipping <span className="text-xs text-[#786963]">(estimated 7-15 business days)</span></span>
+                    <span>{shipping}</span>
                 </div>
+                {error && <p className="-mt-2 text-xs text-[#786963]">{error}</p>}
                 <div className="flex justify-between">
                     <span className="text-[#6e5c55]">Tax</span>
                     <span>Included in prices</span>

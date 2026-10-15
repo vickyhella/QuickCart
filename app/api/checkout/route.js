@@ -17,6 +17,8 @@ export async function POST(request) {
 
   try {
     const body = await request.json()
+    const customerNote = String(body.customerNote || '').trim()
+    if (customerNote.length > 1000) return NextResponse.json({ error: '订单备注最多 1000 个字符。' }, { status: 400 })
     const email = String(body.email || '').trim().toLowerCase()
     const address = body.address || {}
     const countryCode = String(address.country || '').trim().toUpperCase()
@@ -102,6 +104,7 @@ export async function POST(request) {
       data: {
         orderNumber,
         customerEmail: email,
+        customerNote,
         currency,
         items: lines.map(({ product, variant, quantity, unitPrice }) => ({
           product: product.id,

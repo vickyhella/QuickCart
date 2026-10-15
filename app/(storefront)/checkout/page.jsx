@@ -19,6 +19,8 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState(emptyAddress)
   const [promoInput, setPromoInput] = useState('')
   const [promoCode, setPromoCode] = useState('')
+  const [addOrderNote, setAddOrderNote] = useState(false)
+  const [customerNote, setCustomerNote] = useState('')
   const [quote, setQuote] = useState(null)
   const [quoteError, setQuoteError] = useState('')
   const [error, setError] = useState('')
@@ -77,7 +79,7 @@ export default function CheckoutPage() {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, address, promoCode, items: lines.map(({ line }) => line) }),
+      body: JSON.stringify({ email, address, promoCode, customerNote: addOrderNote ? customerNote : '', items: lines.map(({ line }) => line) }),
     })
     const result = await response.json()
     if (!response.ok) throw new Error(result.error || 'Unable to start card payment.')
@@ -97,6 +99,7 @@ export default function CheckoutPage() {
           email,
           address,
           promoCode,
+          customerNote: addOrderNote ? customerNote : '',
           items: lines.map(({ line }) => line),
         }),
       })
@@ -159,6 +162,16 @@ export default function CheckoutPage() {
                 <Link href="/shipping-policy/" className="inline-block mt-2 underline underline-offset-2">Read our shipping policy</Link>
               </div>
             </section>
+            <section className="rounded-xl border border-[#e8ded8] p-5 md:p-7">
+              <label className="flex cursor-pointer items-center gap-3 text-sm font-medium">
+                <input type="checkbox" checked={addOrderNote} onChange={(event) => setAddOrderNote(event.target.checked)} className="h-4 w-4 accent-[#754b43]" />
+                Add note to your order
+              </label>
+              {addOrderNote && <label className="mt-4 block text-sm">Order note
+                <textarea value={customerNote} onChange={(event) => setCustomerNote(event.target.value)} maxLength={1000} rows={4} placeholder="Add a note for your order" className="mt-2 block w-full rounded-lg border border-[#d8c9c1] px-3 py-3" />
+                <span className="mt-1 block text-right text-xs text-[#786963]">{customerNote.length}/1000</span>
+              </label>}
+            </section>
           </div>
 
           <aside className="rounded-xl bg-[#f8f3ef] p-5 md:p-7 h-fit">
@@ -182,7 +195,7 @@ export default function CheckoutPage() {
             <div className="space-y-3 border-t border-[#d8c9c1] mt-6 pt-5 text-sm">
               <div className="flex justify-between"><span>Subtotal</span><span>{symbol}{(quote?.subtotal ?? lines.reduce((sum, line) => sum + line.unitPrice * line.line.quantity, 0)).toFixed(2)}</span></div>
               {quote?.discountTotal > 0 && <div className="flex justify-between"><span>Discount</span><span>-{symbol}{quote.discountTotal.toFixed(2)}</span></div>}
-              <div className="flex justify-between"><span>Shipping</span><span>{quote ? (quote.shippingTotal ? `${symbol}${quote.shippingTotal.toFixed(2)}` : 'Free') : 'Calculating…'}</span></div>
+              <div className="flex justify-between gap-3"><span>Shipping <span className="text-xs text-[#786963]">(estimated 7-15 business days)</span></span><span className="shrink-0">{quote ? (quote.shippingTotal ? `${symbol}${quote.shippingTotal.toFixed(2)}` : 'Free') : 'Calculating…'}</span></div>
               <div className="flex justify-between"><span>Tax</span><span>Included</span></div>
               {quote?.freeShippingThreshold != null && quote.subtotal - quote.discountTotal < quote.freeShippingThreshold && <p className="text-xs text-[#786963]">Spend {symbol}{(quote.freeShippingThreshold - (quote.subtotal - quote.discountTotal)).toFixed(2)} more for free shipping.</p>}
               <div className="flex justify-between border-t border-[#d8c9c1] pt-4 text-base font-medium"><span>Total</span><span>{quote ? `${symbol}${quote.total.toFixed(2)}` : 'Calculating…'}</span></div>

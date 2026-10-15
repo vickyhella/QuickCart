@@ -25,8 +25,8 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
       (Array.isArray(product.variants) && product.variants.some((variant: any) => relationID(variant.image) === String(id))),
     )
     const pins = await payload.find({ collection: 'pinterest-posts', where: { imageMedia: { equals: String(id) } }, limit: 10000, pagination: false, depth: 0, overrideAccess: true })
-    if (references.length || media.product || pins.docs.length) {
-      return NextResponse.json({ error: `This image is still linked to ${references.length} product(s), ${pins.docs.length} Pinterest post(s), or a product media record. Remove those references first.` }, { status: 409 })
+    if (references.length || pins.docs.length) {
+      return NextResponse.json({ error: `This image is still used by ${references.length} product(s) or ${pins.docs.length} Pinterest post(s). Remove those references first.` }, { status: 409 })
     }
 
     if (deleteOriginal && originalID) {

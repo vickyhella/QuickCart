@@ -1,9 +1,12 @@
 "use client";
 import Link from "next/link";
+import { useState } from "react";
 import { useAppContext } from "@/context/AppContext";
+import CartDrawer from "@/components/CartDrawer";
 
 const Navbar = () => {
     const { products, getCartCount } = useAppContext();
+    const [cartOpen, setCartOpen] = useState(false);
     const lengthOrder = ["x-short", "short", "medium", "long", "x-long"];
     const shapeOrder = ["square", "oval", "almond", "round"];
     const lengths = [
@@ -132,14 +135,12 @@ const Navbar = () => {
                     >
                         Order status
                     </Link>
-                    <Link
-                        href="/cart"
-                        className="rounded-full border border-[#d8c9c1] px-4 py-2 transition hover:border-[#985c70] hover:text-[#985c70]"
-                    >
+                    <button type="button" onClick={() => setCartOpen(true)} aria-expanded={cartOpen} className="rounded-full border border-[#d8c9c1] px-4 py-2 transition hover:border-[#985c70] hover:text-[#985c70]">
                         Cart{getCartCount() > 0 ? ` (${getCartCount()})` : ""}
-                    </Link>
+                    </button>
                 </div>
             </nav>
+            {cartOpen && <CartDrawer open onClose={() => setCartOpen(false)} />}
             <nav
                 aria-label="Mobile navigation"
                 className="flex gap-6 overflow-x-auto border-b border-[#eadfdb] bg-[#fffdfa] px-4 py-3 text-xs tracking-wide lg:hidden"

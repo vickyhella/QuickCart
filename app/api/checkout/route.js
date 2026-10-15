@@ -5,13 +5,10 @@ import config from '@/payload.config'
 import { getCheckoutFailure } from '@/lib/checkout-error'
 import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
 import { shippingCountries } from '@/lib/countries'
+import { calculateShippingCharge } from '@/lib/shipping-tiers'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 const amountText = (value) => roundMoney(value).toFixed(2)
-
-function isInRange(value, minimum, maximum) {
-  return value >= (minimum == null ? 0 : Number(minimum)) && (maximum == null || maximum === '' || value <= Number(maximum))
-}
 
 export async function POST(request) {
   if (!isPayPalConfigured()) {
@@ -82,14 +79,18 @@ export async function POST(request) {
     }
 
     const discountedSubtotal = roundMoney(subtotal - discountTotal)
-    const shippingTier = (settings.shippingTiers || []).find((tier) =>
-      isInRange(discountedSubtotal, tier.minimumSubtotal, tier.maximumSubtotal)
-      && isInRange(lines.reduce((sum, line) => sum + line.quantity, 0), tier.minimumItems, tier.maximumItems),
-    )
-    const freeShippingThreshold = Number(settings.freeShippingThreshold ?? 50)
-    const shippingTotal = discountedSubtotal >= freeShippingThreshold
-      ? 0
-      : roundMoney(shippingTier?.fee ?? settings.flatShippingRate ?? 0)
+    const shipping = calculateShippingCharge(settings, {
+      subtotal: discountedSubtotal,
+      quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+      lines,
+    })
+    if (shipping.unavailable) {
+      if (shipping.reason === 'minimum-order-value') {
+        throw new Error(`订单金额需达到 $${Number(settings.minimumOrderValue).toFixed(2)} 才能配送。`)
+      }
+      throw new Error('当前购物车未匹配到配送费率，请联系客服。')
+    }
+    const shippingTotal = roundMoney(shipping.shippingTotal)
     const taxTotal = 0 // Product prices are tax-inclusive per store settings.
     const total = roundMoney(discountedSubtotal + shippingTotal)
     if (total <= 0) throw new Error('订单金额必须大于 $0。')

@@ -39,7 +39,7 @@ export default function MerchantFeedPreviewPage() {
     <p style={{ marginTop: 0, color: '#475569' }}>Preview of published products and variants. Feed URLs: <a href="/api/merchant/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Google Merchant Center XML</a> · <a href="/api/pinterest/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Pinterest catalog XML</a> · <Link href="/pinterest-feed" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Pinterest visual preview</Link></p>
     <section style={{ marginBlock: 20, padding: 16, background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1e3a8a' }}>
       <strong>Country targeting</strong>
-      <p style={{ marginBlock: 6 }}>The site checkout accepts the countries below. In Merchant Center, add these as target countries on the product data source and configure shipping services with USD rates matching the site’s shared order tiers. Country targeting and shipping services are account settings; they are not attributes stored on each product row in this XML.</p>
+      <p style={{ marginBlock: 6 }}>The site checkout accepts the countries below. In Merchant Center, add these as target countries on the product data source and configure shipping services separately. You can mirror the site’s subtotal, item-count, and total-weight ranges and shipping fees; these account settings do not sync automatically from the site.</p>
       <p style={{ margin: 0 }}>{availableCountries.map(([code, name]) => `${name} (${code})`).join(' · ') || 'No available countries configured.'}</p>
     </section>
     {loading ? <p>Loading feed…</p> : error ? <p role="alert" style={{ color: '#b91c1c' }}>{error}</p> : <>

@@ -17,7 +17,7 @@ For a mainland-China merchant account, confirm that the account is enabled for t
 
 ## Shipping and tax
 
-Open **Admin → Store settings** (`/admin/globals/store-settings`). The free-shipping threshold defaults to USD 50. Prices are treated as tax-inclusive, and the checkout does not add a second tax charge. Add shipping tiers for orders below the threshold. Each tier can constrain subtotal, item count, or both; the first matching tier applies. If no tier matches, `flatShippingRate` is used. The current default is $0 and should be changed to your actual base rate before accepting orders.
+Open **Admin → Store settings** (`/admin/globals/store-settings`). Configure the two optional order value conditions first: free shipping above a set order value (defaults to USD 50) and no shipping below a minimum order value. Then select the shipping cost type: Free shipping, Flat rate, Price, Weight, Number of items, or Advanced cost table. Only fields for the selected type appear. Weight ranges use kg and total package weight is calculated from each product's shipping weight times quantity. Advanced cost table matches two selected dimensions against each rate row. Checkout blocks orders below the minimum value and when no rate row matches. Prices are tax-inclusive, so checkout does not add a second tax charge.
 
 ## Product variants and bulk editing
 
@@ -25,7 +25,7 @@ Open **Admin → Products**. Add one row in **Variants** for each purchasable sh
 
 Payload's product list supports selecting multiple documents and bulk-editing shared fields. For spreadsheet import/export, install the Payload Import/Export plugin separately; it is not required for the built-in bulk editor.
 
-The Merchant Center feed is available at `/api/merchant/feed.xml`. Set `NEXT_PUBLIC_SITE_URL=https://ginnynana.com` in the production environment so item links and images use the preserved domain. Add real product photos before submitting items; products without a featured image are omitted. Configure shipping rates in Merchant Center to match the shipping tiers configured in Payload. The product editor includes optional GTIN, MPN, and Google category fields; do not invent identifiers for handmade products.
+The Merchant Center feed is available at `/api/merchant/feed.xml`. Set `NEXT_PUBLIC_SITE_URL=https://ginnynana.com` in the production environment so item links and images use the preserved domain. Add real product photos before submitting items; products without a featured image are omitted. Configure shipping rates separately in Merchant Center to match the shipping conditions and method configured in Payload; these settings do not sync automatically. The product editor includes optional GTIN, MPN, and Google category fields; do not invent identifiers for handmade products.
 
 ## Orders and discounts
 

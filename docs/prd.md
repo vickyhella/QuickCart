@@ -510,6 +510,13 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 - Feed URL 每次被请求时返回当前已发布商品数据；Merchant Center 是否自动更新取决于数据源的抓取计划。需要立即更新时，在 GMC 手动触发抓取。
 - GMC 中已验证并认领的网站域名必须与 Feed 商品落地页链接域名一致；部署时将 `NEXT_PUBLIC_SITE_URL` 设为该正式商城域名。
 
+### 配送费规则
+
+- Store Settings 的运费配置按 GMC 的顺序提供订单金额条件和运费方式：指定订单金额以上免邮、低于指定订单金额不配送；运费方式为 Free shipping、Flat rate、Price、Weight、Number of items 或 Advanced cost table。
+- 不同运费方式只显示所需字段；Flat rate 是可选方式之一，不是必填的全局运费字段。Price、Weight 和 Number of items 使用区间与费用表；重量单位为 kg，按商品单件重量 × 数量计算。历史商品重量为空时按 `0.2 kg` 计算。
+- Advanced cost table 可选两个不同维度（价格、重量、件数），每行配置两个维度范围的组合和对应费用；未匹配到费率时结账会提示无法配送，不会静默按零运费下单。
+- 订单金额条件按应用折扣后的商品小计计算；低于最低配送金额时禁止结账，达到免邮门槛时运费为零。GMC 运费设置需单独配置，不会与网站自动同步。
+
 ### 新增
 
 - `/admin/collections/products/studio`

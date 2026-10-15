@@ -255,7 +255,7 @@ export const Products: CollectionConfig = {
             { name: 'brand', type: 'text', defaultValue: 'Ginny Nana' },
             { name: 'material', type: 'text', defaultValue: 'ABS Plastic' },
             { name: 'color', type: 'text' },
-            { name: 'shippingWeight', type: 'number', min: 0.001, defaultValue: 0.2, admin: { description: 'Shipping weight in kilograms. Used in GMC and Pinterest feeds; new products default to 0.2 kg.' } },
+            { name: 'shippingWeight', type: 'number', min: 0.001, defaultValue: 0.2, admin: { description: 'Per-item shipping weight in kilograms, including packaging if applicable. Used by checkout and product feeds; new products default to 0.2 kg.' } },
             { name: 'gender', type: 'select', defaultValue: 'unisex', options: [{ label: 'Female', value: 'female' }, { label: 'Male', value: 'male' }, { label: 'Unisex', value: 'unisex' }] },
             { name: 'ageGroup', type: 'select', defaultValue: 'adult', options: [{ label: 'Adult', value: 'adult' }, { label: 'Kids', value: 'kids' }, { label: 'Toddler', value: 'toddler' }, { label: 'Infant', value: 'infant' }, { label: 'Newborn', value: 'newborn' }] },
             { name: 'condition', type: 'select', defaultValue: 'new', options: [{ label: 'New', value: 'new' }, { label: 'Used', value: 'used' }, { label: 'Refurbished', value: 'refurbished' }] },

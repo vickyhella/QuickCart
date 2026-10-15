@@ -268,6 +268,10 @@ export interface Product {
   brand?: string | null;
   material?: string | null;
   color?: string | null;
+  /**
+   * Per-item shipping weight in kilograms, including packaging if applicable. Used by checkout and product feeds; new products default to 0.2 kg.
+   */
+  shippingWeight?: number | null;
   gender?: ('female' | 'male' | 'unisex') | null;
   ageGroup?: ('adult' | 'kids' | 'toddler' | 'infant' | 'newborn') | null;
   condition?: ('new' | 'used' | 'refurbished') | null;
@@ -669,6 +673,7 @@ export interface ProductsSelect<T extends boolean = true> {
   brand?: T;
   material?: T;
   color?: T;
+  shippingWeight?: T;
   gender?: T;
   ageGroup?: T;
   condition?: T;
@@ -877,20 +882,29 @@ export interface StoreSetting {
   id: number;
   currency: 'USD';
   /**
-   * Orders at or above this subtotal receive free shipping.
+   * Leave blank to disable this order value condition.
    */
-  freeShippingThreshold: number;
+  freeShippingThreshold?: number | null;
   /**
-   * Shipping charged below the free-shipping threshold. Set the actual amount before launch.
+   * Orders below this value cannot be checked out. Leave blank to disable this condition.
    */
-  flatShippingRate: number;
+  minimumOrderValue?: number | null;
   /**
-   * Optional order-value and item-count ranges. The first matching tier is used; free shipping threshold takes priority.
+   * Choose the same rate type you use in Google Merchant Center.
+   */
+  shippingCostType: 'free' | 'flat' | 'price' | 'weight' | 'items' | 'advanced';
+  flatShippingRate?: number | null;
+  shippingAdvancedDimension1?: ('price' | 'weight' | 'items') | null;
+  shippingAdvancedDimension2?: ('price' | 'weight' | 'items') | null;
+  /**
+   * Enter a cost for each range. Weight is measured in kilograms (kg). Leave the maximum empty for “and above”. In the advanced table, each row combines the selected dimensions.
    */
   shippingTiers?:
     | {
         minimumSubtotal?: number | null;
         maximumSubtotal?: number | null;
+        minimumWeightKg?: number | null;
+        maximumWeightKg?: number | null;
         minimumItems?: number | null;
         maximumItems?: number | null;
         fee: number;
@@ -1039,12 +1053,18 @@ export interface MarketingSetting {
 export interface StoreSettingsSelect<T extends boolean = true> {
   currency?: T;
   freeShippingThreshold?: T;
+  minimumOrderValue?: T;
+  shippingCostType?: T;
   flatShippingRate?: T;
+  shippingAdvancedDimension1?: T;
+  shippingAdvancedDimension2?: T;
   shippingTiers?:
     | T
     | {
         minimumSubtotal?: T;
         maximumSubtotal?: T;
+        minimumWeightKg?: T;
+        maximumWeightKg?: T;
         minimumItems?: T;
         maximumItems?: T;
         fee?: T;

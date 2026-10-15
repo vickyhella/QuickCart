@@ -153,7 +153,9 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-4 rounded-lg bg-[#f8f3ef] p-4 text-sm text-[#6e5c55]">
                 <p className="font-medium text-[#302522]">Shipping details</p>
-                <p className="mt-1">Shipping to {shippingCountries.find(([code]) => code === address.country)?.[1] || address.country}. Rates are based on your order total and quantity; orders over {symbol}{Number(quote?.freeShippingThreshold ?? 50).toFixed(2)} ship free. The current shipping charge is shown in your order summary.</p>
+                <p className="mt-1">Shipping to {shippingCountries.find(([code]) => code === address.country)?.[1] || address.country}. The shipping charge is calculated from the selected shipping method and shown in your order summary.</p>
+                {quote?.freeShippingThreshold != null && <p className="mt-1">Orders over {symbol}{Number(quote.freeShippingThreshold).toFixed(2)} ship free.</p>}
+                {quote?.minimumOrderValue != null && <p className="mt-1">A minimum order of {symbol}{Number(quote.minimumOrderValue).toFixed(2)} is required for shipping.</p>}
                 <Link href="/shipping-policy/" className="inline-block mt-2 underline underline-offset-2">Read our shipping policy</Link>
               </div>
             </section>
@@ -182,7 +184,7 @@ export default function CheckoutPage() {
               {quote?.discountTotal > 0 && <div className="flex justify-between"><span>Discount</span><span>-{symbol}{quote.discountTotal.toFixed(2)}</span></div>}
               <div className="flex justify-between"><span>Shipping</span><span>{quote ? (quote.shippingTotal ? `${symbol}${quote.shippingTotal.toFixed(2)}` : 'Free') : 'Calculating…'}</span></div>
               <div className="flex justify-between"><span>Tax</span><span>Included</span></div>
-              {quote && quote.subtotal - quote.discountTotal < quote.freeShippingThreshold && <p className="text-xs text-[#786963]">Spend {symbol}{(quote.freeShippingThreshold - (quote.subtotal - quote.discountTotal)).toFixed(2)} more for free shipping.</p>}
+              {quote?.freeShippingThreshold != null && quote.subtotal - quote.discountTotal < quote.freeShippingThreshold && <p className="text-xs text-[#786963]">Spend {symbol}{(quote.freeShippingThreshold - (quote.subtotal - quote.discountTotal)).toFixed(2)} more for free shipping.</p>}
               <div className="flex justify-between border-t border-[#d8c9c1] pt-4 text-base font-medium"><span>Total</span><span>{quote ? `${symbol}${quote.total.toFixed(2)}` : 'Calculating…'}</span></div>
             </div>
             {error && <p role="alert" className="text-sm text-red-700 mt-4">{error}</p>}

@@ -122,11 +122,11 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
         .then((response) => response.ok ? response.json() : null)
         .then((product) => {
           if (!product || hasEdited.current || !Array.isArray(product.variants)) return
-          setValue(product.variants)
+          setValue(product.variants, true)
           const lengths = [...new Set(product.variants.map((variant: Variant) => variant.length).filter(Boolean))]
           const shapes = [...new Set(product.variants.map((variant: Variant) => variant.shape).filter(Boolean))]
-          setProductLength(lengths.join(', '))
-          setProductShape(shapes.join(', '))
+          setProductLength(lengths.join(', '), true)
+          setProductShape(shapes.join(', '), true)
         })
         .catch(() => {})
     }

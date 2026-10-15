@@ -2,10 +2,9 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCheckoutFailure } from '@/lib/checkout-error'
+import { calculateShippingCharge } from '@/lib/shipping-tiers'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
-const matchesRange = (value, min, max) => value >= (min == null ? 0 : Number(min)) && (max == null || max === '' || value <= Number(max))
-
 export async function POST(request) {
   try {
     const { items = [], promoCode = '' } = await request.json()
@@ -15,6 +14,7 @@ export async function POST(request) {
     const settings = await payload.findGlobal({ slug: 'store-settings', overrideAccess: true })
     let subtotal = 0
     let quantity = 0
+    const lines = []
     for (const item of items) {
       const product = await payload.findByID({ collection: 'products', id: item.productId, overrideAccess: true })
       if (product.status !== 'published') throw new Error(`${product.title} 目前不可购买。`)
@@ -26,6 +26,7 @@ export async function POST(request) {
       if (variant?.trackStock && Number(variant.stock || 0) < count) throw new Error(`${product.title} 的所选规格库存不足。`)
       subtotal += roundMoney(variant?.price ?? product.price) * count
       quantity += count
+      lines.push({ product, quantity: count })
     }
     subtotal = roundMoney(subtotal)
 
@@ -49,14 +50,17 @@ export async function POST(request) {
     }
 
     const discountedSubtotal = roundMoney(subtotal - discountTotal)
-    const tier = (settings.shippingTiers || []).find((entry) =>
-      matchesRange(discountedSubtotal, entry.minimumSubtotal, entry.maximumSubtotal)
-      && matchesRange(quantity, entry.minimumItems, entry.maximumItems),
-    )
-    const freeShippingThreshold = Number(settings.freeShippingThreshold ?? 50)
-    const shippingTotal = discountedSubtotal >= freeShippingThreshold
-      ? 0
-      : roundMoney(tier?.fee ?? settings.flatShippingRate ?? 0)
+    const shipping = calculateShippingCharge(settings, { subtotal: discountedSubtotal, quantity, lines })
+    if (shipping.unavailable) {
+      const error = shipping.reason === 'minimum-order-value'
+        ? `订单金额需达到 $${Number(settings.minimumOrderValue).toFixed(2)} 才能配送。`
+        : '当前购物车未匹配到配送费率，请联系客服。'
+      throw new Error(error)
+    }
+    const shippingTotal = roundMoney(shipping.shippingTotal)
+    const freeShippingThreshold = settings.freeShippingThreshold == null || settings.freeShippingThreshold === ''
+      ? null
+      : Number(settings.freeShippingThreshold)
     return NextResponse.json({
       currency: settings.currency || 'USD',
       subtotal,
@@ -65,6 +69,7 @@ export async function POST(request) {
       taxTotal: 0,
       total: roundMoney(discountedSubtotal + shippingTotal),
       freeShippingThreshold,
+      minimumOrderValue: settings.minimumOrderValue == null || settings.minimumOrderValue === '' ? null : Number(settings.minimumOrderValue),
       itemCount: quantity,
     })
   } catch (error) {

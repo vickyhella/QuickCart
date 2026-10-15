@@ -3,6 +3,8 @@ import * as migration_20261013_143230_addStudioDescriptionTemplate from './20261
 import * as migration_20261014_110652_add_marketing_workspace from './20261014_110652_add_marketing_workspace';
 import * as migration_20261014_233000_add_store_settings_checkout_fields from './20261014_233000_add_store_settings_checkout_fields';
 import * as migration_20261015_160600_add_product_shipping_weight from './20261015_160600_add_product_shipping_weight';
+import * as migration_20261015_170000_add_shipping_tier_weight_ranges from './20261015_170000_add_shipping_tier_weight_ranges';
+import * as migration_20261015_180000_add_gmc_shipping_configuration from './20261015_180000_add_gmc_shipping_configuration';
 
 export const migrations = [
   {
@@ -29,5 +31,15 @@ export const migrations = [
     up: migration_20261015_160600_add_product_shipping_weight.up,
     down: migration_20261015_160600_add_product_shipping_weight.down,
     name: '20261015_160600_add_product_shipping_weight'
+  },
+  {
+    up: migration_20261015_170000_add_shipping_tier_weight_ranges.up,
+    down: migration_20261015_170000_add_shipping_tier_weight_ranges.down,
+    name: '20261015_170000_add_shipping_tier_weight_ranges'
+  },
+  {
+    up: migration_20261015_180000_add_gmc_shipping_configuration.up,
+    down: migration_20261015_180000_add_gmc_shipping_configuration.down,
+    name: '20261015_180000_add_gmc_shipping_configuration'
   },
 ];

@@ -16,7 +16,7 @@ export function ProductSlugField({ path, readOnly }: { path: string; readOnly?: 
     const next = slugify(title)
     const current = String(value || '')
     if (!current || current === previousGenerated.current || current === slugify(title)) {
-      if (next && next !== current) setValue(next)
+      if (next && next !== current) setValue(next, true)
       previousGenerated.current = next
     }
   }, [readOnly, setValue, title, value])

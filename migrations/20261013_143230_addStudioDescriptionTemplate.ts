@@ -4,7 +4,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.execute(sql`
    ALTER TABLE "marketing_settings" ALTER COLUMN "product_title_template" SET DEFAULT '{brand} {productName} — {availableLengthShapeCombinations}';
   ALTER TABLE "marketing_settings" ALTER COLUMN "product_description_template" SET DEFAULT '{productName} press-on nails by {brand}, available in {availableLengthShapeCombinations} and sizes {availableSizes}.';
-  ALTER TABLE "marketing_settings" ADD COLUMN "studio_description_template" varchar DEFAULT '**{productName}**
+  ALTER TABLE "marketing_settings" ADD COLUMN IF NOT EXISTS "studio_description_template" varchar DEFAULT '**{productName}**
   
   Discover {productName} by {brand}, a press-on nail style for your everyday look.
   

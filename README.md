@@ -37,6 +37,24 @@ This repo is **frontend only** – contributors can improve the design, add new 
     npm run dev
     ```
 
+## Production database migrations
+
+商品、页面、库存等内容的增删改不需要运行迁移。只有代码修改了 Payload 数据结构（例如新增集合或字段），并生成了新的 `migrations/` 文件，才需要把迁移应用到数据库。
+
+部署包含这些迁移文件的代码后，先查看 Production 是否还有未执行的迁移：
+
+```bash
+npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npx payload migrate:status
+```
+
+如果新迁移显示 `Ran: No`，运行下面的命令应用到 Production：
+
+```bash
+npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npm run migrate
+```
+
+如果新迁移都显示 `Ran: Yes`，就不需要再运行。`npm run migrate` 单独运行时使用本地环境配置；不要把它当作 Production 迁移命令。开发时出现的 schema push 提示也只用于当前开发数据库，不代表 Production 已迁移。
+
 ---
 
 ## Contributing

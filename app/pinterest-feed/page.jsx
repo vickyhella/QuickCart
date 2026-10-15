@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 
 export default function PinterestFeedPreviewPage() {
   const [items, setItems] = useState([])
@@ -16,7 +17,7 @@ export default function PinterestFeedPreviewPage() {
     }).catch((reason) => setError(reason.message || 'Feed could not be loaded.')).finally(() => setLoading(false))
   }, [])
   return <main style={{ padding: '32px clamp(16px, 4vw, 56px)', color: '#172033', background: '#f8fafc', minHeight: '100vh' }}>
-    <h1>Pinterest catalog feed</h1><p>Live preview of published products and their enabled variants. <a href="/api/pinterest/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Open XML feed</a> · <a href="/merchant-feed" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Google feed preview</a></p>
+    <h1>Pinterest catalog feed</h1><p>Live preview of published products and their enabled variants. <a href="/api/pinterest/feed.xml" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Open XML feed</a> · <Link href="/merchant-feed" style={{ color: '#1d4ed8', textDecoration: 'underline' }}>Google feed preview</Link></p>
     {loading ? <p>Loading feed…</p> : error ? <p role="alert" style={{ color: '#b91c1c' }}>{error}</p> : <>
       <p>{items.length} item(s) in feed</p><div style={{ overflowX: 'auto', background: '#fff', border: '1px solid #cbd5e1', borderRadius: 8 }}>
         <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: 1050 }}><thead><tr>{['Image', 'ID', 'Product / variant', 'Price', 'Availability', 'Brand', 'Color', 'Size', 'Additional images', 'Link'].map((label) => <th key={label} style={{ padding: 12, textAlign: 'left', borderBottom: '1px solid #cbd5e1', background: '#f1f5f9' }}>{label}</th>)}</tr></thead>

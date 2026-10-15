@@ -53,7 +53,7 @@ type ColumnKey =
   | 'seoTitle'
   | 'seoDescription'
 
-type GridRow = Record<ColumnKey, string> & { id: string }
+type GridRow = Record<ColumnKey, string> & { id: string; featuredImageURL: string; resolvedFeaturedImageID: string }
 
 const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?: boolean }> = [
   { key: 'title', label: 'Title', width: 190 },
@@ -124,7 +124,16 @@ function toGridRow(product: Product): GridRow {
     } else row[column.key] = cellValue(value)
   }
   row.id = String(product.id)
+  const featuredImage = product.featuredImage && typeof product.featuredImage === 'object' ? product.featuredImage as Media : null
+  row.featuredImageURL = featuredImage?.url || ''
+  row.resolvedFeaturedImageID = featuredImage?.id === undefined ? '' : String(featuredImage.id)
   return row
+}
+
+function getFeaturedImageURL(row: GridRow, media: Media[]) {
+  const item = media.find((entry) => String(entry.id) === row.featuredImage || entry.filename === row.featuredImage)
+  if (item?.url) return item.url
+  return row.featuredImage === row.resolvedFeaturedImageID ? row.featuredImageURL : ''
 }
 
 function parseTSV(input: string): string[][] {
@@ -618,10 +627,10 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                 return (
                   <React.Fragment key={row.id}><tr style={{ background: dirty ? 'var(--theme-elevation-50, rgba(40,120,80,.08))' : undefined }}>
                     <td style={{ position: 'sticky', left: 0, zIndex: 1, width: 64, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
-                      {(() => { const item = media.find((entry) => String(entry.id) === row.featuredImage || entry.filename === row.featuredImage); return <img src={item?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 'var(--brand-radius-sm)' }} /> })()}
+                      <img src={getFeaturedImageURL(row, media) || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 'var(--brand-radius-sm)' }} />
                     </td>
                     <th style={{ position: 'sticky', left: 64, zIndex: 1, minWidth: 110, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
-                      {dirty ? '● ' : ''}{rowIndex + 1}<button type="button" onClick={() => void duplicateProduct(rowIndex)} style={{ display: 'block', marginTop: 4, fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-accent)', textDecoration: 'underline' }}>Duplicate</button>
+                      {dirty ? '● ' : ''}{rowIndex + 1}<button type="button" onClick={() => void duplicateProduct(rowIndex)} style={{ appearance: 'none', display: 'block', marginTop: 4, border: 0, borderRadius: 0, padding: 0, background: 'transparent', color: 'var(--brand-accent)', cursor: 'pointer', fontSize: 'var(--brand-font-size-caption)', textDecoration: 'underline' }}>Duplicate</button>
                     </th>
                     {columns.map((column, columnIndex) => (
                       <td key={column.key}
@@ -678,9 +687,9 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                               style={inputStyle}
                             />
                             {column.key === 'featuredImage' && (() => {
-                              const selectedMedia = media.find((item) => String(item.id) === row.featuredImage || item.filename === row.featuredImage)
+                              const imageURL = getFeaturedImageURL(row, media)
                               return <>
-                                <img src={selectedMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={selectedMedia?.filename || 'Selected product image'} style={{ display: 'block', marginTop: 6, maxWidth: 110, maxHeight: 80, objectFit: 'contain' }} />
+                                <img src={imageURL || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title || 'Selected product image'} style={{ display: 'block', marginTop: 6, maxWidth: 110, maxHeight: 80, objectFit: 'contain' }} />
                                 <label style={{ display: 'block', marginTop: 5, fontSize: 'var(--brand-font-size-caption)' }}>Upload
                                   <input type="file" accept="image/*" aria-label={`Upload image for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); updateCell(rowIndex, columnIndex, String(uploaded.id)) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 'var(--brand-font-size-caption)' }} />
                                 </label>
@@ -723,7 +732,7 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 12 }}>
                   <select aria-label="Length" value={variantEditor.newPair.length} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, length: event.target.value } })}>{['x-short', 'short', 'medium', 'long', 'x-long', ...variantEditor.values.combinations.map((pair) => pair.length)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
                   <select aria-label="Shape" value={variantEditor.newPair.shape} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, shape: event.target.value } })}>{['square', 'oval', 'almond', 'round', ...variantEditor.values.combinations.map((pair) => pair.shape)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
-                  <button type="button" onClick={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: [...new Map([...variantEditor.values.combinations, variantEditor.newPair].map((pair) => [`${pair.length}|${pair.shape}`, pair])).values()] } })}>Add</button>
+                  <button type="button" onClick={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: [...new Map([...variantEditor.values.combinations, variantEditor.newPair].map((pair) => [`${pair.length}|${pair.shape}`, pair])).values()] } })} style={buttonStyle}>Add</button>
                 </div>
                 {variantEditor.values.combinations.map((pair) => <label key={`${pair.length}|${pair.shape}`} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 6, textTransform: 'capitalize' }}><input type="checkbox" checked onChange={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: variantEditor.values.combinations.filter((item) => item !== pair) } })} />{pair.length.replace('-', ' ')} {pair.shape}</label>)}
               </fieldset>

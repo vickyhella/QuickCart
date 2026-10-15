@@ -1,6 +1,6 @@
 # Ginny Nana — Product Studio & Marketing Studio PRD
 
-**Version:** 1.8
+**Version:** 1.9
 **Project:** [vickyhella/QuickCart](https://github.com/vickyhella/QuickCart)  
 **Tech Stack:** Next.js + Payload CMS + Neon PostgreSQL + Cloudflare R2
 
@@ -501,6 +501,14 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 - 开发与 Preview 使用独立 R2 bucket/凭据；未配置时本地媒体只写入 Git 忽略的本地媒体目录，不回退使用 Production R2。
 - 订单、折扣、支付功能
 - GMC / Pinterest Feed 功能
+
+### 商品 Feed
+
+- 商品提供可编辑的 Shipping weight（kg）字段，新商品默认 `0.2 kg`；GMC 和 Pinterest XML Feed 都输出该商品的重量，历史记录为空时按 `0.2 kg` 处理。
+- 商品 Feed 标题的规格顺序统一为 Length、Shape、Size，例如 `Silver Moonlight - medium almond XS`；Variant 名称和值的顺序保持一致。
+- GMC 的 `product_detail` 只发送 Length 和 Shape；Size 使用标准 `g:size` 字段，避免重复显示。
+- Feed URL 每次被请求时返回当前已发布商品数据；Merchant Center 是否自动更新取决于数据源的抓取计划。需要立即更新时，在 GMC 手动触发抓取。
+- GMC 中已验证并认领的网站域名必须与 Feed 商品落地页链接域名一致；部署时将 `NEXT_PUBLIC_SITE_URL` 设为该正式商城域名。
 
 ### 新增
 

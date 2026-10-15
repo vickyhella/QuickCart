@@ -2,6 +2,7 @@ import * as migration_20261013_085525 from './20261013_085525';
 import * as migration_20261013_143230_addStudioDescriptionTemplate from './20261013_143230_addStudioDescriptionTemplate';
 import * as migration_20261014_110652_add_marketing_workspace from './20261014_110652_add_marketing_workspace';
 import * as migration_20261014_233000_add_store_settings_checkout_fields from './20261014_233000_add_store_settings_checkout_fields';
+import * as migration_20261015_160600_add_product_shipping_weight from './20261015_160600_add_product_shipping_weight';
 
 export const migrations = [
   {
@@ -23,5 +24,10 @@ export const migrations = [
     up: migration_20261014_233000_add_store_settings_checkout_fields.up,
     down: migration_20261014_233000_add_store_settings_checkout_fields.down,
     name: '20261014_233000_add_store_settings_checkout_fields'
+  },
+  {
+    up: migration_20261015_160600_add_product_shipping_weight.up,
+    down: migration_20261015_160600_add_product_shipping_weight.down,
+    name: '20261015_160600_add_product_shipping_weight'
   },
 ];

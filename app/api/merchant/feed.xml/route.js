@@ -38,6 +38,7 @@ export async function GET() {
 
   const siteURL = (getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com').replace(/\/$/, '')
   const entries = productsWithMedia.flatMap((product) => {
+    const shippingWeight = Number(product.shippingWeight) > 0 ? Number(product.shippingWeight) : 0.2
     const image = typeof product.featuredImage === 'object' ? product.featuredImage : null
     const configuredVariants = product.variants || []
     const variants = configuredVariants.filter((variant) => variant.enabled !== false)
@@ -55,8 +56,8 @@ export async function GET() {
       const productImages = [image, ...(product.gallery || [])].filter((item) => item?.url)
       const extraImages = productImages.filter((item) => new URL(item.url, siteURL).toString() !== itemImageLink)
         .map((item) => `<g:additional_image_link>${text(new URL(item.url, siteURL).toString())}</g:additional_image_link>`).join('')
-      const dimensions = variant ? [['Shape', variant.shape], ['Length', variant.length], ['Size', (variant.size || 's').toUpperCase()]].filter(([, value]) => value) : []
-      const title = `${product.title}${variant ? ` - ${[variant.shape, variant.length, (variant.size || 's').toUpperCase()].filter(Boolean).join(' ')}` : ''}`
+      const dimensions = variant ? [['Length', variant.length], ['Shape', variant.shape]].filter(([, value]) => value) : []
+      const title = `${product.title}${variant ? ` - ${[variant.length, variant.shape, (variant.size || 's').toUpperCase()].filter(Boolean).join(' ')}` : ''}`
       const availability = variant?.trackStock && Number(variant.stock || 0) < 1 ? 'out_of_stock' : 'in_stock'
       const gtin = product.gtin
       const mpn = product.mpn
@@ -74,6 +75,7 @@ export async function GET() {
         <g:price>${amount(price)}</g:price>
         ${sale}
         <g:condition>${text(product.condition || 'new')}</g:condition>
+        <g:shipping_weight>${shippingWeight} kg</g:shipping_weight>
         <g:brand>${text(product.brand || 'Ginny Nana')}</g:brand>
         ${gtin ? `<g:gtin>${text(gtin)}</g:gtin>` : ''}
         ${mpn ? `<g:mpn>${text(mpn)}</g:mpn>` : ''}

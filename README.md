@@ -41,13 +41,13 @@ This repo is **frontend only** – contributors can improve the design, add new 
 
 商品、页面、库存等内容的增删改不需要运行迁移。只有代码修改了 Payload 数据结构（例如新增集合或字段），并生成了新的 `migrations/` 文件，才需要把迁移应用到数据库。
 
-部署包含这些迁移文件的代码后，先查看 Production 是否还有未执行的迁移：
+部署依赖新字段或集合的代码前，先查看 Production 是否还有未执行的迁移：
 
 ```bash
 npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npx payload migrate:status
 ```
 
-如果新迁移显示 `Ran: No`，运行下面的命令应用到 Production：
+如果新迁移显示 `Ran: No`，运行下面的命令应用到 Production，然后再部署代码：
 
 ```bash
 npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npm run migrate

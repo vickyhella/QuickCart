@@ -50,6 +50,7 @@ export async function GET() {
   const siteURL = (getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com').replace(/\/$/, '')
   const currency = getEnvironmentVariable('NEXT_PUBLIC_CURRENCY') || 'USD'
   const entries = productsWithMedia.flatMap((product) => {
+    const shippingWeight = Number(product.shippingWeight) > 0 ? Number(product.shippingWeight) : 0.2
     const featured = mediaDoc(product.featuredImage)
     const gallery = (product.gallery || []).map(mediaDoc).filter(Boolean)
     const configuredVariants = product.variants || []
@@ -67,15 +68,15 @@ export async function GET() {
       const price = hasSalePrice ? regularPrice : salePrice
       if (!imageURL || !Number.isFinite(price) || price <= 0) return null
       const additionalImages = [...new Set([featured, ...gallery].map((image) => urlFor(image?.url, siteURL)).filter((url) => url && url !== imageURL))].slice(0, 10)
-      const nameParts = [variant?.shape, variant?.length, variant?.size?.toUpperCase()].filter(Boolean)
+      const nameParts = [variant?.length, variant?.shape, variant?.size?.toUpperCase()].filter(Boolean)
       const title = `${product.title}${nameParts.length ? ` - ${nameParts.join(' ')}` : ''}`
       const link = new URL(`/product/${encodeURIComponent(product.slug || product.id)}/`, siteURL)
       if (variant?.id) link.searchParams.set('variant', String(variant.id))
       const available = !variant?.trackStock || Number(variant.stock ?? 0) > 0
       const altTexts = [mainImage?.altText || `${product.title}${nameParts.length ? ` ${nameParts.join(' ')}` : ''}`, ...additionalImages.map((_, index) => [featured, ...gallery].filter(Boolean)[index]?.altText || `${product.title} product view ${index + 2}`)]
       const size = variant?.size ? `<g:size>${xml(variant.size.toUpperCase())}</g:size>` : ''
-      const variantNames = variant ? '<g:variant_names>Shape,Length,Size</g:variant_names>' : ''
-      const variantValues = variant ? `<g:variant_values>${xml([variant.shape, variant.length, variant.size?.toUpperCase()].filter(Boolean).join(','))}</g:variant_values>` : ''
+      const variantNames = variant ? '<g:variant_names>Length,Shape,Size</g:variant_names>' : ''
+      const variantValues = variant ? `<g:variant_values>${xml([variant.length, variant.shape, variant.size?.toUpperCase()].filter(Boolean).join(','))}</g:variant_values>` : ''
       const moreImages = additionalImages.map((url) => `<g:additional_image_link>${xml(url)}</g:additional_image_link>`).join('')
       return `<item>
         <g:id>${xml(variant?.sku || (variant ? `${groupId}-${variant.id}` : groupId))}</g:id>
@@ -90,6 +91,7 @@ export async function GET() {
         ${hasSalePrice ? `<g:sale_price>${salePrice.toFixed(2)} ${xml(currency)}</g:sale_price>` : ''}
         <g:availability>${available ? 'in stock' : 'out of stock'}</g:availability>
         <g:condition>${xml(product.condition || 'new')}</g:condition>
+        <g:shipping_weight>${shippingWeight} kg</g:shipping_weight>
         <g:brand>${xml(product.brand || 'Ginny Nana')}</g:brand>
         <g:product_type>${xml(product.category === 'press-on-nails' ? 'Beauty & Personal Care > Nails > Press-on Nails' : product.category || 'Press-on Nails')}</g:product_type>
         <g:google_product_category>${xml(product.googleProductCategory || 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails')}</g:google_product_category>

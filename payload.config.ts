@@ -18,10 +18,11 @@ import { PinterestPosts } from './collections/PinterestPosts'
 import { Users } from './collections/Users'
 import { StoreSettings } from './globals/StoreSettings'
 import { MarketingSettings } from './globals/MarketingSettings'
-import { getEnvironmentVariable, getRuntimeEnvironment } from './lib/environment-config'
+import { assertRuntimeEnvironmentConfigured, getEnvironmentVariable, getRuntimeEnvironment } from './lib/environment-config'
 
 const filename = fileURLToPath(import.meta.url)
 const runtimeEnvironment = getRuntimeEnvironment()
+assertRuntimeEnvironmentConfigured()
 const databaseURL = getEnvironmentVariable('DATABASE_URL')
 const databaseAdapter = databaseURL
   ? postgresAdapter({
@@ -91,7 +92,7 @@ export default buildConfig({
     }),
   ],
   editor: lexicalEditor(),
-  secret: getEnvironmentVariable('PAYLOAD_SECRET') || process.env.PAYLOAD_SECRET || '',
+  secret: getEnvironmentVariable('PAYLOAD_SECRET') || '',
   db: databaseAdapter,
   sharp,
   typescript: {

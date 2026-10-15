@@ -23,7 +23,7 @@ export function ProductSlugField({ path, readOnly }: { path: string; readOnly?: 
 
   return <div>
     <label htmlFor="product-slug" style={{ display: 'block', marginBottom: 6, fontWeight: 600 }}>Slug</label>
-    <input id="product-slug" value={value || ''} readOnly={readOnly} onChange={(event) => setValue(event.target.value)} style={{ width: '100%', padding: 10, border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 5, background: 'var(--theme-input-bg, #fff)', color: 'var(--theme-text, #111827)' }} />
-    <small style={{ display: 'block', marginTop: 5, color: 'var(--theme-elevation-600, #64748b)' }}>Generated from the product name. Edit it here if you want a custom URL.</small>
+    <input id="product-slug" value={value || ''} readOnly={readOnly} onChange={(event) => setValue(event.target.value)} style={{ width: '100%', padding: 10, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)' }} />
+    <small style={{ display: 'block', marginTop: 5, color: 'var(--brand-text-secondary)' }}>Generated from the product name. Edit it here if you want a custom URL.</small>
   </div>
 }

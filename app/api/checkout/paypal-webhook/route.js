@@ -3,9 +3,10 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { markOrderPaid } from '@/lib/complete-order'
 import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
+import { getEnvironmentVariable } from '@/lib/environment-config'
 
 export async function POST(request) {
-  const webhookId = process.env.PAYPAL_WEBHOOK_ID
+  const webhookId = getEnvironmentVariable('PAYPAL_WEBHOOK_ID')
   if (!isPayPalConfigured() || !webhookId) {
     return NextResponse.json({ error: 'Webhook is not configured' }, { status: 503 })
   }

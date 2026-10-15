@@ -1,10 +1,12 @@
+import { getEnvironmentVariable } from './environment-config'
+
 type ProductReference = { id: string | number; slug?: string | null }
 
 export function pinterestProductLink(
   product: ProductReference,
   variantID?: string | number | null,
   link?: string | null,
-  siteURL = process.env.NEXT_PUBLIC_SITE_URL || 'https://ginnynana.com',
+  siteURL = getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com',
 ) {
   const configuredURL = new URL(siteURL)
   const baseURL = ['localhost', '127.0.0.1', '::1'].includes(configuredURL.hostname)

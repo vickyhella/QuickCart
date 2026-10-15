@@ -240,14 +240,14 @@ export function ProductBulkEditLink() {
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
         <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/products/spreadsheet">Open spreadsheet editor</Link>
         {imageIssues && imageIssues.length > 0 && <details style={{ alignSelf: 'center' }}>
-          <summary style={{ cursor: 'pointer', color: '#a52d22', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
+          <summary style={{ cursor: 'pointer', color: 'var(--brand-danger)', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
           <ul style={{ margin: '8px 0', paddingInlineStart: 20 }}>
             {imageIssues.map((issue, index) => <li key={`${issue.id}-${issue.slot}-${index}`}>
               <Link href={`/admin/collections/products/${encodeURIComponent(issue.id)}`}>{issue.title}</Link> — {issue.slot}: {issue.reason}
             </li>)}
           </ul>
         </details>}
-        {imageIssues?.length === 0 && <span style={{ alignSelf: 'center', color: 'var(--theme-success-600)' }}>Images checked: no missing product images.</span>}
+        {imageIssues?.length === 0 && <span style={{ alignSelf: 'center', color: 'var(--brand-text-secondary)' }}>Images checked: no missing product images.</span>}
       </div>
     </div>
   )
@@ -548,11 +548,11 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
   // resolve to low-contrast combinations in custom views (for example white
   // text on a white button in light mode).
   const buttonStyle: React.CSSProperties = {
-    border: '1px solid #9ca3af',
-    borderRadius: 4,
+    border: '1px solid var(--brand-border)',
+    borderRadius: 'var(--brand-radius-sm)',
     padding: '0.7rem 1rem',
-    background: '#f3f4f6',
-    color: '#111827',
+    background: 'var(--brand-soft)',
+    color: 'var(--brand-text-primary)',
     cursor: 'pointer',
   }
   const inputStyle: React.CSSProperties = {
@@ -560,10 +560,10 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
     minWidth: 90,
     minHeight: 38,
     padding: '0.45rem 0.55rem',
-    border: '1px solid #9ca3af',
-    borderRadius: 3,
-    background: '#fff',
-    color: '#111827',
+    border: '1px solid var(--brand-border)',
+    borderRadius: 'var(--brand-radius-sm)',
+    background: 'var(--brand-surface)',
+    color: 'var(--brand-text-primary)',
     font: 'inherit',
   }
 
@@ -581,7 +581,7 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
         {!inStudio && <Link href="/admin/collections/marketing/studio?tab=seo" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing Studio</Link>}
         <button type="button" onClick={exportTSV} style={buttonStyle} disabled={loading || rows.length === 0}>Export TSV</button>
         <button type="button" onClick={() => void load()} style={buttonStyle} disabled={loading || saving}>Reload</button>
-        <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: '#166534', background: '#15803d', color: '#fff' }} disabled={loading || saving || dirtyIDs.size === 0}>
+        <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: 'var(--brand-accent)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)' }} disabled={loading || saving || dirtyIDs.size === 0}>
           {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
         </button>
         <input aria-label="Search products on this page" placeholder="Filter this page by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
@@ -599,11 +599,11 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
         <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} style={buttonStyle} disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
         {loading ? <span>Loading products…</span> : <span>{rows.length} on this page · {dirtyIDs.size} changed</span>}
       </div>
-      {message && <p role="status" style={{ color: 'var(--theme-success-500, #16825d)' }}>{message}</p>}
-      {error && <p role="alert" style={{ color: 'var(--theme-error-500, #c02b20)' }}>{error}</p>}
+      {message && <p role="status" style={{ color: 'var(--brand-text-secondary)' }}>{message}</p>}
+      {error && <p role="alert" style={{ color: 'var(--brand-danger)' }}>{error}</p>}
       {loading ? <p>Loading…</p> : rows.length === 0 ? <p>No products found.</p> : (
         <div onPasteCapture={handlePaste} onCopy={handleCopy} onMouseUp={() => setIsSelecting(false)} style={{ overflow: 'auto', maxHeight: '70vh', border: '1px solid var(--theme-elevation-300)' }}>
-          <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%', width: 'max-content', fontSize: 13 }}>
+          <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%', width: 'max-content', fontSize: 'var(--brand-font-size-caption)' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--theme-elevation-100)' }}>
               <tr>
                 <th style={{ padding: '0.65rem', position: 'sticky', left: 0, minWidth: 64, background: 'var(--theme-elevation-100)', zIndex: 3 }}>Image</th>
@@ -618,30 +618,30 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                 return (
                   <React.Fragment key={row.id}><tr style={{ background: dirty ? 'var(--theme-elevation-50, rgba(40,120,80,.08))' : undefined }}>
                     <td style={{ position: 'sticky', left: 0, zIndex: 1, width: 64, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
-                      {(() => { const item = media.find((entry) => String(entry.id) === row.featuredImage || entry.filename === row.featuredImage); return <img src={item?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 5 }} /> })()}
+                      {(() => { const item = media.find((entry) => String(entry.id) === row.featuredImage || entry.filename === row.featuredImage); return <img src={item?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 'var(--brand-radius-sm)' }} /> })()}
                     </td>
                     <th style={{ position: 'sticky', left: 64, zIndex: 1, minWidth: 110, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
-                      {dirty ? '● ' : ''}{rowIndex + 1}<button type="button" onClick={() => void duplicateProduct(rowIndex)} style={{ display: 'block', marginTop: 4, fontSize: 10, color: '#6b4252', textDecoration: 'underline' }}>Duplicate</button>
+                      {dirty ? '● ' : ''}{rowIndex + 1}<button type="button" onClick={() => void duplicateProduct(rowIndex)} style={{ display: 'block', marginTop: 4, fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-accent)', textDecoration: 'underline' }}>Duplicate</button>
                     </th>
                     {columns.map((column, columnIndex) => (
                       <td key={column.key}
                         onMouseDown={(event) => { if ((event.target as HTMLElement).closest('button, input[type=file]')) return; setSelectedRange((current) => event.shiftKey && current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : { startRow: rowIndex, startColumn: columnIndex, endRow: rowIndex, endColumn: columnIndex }); setIsSelecting(true) }}
                         onMouseEnter={() => { if (isSelecting) setSelectedRange((current) => current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : current) }}
-                        style={{ minWidth: column.width, padding: '0.3rem', borderBottom: '1px solid var(--theme-elevation-150)', verticalAlign: 'top', color: '#111827', background: selectedRange && rowIndex >= Math.min(selectedRange.startRow, selectedRange.endRow) && rowIndex <= Math.max(selectedRange.startRow, selectedRange.endRow) && columnIndex >= Math.min(selectedRange.startColumn, selectedRange.endColumn) && columnIndex <= Math.max(selectedRange.startColumn, selectedRange.endColumn) ? '#bfdbfe' : undefined }}>
+                        style={{ minWidth: column.width, padding: '0.3rem', borderBottom: '1px solid var(--theme-elevation-150)', verticalAlign: 'top', color: 'var(--brand-text-primary)', background: selectedRange && rowIndex >= Math.min(selectedRange.startRow, selectedRange.endRow) && rowIndex <= Math.max(selectedRange.startRow, selectedRange.endRow) && columnIndex >= Math.min(selectedRange.startColumn, selectedRange.endColumn) && columnIndex <= Math.max(selectedRange.startColumn, selectedRange.endColumn) ? 'var(--brand-soft-strong)' : undefined }}>
                         {column.key === 'gallery' ? (
                           <>
-                            <select data-row={rowIndex} data-column={columnIndex} multiple aria-label={`Gallery images for ${row.title}`} value={row.gallery.split(';').map((value) => value.trim()).filter(Boolean).map((value) => media.find((item) => String(item.id) === value || item.filename === value)?.id.toString() || value)} onChange={(event) => updateCell(rowIndex, columnIndex, [...event.currentTarget.selectedOptions].map((option) => option.value).join('; '))} style={{ ...inputStyle, minHeight: 96, color: '#111827' }}>
+                            <select data-row={rowIndex} data-column={columnIndex} multiple aria-label={`Gallery images for ${row.title}`} value={row.gallery.split(';').map((value) => value.trim()).filter(Boolean).map((value) => media.find((item) => String(item.id) === value || item.filename === value)?.id.toString() || value)} onChange={(event) => updateCell(rowIndex, columnIndex, [...event.currentTarget.selectedOptions].map((option) => option.value).join('; '))} style={{ ...inputStyle, minHeight: 96, color: 'var(--brand-text-primary)' }}>
                               {pickerMedia.map((item) => <option key={item.id} value={String(item.id)}>{item.filename || `Media ${item.id}`}</option>)}
                             </select>
-                            <p style={{ margin: '3px 0', fontSize: 11, color: '#4b5563' }}>Ctrl/Cmd-click to select multiple</p>
-                            <input type="file" accept="image/*" multiple aria-label={`Upload gallery images for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const files = [...(input.files || [])]; if (!files.length) return; try { const uploaded = await Promise.all(files.map((file) => uploadMedia(file, row.id))); const current = rows[rowIndex].gallery.split(';').map((value) => value.trim()).filter(Boolean); updateCell(rowIndex, columnIndex, [...new Set([...current, ...uploaded.map((item) => String(item.id))])].join('; ')) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', width: column.width, fontSize: 11 }} />
+                            <p style={{ margin: '3px 0', fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-text-secondary)' }}>Ctrl/Cmd-click to select multiple</p>
+                            <input type="file" accept="image/*" multiple aria-label={`Upload gallery images for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const files = [...(input.files || [])]; if (!files.length) return; try { const uploaded = await Promise.all(files.map((file) => uploadMedia(file, row.id))); const current = rows[rowIndex].gallery.split(';').map((value) => value.trim()).filter(Boolean); updateCell(rowIndex, columnIndex, [...new Set([...current, ...uploaded.map((item) => String(item.id))])].join('; ')) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', width: column.width, fontSize: 'var(--brand-font-size-caption)' }} />
                           </>
                         ) : column.key === 'variants' ? (
           <div>
                             <button type="button" onClick={() => openVariantEditor(rowIndex)} style={{ ...buttonStyle, whiteSpace: 'nowrap' }}>
                               Edit variants ({(() => { try { const v = JSON.parse(row.variants || '[]'); return Array.isArray(v) ? v.length : '?' } catch { return '!' } })()})
                             </button>
-                            <div style={{ marginTop: 5, color: '#4b5563', fontSize: 12 }}>Structured editor</div>
+                            <div style={{ marginTop: 5, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Structured editor</div>
                           </div>
                         ) : column.multiline ? (
                           column.key === 'description' ? <>
@@ -654,8 +654,8 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                             onChange={(event) => updateCell(rowIndex, columnIndex, event.target.value)}
                             style={{ ...inputStyle, minWidth: column.width, resize: 'vertical' }}
                           />
-                          <label style={{ display: 'block', marginTop: 5, fontSize: 12 }}>Insert uploaded image into Markdown
-                              <input type="file" accept="image/*" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); if (!uploaded.url) throw new Error('Uploaded image URL is missing'); updateCell(rowIndex, columnIndex, `${row.description}${row.description ? '\n\n' : ''}![${uploaded.filename || 'Product image'}](${uploaded.url})`) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 11 }} />
+                          <label style={{ display: 'block', marginTop: 5, fontSize: 'var(--brand-font-size-caption)' }}>Insert uploaded image into Markdown
+                              <input type="file" accept="image/*" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); if (!uploaded.url) throw new Error('Uploaded image URL is missing'); updateCell(rowIndex, columnIndex, `${row.description}${row.description ? '\n\n' : ''}![${uploaded.filename || 'Product image'}](${uploaded.url})`) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 'var(--brand-font-size-caption)' }} />
                           </label>
                           </> : <textarea
                             aria-label={`${column.label}, row ${rowIndex + 1}`}
@@ -681,8 +681,8 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                               const selectedMedia = media.find((item) => String(item.id) === row.featuredImage || item.filename === row.featuredImage)
                               return <>
                                 <img src={selectedMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={selectedMedia?.filename || 'Selected product image'} style={{ display: 'block', marginTop: 6, maxWidth: 110, maxHeight: 80, objectFit: 'contain' }} />
-                                <label style={{ display: 'block', marginTop: 5, fontSize: 12 }}>Upload
-                                  <input type="file" accept="image/*" aria-label={`Upload image for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); updateCell(rowIndex, columnIndex, String(uploaded.id)) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 11 }} />
+                                <label style={{ display: 'block', marginTop: 5, fontSize: 'var(--brand-font-size-caption)' }}>Upload
+                                  <input type="file" accept="image/*" aria-label={`Upload image for ${row.title}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, row.id); updateCell(rowIndex, columnIndex, String(uploaded.id)) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: column.width, fontSize: 'var(--brand-font-size-caption)' }} />
                                 </label>
                               </>
                             })()}
@@ -694,9 +694,9 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                   {expandedVariants.has(row.id) && (() => {
                     let variants: ProductVariant[] = []
                     try { variants = JSON.parse(row.variants || '[]') } catch { /* invalid JSON is handled by the variant editor */ }
-                    return <tr key={`${row.id}-variants`} style={{ color: '#1f2937', background: '#f8f6f4' }}><td colSpan={columns.length + 2} style={{ padding: 12, color: '#1f2937', background: '#f8f6f4', borderBottom: '1px solid #d6ccc7' }}>
+                    return <tr key={`${row.id}-variants`} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-soft)' }}><td colSpan={columns.length + 2} style={{ padding: 12, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><strong>{row.title} · {variants.length} variants</strong><button type="button" onClick={() => openVariantEditor(rowIndex)} style={buttonStyle}>Edit / copy / paste variants</button></div>
-                      <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', color: '#1f2937', background: '#fff' }}><thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Stock', 'Image'].map((label) => <th key={label} style={{ padding: 6, color: '#1f2937', background: '#f3f4f6', borderBottom: '1px solid #d6ccc7' }}>{label}</th>)}</tr></thead><tbody>{variants.map((variant, index) => { const image = media.find((item) => String(item.id) === mediaID(variant.image) || item.filename === variant.image); return <tr key={variant.id || index} style={{ color: '#1f2937', background: '#fff' }}>{[variant.sku, variant.length, variant.shape, variant.size?.toUpperCase(), variant.price ?? row.price, variant.stock, image?.filename || 'Product image'].map((value, cell) => <td key={cell} style={{ padding: 6, color: '#1f2937', background: '#fff', borderBottom: '1px solid #ebe6e3' }}>{String(value ?? '')}</td>)}</tr> })}</tbody></table></div>
+                      <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}><thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Stock', 'Image'].map((label) => <th key={label} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>{label}</th>)}</tr></thead><tbody>{variants.map((variant, index) => { const image = media.find((item) => String(item.id) === mediaID(variant.image) || item.filename === variant.image); return <tr key={variant.id || index} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}>{[variant.sku, variant.length, variant.shape, variant.size?.toUpperCase(), variant.price ?? row.price, variant.stock, image?.filename || 'Product image'].map((value, cell) => <td key={cell} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-surface)', borderBottom: '1px solid var(--brand-border)' }}>{String(value ?? '')}</td>)}</tr> })}</tbody></table></div>
                     </td></tr>
                   })()}
                   </React.Fragment>
@@ -714,11 +714,11 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
       )}
       {variantEditor && (
         <div role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVariantEditor(null) }} style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 20, background: 'rgba(15, 23, 42, 0.58)' }}>
-          <section role="dialog" aria-modal="true" aria-labelledby="variant-editor-title" style={{ width: 'min(1200px, 96vw)', maxHeight: '90vh', overflow: 'auto', background: '#fff', color: '#111827', borderRadius: 8, padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
+          <section role="dialog" aria-modal="true" aria-labelledby="variant-editor-title" style={{ width: 'min(1200px, 96vw)', maxHeight: '90vh', overflow: 'auto', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)', borderRadius: 'var(--brand-radius-sm)', padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>
             <h2 id="variant-editor-title" style={{ marginTop: 0 }}>Variants — {rows[variantEditor.rowIndex]?.title}</h2>
-            <p style={{ color: '#4b5563' }}>Select the exact Length + Shape pairs and sizes. Sync keeps existing SKU, price, stock, and image values for matching variants. You can paste tab-separated data into the table below.</p>
+            <p style={{ color: 'var(--brand-text-secondary)' }}>Select the exact Length + Shape pairs and sizes. Sync keeps existing SKU, price, stock, and image values for matching variants. You can paste tab-separated data into the table below.</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBlock: 16 }}>
-              <fieldset style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 12 }}>
+              <fieldset style={{ border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', padding: 12 }}>
                 <legend style={{ paddingInline: 5, fontWeight: 600 }}>Length + Shape combinations</legend>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 12 }}>
                   <select aria-label="Length" value={variantEditor.newPair.length} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, length: event.target.value } })}>{['x-short', 'short', 'medium', 'long', 'x-long', ...variantEditor.values.combinations.map((pair) => pair.length)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
@@ -727,7 +727,7 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                 </div>
                 {variantEditor.values.combinations.map((pair) => <label key={`${pair.length}|${pair.shape}`} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 6, textTransform: 'capitalize' }}><input type="checkbox" checked onChange={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: variantEditor.values.combinations.filter((item) => item !== pair) } })} />{pair.length.replace('-', ' ')} {pair.shape}</label>)}
               </fieldset>
-              <fieldset style={{ border: '1px solid #d1d5db', borderRadius: 6, padding: 12 }}>
+              <fieldset style={{ border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', padding: 12 }}>
                 <legend style={{ paddingInline: 5, fontWeight: 600 }}>Sizes</legend>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>{['xs', 's', 'm', 'l', ...variantEditor.values.size].filter((value, index, all) => all.indexOf(value) === index).map((option) => <label key={option}><input type="checkbox" checked={variantEditor.values.size.includes(option)} onChange={(event) => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, size: event.target.checked ? [...variantEditor.values.size, option] : variantEditor.values.size.filter((value) => value !== option) } })} /> {option.toUpperCase()}</label>)}</div>
               </fieldset>
@@ -736,7 +736,7 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
             <div style={{ overflowX: 'auto' }}>
               <div onPaste={handleVariantPaste}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1200 }}>
-                <thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Compare at', 'Stock', 'Variant image', 'Track stock', 'Enabled', ''].map((label) => <th key={label} style={{ textAlign: 'left', padding: 8, borderBottom: '2px solid #d1d5db', whiteSpace: 'nowrap' }}>{label}</th>)}</tr></thead>
+                <thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Compare at', 'Stock', 'Variant image', 'Track stock', 'Enabled', ''].map((label) => <th key={label} style={{ textAlign: 'left', padding: 8, borderBottom: '2px solid var(--brand-border)', whiteSpace: 'nowrap' }}>{label}</th>)}</tr></thead>
                 <tbody>{variantEditor.variants.map((variant, index) => {
                   const edit = (key: keyof ProductVariant, value: string | number | boolean | null) => setVariantEditor((current) => current ? { ...current, variants: current.variants.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item) } : current)
                   const cellInput: React.CSSProperties = { ...inputStyle, minWidth: 90 }
@@ -749,10 +749,10 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={4} aria-label={`Variant ${index + 1} price`} type="number" min="0" value={variant.price ?? ''} onChange={(event) => edit('price', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={5} aria-label={`Variant ${index + 1} compare at price`} type="number" min="0" value={variant.compareAtPrice ?? ''} onChange={(event) => edit('compareAtPrice', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={6} aria-label={`Variant ${index + 1} stock`} type="number" min="0" value={variant.stock} onChange={(event) => edit('stock', Number(event.target.value))} style={cellInput} /></td>
-                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={7} aria-label={`Variant ${index + 1} image filename or media ID`} list="product-media-options" placeholder="Product image" value={typeof variant.image === 'object' ? String(variant.image?.id || '') : String(variant.image || '')} onChange={(event) => edit('image', event.target.value)} style={{ ...cellInput, minWidth: 190 }} /><img src={variantMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={variantMedia?.filename || `Variant ${index + 1} image`} style={{ display: 'block', marginTop: 4, maxWidth: 52, maxHeight: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 11, marginTop: 4 }}>Upload<input type="file" accept="image/*" aria-label={`Upload image for variant ${index + 1}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, rows[variantEditor.rowIndex]?.id); edit('image', uploaded.id) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: 180, fontSize: 10 }} /></label></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={7} aria-label={`Variant ${index + 1} image filename or media ID`} list="product-media-options" placeholder="Product image" value={typeof variant.image === 'object' ? String(variant.image?.id || '') : String(variant.image || '')} onChange={(event) => edit('image', event.target.value)} style={{ ...cellInput, minWidth: 190 }} /><img src={variantMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={variantMedia?.filename || `Variant ${index + 1} image`} style={{ display: 'block', marginTop: 4, maxWidth: 52, maxHeight: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 'var(--brand-font-size-caption)', marginTop: 4 }}>Upload<input type="file" accept="image/*" aria-label={`Upload image for variant ${index + 1}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, rows[variantEditor.rowIndex]?.id); edit('image', uploaded.id) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: 180, fontSize: 'var(--brand-font-size-caption)' }} /></label></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={8} aria-label={`Variant ${index + 1} track stock`} type="checkbox" checked={variant.trackStock} onChange={(event) => edit('trackStock', event.target.checked)} /></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={9} aria-label={`Variant ${index + 1} enabled`} type="checkbox" checked={variant.enabled} onChange={(event) => edit('enabled', event.target.checked)} /></td>
-                    <td style={{ padding: 5 }}><button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: current.variants.filter((_, itemIndex) => itemIndex !== index) } : current)} style={{ ...buttonStyle, color: '#991b1b' }}>Remove</button></td>
+                    <td style={{ padding: 5 }}><button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: current.variants.filter((_, itemIndex) => itemIndex !== index) } : current)} style={{ ...buttonStyle, color: 'var(--brand-danger)' }}>Remove</button></td>
                   </tr>
                 })}</tbody>
               </table>
@@ -762,7 +762,7 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
               <button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: [...current.variants, { sku: '', length: 'short', shape: 'almond', size: 's', price: Number(rows[current.rowIndex]?.price || 0), compareAtPrice: rows[current.rowIndex]?.compareAtPrice ? Number(rows[current.rowIndex].compareAtPrice) : null, image: mediaID(rows[current.rowIndex]?.featuredImage) || null, stock: 10, trackStock: true, enabled: true }] } : current)} style={buttonStyle}>+ Add variant</button>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="button" onClick={() => setVariantEditor(null)} style={buttonStyle}>Cancel</button>
-                <button type="button" onClick={applyVariantEditor} style={{ ...buttonStyle, borderColor: '#166534', background: '#15803d', color: '#fff' }}>Apply variants</button>
+                <button type="button" onClick={applyVariantEditor} style={{ ...buttonStyle, borderColor: 'var(--brand-accent)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)' }}>Apply variants</button>
               </div>
             </div>
           </section>

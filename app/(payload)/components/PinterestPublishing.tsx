@@ -61,9 +61,9 @@ export function PinterestPublishing() {
     }
   }
 
-  return <section style={{ marginBlock: 24, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 8 }}>
+  return <section style={{ marginBlock: 24, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-sm)' }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-      <div><h2 style={{ margin: 0 }}>Pinterest publishing</h2><p style={{ margin: '6px 0 0', color: 'var(--theme-elevation-700)' }}>Choose products and a publish time. Titles, descriptions, links, and main images are filled from your product and templates.</p></div>
+      <div><h2 style={{ margin: 0 }}>Pinterest publishing</h2><p style={{ margin: '6px 0 0', color: 'var(--brand-text-secondary)' }}>Choose products and a publish time. Titles, descriptions, links, and main images are filled from your product and templates.</p></div>
       <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/pinterest-posts/">View scheduled publishing posts</Link>
     </div>
 
@@ -75,7 +75,7 @@ export function PinterestPublishing() {
       <label style={{ display: 'block', marginTop: 12 }}>Pinterest description template
         <textarea value={templates.description} onChange={(event) => setTemplates((value) => ({ ...value, description: event.target.value }))} rows={3} style={{ display: 'block', width: '100%', marginTop: 6 }} />
       </label>
-      <p style={{ marginBottom: 0, color: 'var(--theme-elevation-700)' }}>Available tokens: {'{brand}'}, {'{productName}'}, {'{productType}'}, {'{length}'}, {'{shape}'}, {'{size}'}.</p>
+      <p style={{ marginBottom: 0, color: 'var(--brand-text-secondary)' }}>Available tokens: {'{brand}'}, {'{productName}'}, {'{productType}'}, {'{length}'}, {'{shape}'}, {'{size}'}.</p>
     </details>
 
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'end', gap: 12, marginTop: 20 }}>
@@ -93,13 +93,13 @@ export function PinterestPublishing() {
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
       <button type="button" className="btn btn--style-secondary btn--size-small" onClick={() => setSelected((value) => [...new Set([...value, ...filtered.filter((product) => product.imageURL).map((product) => product.id)])])}>Select visible products</button>
       <button type="button" className="btn btn--style-secondary btn--size-small" onClick={() => setSelected([])}>Clear selection</button>
-      <span style={{ alignSelf: 'center', color: 'var(--theme-elevation-700)' }}>Only published products with an image can be scheduled; product URLs and images are automatic.</span>
+      <span style={{ alignSelf: 'center', color: 'var(--brand-text-secondary)' }}>Only published products with an image can be scheduled; product URLs and images are automatic.</span>
     </div>
 
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 10, marginTop: 14, maxHeight: 360, overflow: 'auto' }}>
-      {loading ? <p>Loading products…</p> : filtered.map((product) => <label key={product.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 9, border: `1px solid ${selected.includes(product.id) ? 'var(--theme-success-500)' : 'var(--theme-elevation-200)'}`, borderRadius: 6, cursor: product.imageURL ? 'pointer' : 'not-allowed', opacity: product.imageURL ? 1 : 0.65 }}>
+      {loading ? <p>Loading products…</p> : filtered.map((product) => <label key={product.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 9, border: `1px solid ${selected.includes(product.id) ? 'var(--theme-success-500)' : 'var(--theme-elevation-200)'}`, borderRadius: 'var(--brand-radius-sm)', cursor: product.imageURL ? 'pointer' : 'not-allowed', opacity: product.imageURL ? 1 : 0.65 }}>
         <input type="checkbox" checked={selected.includes(product.id)} disabled={!product.imageURL} onChange={() => toggle(product.id)} />
-        <img src={product.imageURL || '/nail-placeholder.svg'} alt="" onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} style={{ width: 44, height: 52, objectFit: 'cover', borderRadius: 4 }} />
+        <img src={product.imageURL || '/nail-placeholder.svg'} alt="" onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} style={{ width: 44, height: 52, objectFit: 'cover', borderRadius: 'var(--brand-radius-sm)' }} />
         <span style={{ minWidth: 0 }}><strong style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{product.title}</strong><small>{product.sku || 'No SKU'}</small></span>
       </label>)}
       {!loading && !filtered.length && <p>No published products match this search.</p>}

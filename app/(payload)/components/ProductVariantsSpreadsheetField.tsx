@@ -255,19 +255,19 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   }
 
   const styles: Record<string, React.CSSProperties> = {
-    input: { width: '100%', minWidth: 80, padding: '7px 8px', border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 4, background: 'var(--theme-input-bg, #fff)', color: 'var(--theme-text, #111827)' },
-    th: { padding: 8, textAlign: 'left', borderBottom: '2px solid var(--theme-elevation-300, #cbd5e1)', whiteSpace: 'nowrap', fontSize: 12 },
-    td: { padding: 5, borderBottom: '1px solid var(--theme-elevation-100, #e5e7eb)', verticalAlign: 'top' },
-    button: { padding: '8px 12px', border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 5, background: 'var(--theme-elevation-0, #fff)', color: 'var(--theme-text, #111827)', cursor: 'pointer' },
+    input: { width: '100%', minWidth: 80, padding: '7px 8px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)' },
+    th: { padding: 8, textAlign: 'left', borderBottom: '2px solid var(--brand-border)', whiteSpace: 'nowrap', fontSize: 'var(--brand-font-size-caption)' },
+    td: { padding: 5, borderBottom: '1px solid var(--brand-border)', verticalAlign: 'top' },
+    button: { padding: '8px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)', cursor: 'pointer' },
   }
 
   return <div style={{ marginBlock: 12 }}>
     {spreadsheetHref && <p style={{ marginBlock: '0 12px' }}><a className="btn btn--style-secondary btn--size-medium" href={spreadsheetHref}>Open this product in the full spreadsheet editor</a></p>}
-    <p style={{ margin: '0 0 12px', color: 'var(--theme-elevation-700, #475569)' }}>
+    <p style={{ margin: '0 0 12px', color: 'var(--brand-text-secondary)' }}>
       Select exact Length + Shape pairs and sizes, then sync. Matching variants keep their existing SKU, price, stock, and image. New rows use the product image and stock 10 by default.
     </p>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: 12 }}>
-      <fieldset style={{ border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 6, padding: 10, minWidth: 0 }}>
+      <fieldset style={{ border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', padding: 10, minWidth: 0 }}>
         <legend style={{ paddingInline: 5, fontWeight: 600 }}>Length + Shape</legend>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 6 }}>
           <select disabled={readOnly} aria-label="Length" value={dimensions.newPair.length} onChange={(event) => setDimensions((current) => ({ ...current, newPair: { ...current.newPair, length: event.target.value } }))}>{[...new Set([...presets.length, ...dimensions.combinations.map((pair) => pair.length)])].map((value) => <option key={value}>{value}</option>)}</select>
@@ -276,7 +276,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
         </div>
         {dimensions.combinations.map((pair) => <label key={`${pair.length}|${pair.shape}`} style={{ display: 'flex', gap: 6, marginTop: 7, textTransform: 'capitalize' }}><input type="checkbox" disabled={readOnly} checked onChange={() => setDimensions((current) => ({ ...current, combinations: current.combinations.filter((item) => item !== pair) }))} />{pair.length.replace('-', ' ')} {pair.shape}</label>)}
       </fieldset>
-      <fieldset style={{ border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 6, padding: 10, minWidth: 0 }}>
+      <fieldset style={{ border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', padding: 10, minWidth: 0 }}>
         <legend style={{ paddingInline: 5, fontWeight: 600 }}>Sizes</legend>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 9 }}>{[...new Set([...presets.size, ...dimensions.size])].map((option) => <label key={option}><input type="checkbox" disabled={readOnly} checked={dimensions.size.includes(option)} onChange={(event) => setDimensions((current) => ({ ...current, size: event.target.checked ? [...current.size, option] : current.size.filter((value) => value !== option) }))} /> {option.toUpperCase()}</label>)}</div>
       </fieldset>
@@ -284,23 +284,23 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
       <button type="button" disabled={readOnly} onClick={syncCombinations} style={styles.button}>Sync combinations &amp; generate SKUs</button>
       <button type="button" disabled={readOnly} onClick={() => updateRows([...rows, { sku: '', shape: dimensions.combinations[0]?.shape || 'almond', length: dimensions.combinations[0]?.length || 'short', size: dimensions.size[0] || 's', price: null, compareAtPrice: null, image: featuredImage || null, stock: 10, trackStock: true, enabled: true }])} style={styles.button}>+ Add one variant</button>
-      <span style={{ color: 'var(--theme-elevation-600, #64748b)', fontSize: 12 }}>{rows.length} variant(s)</span>
+      <span style={{ color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{rows.length} variant(s)</span>
     </div>
-    {message && <p role="status" style={{ color: 'var(--theme-elevation-700, #475569)', fontSize: 12 }}>{message}</p>}
-    <div style={{ overflowX: 'auto', border: '1px solid var(--theme-elevation-200, #e2e8f0)', borderRadius: 6 }} onPaste={handlePaste} onCopy={handleCopy}>
+    {message && <p role="status" style={{ color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{message}</p>}
+    <div style={{ overflowX: 'auto', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)' }} onPaste={handlePaste} onCopy={handleCopy}>
       <table style={{ width: '100%', minWidth: 1250, borderCollapse: 'collapse' }}>
         <thead><tr>{columns.map((column) => <th key={column.key} style={styles.th}>{column.label}</th>)}<th style={styles.th}>Remove</th></tr></thead>
         <tbody>{rows.map((variant, rowIndex) => <tr key={variant.id || `${variant.sku}-${rowIndex}`}>
           {columns.map((column, columnIndex) => <td key={column.key} style={styles.td} onMouseDown={() => setRange({ startRow: rowIndex, endRow: rowIndex, startColumn: columnIndex, endColumn: columnIndex })} onMouseEnter={() => setRange((current) => current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : current)}>
             {column.key === 'size' ? <select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={variant.size || 's'} onChange={(event) => updateCell(rowIndex, 'size', event.target.value)} style={styles.input}>{presets.size.map((size) => <option key={size} value={size}>{size.toUpperCase()}</option>)}</select>
-              : column.key === 'image' ? <><select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={imageID(variant.image)} onChange={(event) => updateCell(rowIndex, 'image', event.target.value)} style={{ ...styles.input, minWidth: 190 }}><option value="">Use product image</option>{mediaOptions.map((item) => <option key={item.id} value={String(item.id)}>{item.filename}</option>)}</select><img src={media.find((item) => String(item.id) === imageID(variant.image))?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt="Variant preview" style={{ display: 'block', marginTop: 5, width: 52, height: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 11, marginTop: 5 }}>Upload<input type="file" accept="image/*" disabled={readOnly} onChange={(event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) void uploadImage(file, rowIndex).catch((error) => setMessage(error.message)); input.value = '' }} /></label></>
+              : column.key === 'image' ? <><select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={imageID(variant.image)} onChange={(event) => updateCell(rowIndex, 'image', event.target.value)} style={{ ...styles.input, minWidth: 190 }}><option value="">Use product image</option>{mediaOptions.map((item) => <option key={item.id} value={String(item.id)}>{item.filename}</option>)}</select><img src={media.find((item) => String(item.id) === imageID(variant.image))?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt="Variant preview" style={{ display: 'block', marginTop: 5, width: 52, height: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 'var(--brand-font-size-caption)', marginTop: 5 }}>Upload<input type="file" accept="image/*" disabled={readOnly} onChange={(event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) void uploadImage(file, rowIndex).catch((error) => setMessage(error.message)); input.value = '' }} /></label></>
               : column.key === 'trackStock' || column.key === 'enabled' ? <input data-variant-row={rowIndex} data-variant-column={columnIndex} type="checkbox" disabled={readOnly} checked={Boolean(variant[column.key] ?? (column.key === 'enabled'))} onChange={(event) => updateCell(rowIndex, column.key, event.target.checked)} />
                 : <input data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} aria-label={`${column.label} variant ${rowIndex + 1}`} type={['price', 'compareAtPrice', 'stock'].includes(String(column.key)) ? 'number' : 'text'} min="0" value={variant[column.key] === null || variant[column.key] === undefined ? '' : String(variant[column.key])} placeholder={column.key === 'price' ? 'Product price' : ''} onChange={(event) => updateCell(rowIndex, column.key, event.target.value)} style={styles.input} />}
           </td>)}
-          <td style={styles.td}><button type="button" disabled={readOnly} onClick={() => updateRows(rows.filter((_, index) => index !== rowIndex))} style={{ ...styles.button, color: '#b91c1c' }}>Remove</button></td>
+          <td style={styles.td}><button type="button" disabled={readOnly} onClick={() => updateRows(rows.filter((_, index) => index !== rowIndex))} style={{ ...styles.button, color: 'var(--brand-danger)' }}>Remove</button></td>
         </tr>)}</tbody>
       </table>
     </div>
-    <p style={{ marginTop: 8, color: 'var(--theme-elevation-600, #64748b)', fontSize: 12 }}>Copy a rectangular selection with Ctrl/Cmd+C, or paste a tab-separated block into any cell. Image cells accept an image filename or Media ID when pasted.</p>
+    <p style={{ marginTop: 8, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Copy a rectangular selection with Ctrl/Cmd+C, or paste a tab-separated block into any cell. Image cells accept an image filename or Media ID when pasted.</p>
   </div>
 }

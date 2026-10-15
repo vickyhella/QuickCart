@@ -32,7 +32,7 @@ const statusLabels: Record<PublishingPost['status'], string> = {
   failed: 'Failed',
 }
 
-const cardStyle = { border: '1px solid #e7ddd8', borderRadius: 16, background: 'white' }
+const cardStyle = { border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-lg)', background: 'var(--brand-surface)' }
 
 export default function MarketingStudio() {
   const router = useRouter()
@@ -106,7 +106,7 @@ export default function MarketingStudio() {
     </header>
 
     <div role="tablist" aria-label="Marketing Studio sections" className="mb-8 flex gap-2 border-b border-[#e7ddd8]">
-      {marketingStudioTabs.map((item) => <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => selectTab(item.id)} className="border-0 border-b-2 bg-transparent px-4 py-3 text-sm" style={{ borderBottomColor: tab === item.id ? 'var(--accent)' : 'transparent', color: tab === item.id ? 'var(--theme-text)' : 'var(--theme-elevation-700)', fontWeight: tab === item.id ? 600 : 400 }}>{item.label}</button>)}
+      {marketingStudioTabs.map((item) => <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => selectTab(item.id)} className="border-0 border-b-2 bg-transparent px-4 py-3 text-sm" style={{ borderBottomColor: tab === item.id ? 'var(--accent)' : 'transparent', color: tab === item.id ? 'var(--brand-text-primary)' : 'var(--brand-text-secondary)', fontWeight: tab === item.id ? 600 : 400 }}>{item.label}</button>)}
     </div>
 
     {tab === 'pinterest' && <>
@@ -132,11 +132,11 @@ export default function MarketingStudio() {
           {post.imageURL ? <img src={post.imageURL} alt="" className="h-14 w-12 rounded-md object-cover" /> : <div className="h-14 w-12 rounded-md bg-[#f5efec]" />}
           <div className="min-w-[180px] flex-1">
             <div className="font-medium">{post.title || post.productTitle || 'Untitled post'}</div>
-            <div className="mt-1 text-xs text-[#766966]">{post.productTitle}{post.productTitle ? ' · ' : ''}{post.status === 'published' && post.publishedAt ? `Published ${new Date(post.publishedAt).toLocaleString()}` : `Scheduled ${new Date(post.scheduledAt).toLocaleString()}`}</div>
-            {post.lastError && <div className="mt-1 text-xs text-red-700">{post.lastError}</div>}
-            {post.pinId && <div className="mt-1 text-xs text-[#766966]">Pinterest ID: {post.pinId}</div>}
+            <div className="mt-1 text-sm text-[#766966]">{post.productTitle}{post.productTitle ? ' · ' : ''}{post.status === 'published' && post.publishedAt ? `Published ${new Date(post.publishedAt).toLocaleString()}` : `Scheduled ${new Date(post.scheduledAt).toLocaleString()}`}</div>
+            {post.lastError && <div className="mt-1 text-sm text-red-700">{post.lastError}</div>}
+            {post.pinId && <div className="mt-1 text-sm text-[#766966]">Pinterest ID: {post.pinId}</div>}
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs ${post.status === 'failed' ? 'bg-red-50 text-red-800' : post.status === 'published' ? 'bg-green-50 text-green-800' : 'bg-[#f5efec] text-[#604a45]'}`}>{statusLabels[post.status]}</span>
+          <span className={`rounded-full px-3 py-1 text-sm ${post.status === 'failed' ? 'bg-red-50 text-red-800' : post.status === 'published' ? 'bg-green-50 text-green-800' : 'bg-[#f5efec] text-[#604a45]'}`}>{statusLabels[post.status]}</span>
           {post.status === 'failed' && <button type="button" disabled={busyID === post.id} onClick={() => void updatePost(post, 'retry')} className="rounded-lg bg-[#604a45] px-3 py-2 text-sm text-white disabled:opacity-50">{busyID === post.id ? 'Retrying…' : 'Queue retry'}</button>}
           {post.status === 'scheduled' && <button type="button" disabled={busyID === post.id} onClick={() => void updatePost(post, 'cancel')} className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm disabled:opacity-50">Cancel</button>}
         </article>)}

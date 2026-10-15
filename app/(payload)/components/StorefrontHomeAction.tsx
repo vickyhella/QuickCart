@@ -12,10 +12,10 @@ export function StorefrontHomeAction() {
 
 const actionStyle: CSSProperties = {
   alignItems: 'center',
-  border: '1px solid var(--theme-elevation-300, #d8d8d8)',
-  borderRadius: 6,
+  border: '1px solid var(--theme-elevation-300, var(--brand-border))',
+  borderRadius: 'var(--brand-radius-sm)',
   display: 'inline-flex',
-  fontSize: 13,
+  fontSize: 'var(--brand-font-size-caption)',
   minHeight: 36,
   padding: '0 12px',
   textDecoration: 'none',

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { randomBytes } from 'node:crypto'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getCheckoutFailure } from '@/lib/checkout-error'
 import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
 import { shippingCountries } from '@/lib/countries'
 
@@ -194,6 +195,7 @@ export async function POST(request) {
     }
   } catch (error) {
     console.error('Checkout creation failed:', error)
-    return NextResponse.json({ error: error.message || '无法创建结账订单。' }, { status: error.status || 400 })
+    const failure = getCheckoutFailure(error, '无法创建结账订单。')
+    return NextResponse.json({ error: failure.message }, { status: failure.status })
   }
 }

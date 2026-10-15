@@ -13,7 +13,7 @@ export function ProductThumbnailCell({ cellData }: { cellData?: unknown }) {
     fetch(`/api/media/${encodeURIComponent(id)}?depth=0`, { credentials: 'same-origin' }).then((response) => response.ok ? response.json() : null).then((media) => { if (active && media?.url) setUrl(media.url) }).catch(() => {})
     return () => { active = false }
   }, [cellData, initial])
-  return <div style={{ width: 48, height: 48, display: 'grid', placeItems: 'center', overflow: 'hidden', borderRadius: 6, background: 'var(--theme-elevation-100)' }}>
+  return <div style={{ width: 48, height: 48, display: 'grid', placeItems: 'center', overflow: 'hidden', borderRadius: 'var(--brand-radius-sm)', background: 'var(--theme-elevation-100)' }}>
     <img src={url} alt="Product image or placeholder" onError={() => setUrl('/nail-placeholder.svg')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
   </div>
 }

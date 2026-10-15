@@ -2,17 +2,18 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { pinterestProductLink } from '@/lib/pinterest-product-link'
+import { getEnvironmentVariable } from '@/lib/environment-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
+  const secret = getEnvironmentVariable('CRON_SECRET')
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
-  const accessToken = process.env.PINTEREST_ACCESS_TOKEN
-  const boardID = process.env.PINTEREST_BOARD_ID
+  const accessToken = getEnvironmentVariable('PINTEREST_ACCESS_TOKEN')
+  const boardID = getEnvironmentVariable('PINTEREST_BOARD_ID')
   if (!accessToken || !boardID) {
     return NextResponse.json({ error: 'Configure PINTEREST_ACCESS_TOKEN and PINTEREST_BOARD_ID.' }, { status: 503 })
   }

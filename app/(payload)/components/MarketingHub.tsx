@@ -31,9 +31,9 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
     brand: 'Ginny Nana', productType: 'press-on nails', productName: 'Example product', length: 'Short', shape: 'Square',
     availableLengthShapeCombinations: 'Short Square, Medium Almond', availableSizes: 'XS, S, M, L',
   })
-  const fieldStyle: CSSProperties = { boxSizing: 'border-box', width: '100%', minHeight: 44, padding: '10px 12px', border: '1px solid #c9c4c2', borderRadius: 6, background: '#fff', color: '#261f22', font: 'inherit' }
-  const labelStyle: CSSProperties = { display: 'grid', gap: 8, minWidth: 0, color: 'var(--theme-text, #302522)', fontWeight: 600 }
-  const panelStyle: CSSProperties = { padding: '24px clamp(18px, 3vw, 32px)', marginBottom: 18, border: '1px solid var(--theme-elevation-200)', borderRadius: 12, background: 'var(--theme-elevation-0, #fff)' }
+  const fieldStyle: CSSProperties = { boxSizing: 'border-box', width: '100%', minHeight: 44, padding: '10px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-ink)', fontFamily: 'var(--font-body)', fontSize: 'var(--brand-font-size-control)' }
+  const labelStyle: CSSProperties = { display: 'grid', gap: 8, minWidth: 0, color: 'var(--brand-text-primary)', fontWeight: 600 }
+  const panelStyle: CSSProperties = { padding: '24px clamp(18px, 3vw, 32px)', marginBottom: 18, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-md)', background: 'var(--brand-surface)' }
   const update = (key: string, value: string | number | boolean) => setTemplates((current) => ({ ...current, [key]: value }))
 
   useEffect(() => {
@@ -143,7 +143,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
     {error && <p role="alert">{error}</p>}
     {section === 'feeds' && <>
     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(250px,1fr))', gap: 16 }}>
-      {([{ name: 'Google Merchant Center', summary: gmc, feed: '/api/merchant/feed.xml' }, { name: 'Pinterest catalog', summary: pinterest, feed: '/api/pinterest/feed.xml' }]).map(({ name, summary, feed }) => <section key={name} style={{ padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 12 }}>
+      {([{ name: 'Google Merchant Center', summary: gmc, feed: '/api/merchant/feed.xml' }, { name: 'Pinterest catalog', summary: pinterest, feed: '/api/pinterest/feed.xml' }]).map(({ name, summary, feed }) => <section key={name} style={{ padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-md)' }}>
         <h2>{name}</h2><p>{summary ? `${summary.publishedProducts ?? 0} published products · ${summary.feedItems ?? 0} feed items` : 'Loading preview…'}</p>
         {!!summary?.skippedPublishedProducts?.length && <p>{summary.skippedPublishedProducts.length} published products need attention.</p>}
         <a href={feed} target="_blank" rel="noreferrer">Open XML feed</a>{' · '}<a href={feed.includes('pinterest') ? '/pinterest-feed' : '/merchant-feed'} target="_blank" rel="noreferrer">Open visual preview</a>
@@ -158,11 +158,11 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           <label style={labelStyle}>Studio Auto description
             <textarea rows={7} style={{ ...fieldStyle, minHeight: 180, resize: 'vertical' }} value={templates.studioDescriptionTemplate || DEFAULT_STUDIO_DESCRIPTION_TEMPLATE} onChange={(event) => update('studioDescriptionTemplate', event.target.value)} />
           </label>
-          <p style={{ marginBottom: 8, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Markdown is supported: headings, **bold**, *italic*, lists, links, and tables.</p>
-          <div aria-label="Description template preview" style={{ marginTop: 12, padding: 16, border: '1px solid var(--theme-elevation-200)', borderRadius: 8, background: 'var(--theme-elevation-50, #faf9f8)' }}>
+          <p style={{ marginBottom: 8, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Markdown is supported: headings, **bold**, *italic*, lists, links, and tables.</p>
+          <div aria-label="Description template preview" style={{ marginTop: 12, padding: 16, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-soft)' }}>
             <ReactMarkdown remarkPlugins={[remarkGfm]}>{descriptionPreview}</ReactMarkdown>
           </div>
-          <p style={{ marginBottom: 0, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{availableLengthShapeCombinations}'}, {'{availableSizes}'}.</p>
+          <p style={{ marginBottom: 0, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{availableLengthShapeCombinations}'}, {'{availableSizes}'}.</p>
         </section>
 
         <section style={panelStyle}>
@@ -176,7 +176,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
               <textarea rows={4} style={{ ...fieldStyle, minHeight: 112, resize: 'vertical' }} value={templates.productDescriptionTemplate || DEFAULT_PRODUCT_SEO_DESCRIPTION} onChange={(event) => update('productDescriptionTemplate', event.target.value)} />
             </label>
           </div>
-          <p style={{ marginBottom: 0, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{availableLengthShapeCombinations}'}, {'{availableSizes}'}.</p>
+          <p style={{ marginBottom: 0, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{availableLengthShapeCombinations}'}, {'{availableSizes}'}.</p>
         </section>
         </>}
 
@@ -198,7 +198,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
               <input style={fieldStyle} value={templates.imageCaptionTemplate || '{productName} press-on nails by {brand}'} onChange={(event) => update('imageCaptionTemplate', event.target.value)} />
             </label>
           </div>
-          <p style={{ marginBottom: 0, color: 'var(--brand-muted, #766762)', fontSize: 13 }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{number}'}.</p>
+          <p style={{ marginBottom: 0, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{number}'}.</p>
         </section>
         <section style={{ ...panelStyle, overflowX: 'auto' }}>
           <h2 style={{ marginTop: 0 }}>Current image metadata</h2>
@@ -215,16 +215,16 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           <label style={{ ...labelStyle, maxWidth: 420, marginTop: 20 }}>WebP quality (1–100)
             <input style={fieldStyle} type="number" min={1} max={100} step={1} value={templates.webpQuality ?? 82} onChange={(event) => update('webpQuality', event.target.value === '' ? '' : Number(event.target.value))} />
           </label>
-          <p style={{ margin: '14px 0 8px', color: 'var(--brand-muted, #766762)', fontSize: 13 }}>{reprocessLoading ? 'Checking existing media…' : `${reprocessImages.length} existing image${reprocessImages.length === 1 ? '' : 's'} can be rebuilt from preserved originals. The entered quality will be saved when reprocessing starts. Temporary images and GIF/SVG files are excluded.`}</p>
-          <button type="button" disabled={saving || reprocessLoading || Boolean(reprocessProgress) || !reprocessImages.length} onClick={() => void reprocessExistingImages()} style={{ padding: '10px 16px', border: '1px solid #74495a', borderRadius: 6, background: '#fff', color: '#74495a', fontWeight: 600, cursor: 'pointer', opacity: saving || reprocessLoading || reprocessProgress || !reprocessImages.length ? 0.55 : 1 }}>{reprocessProgress ? `Recompressing ${reprocessProgress.done} / ${reprocessProgress.total}…` : `Recompress ${reprocessImages.length} existing images`}</button>
-          {!!reprocessFailures.length && <div role="alert" style={{ marginTop: 12, color: '#8b1e1e', fontSize: 13 }}><strong>{reprocessFailures.length} image(s) failed:</strong><ul>{reprocessFailures.map((failure) => <li key={failure.id}>{failure.filename}: {failure.error}</li>)}</ul></div>}
+          <p style={{ margin: '14px 0 8px', color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{reprocessLoading ? 'Checking existing media…' : `${reprocessImages.length} existing image${reprocessImages.length === 1 ? '' : 's'} can be rebuilt from preserved originals. The entered quality will be saved when reprocessing starts. Temporary images and GIF/SVG files are excluded.`}</p>
+          <button type="button" disabled={saving || reprocessLoading || Boolean(reprocessProgress) || !reprocessImages.length} onClick={() => void reprocessExistingImages()} style={{ padding: '10px 16px', border: '1px solid var(--brand-accent)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-accent)', fontWeight: 600, cursor: 'pointer', opacity: saving || reprocessLoading || reprocessProgress || !reprocessImages.length ? 0.55 : 1 }}>{reprocessProgress ? `Recompressing ${reprocessProgress.done} / ${reprocessProgress.total}…` : `Recompress ${reprocessImages.length} existing images`}</button>
+          {!!reprocessFailures.length && <div role="alert" style={{ marginTop: 12, color: 'var(--brand-danger)', fontSize: 'var(--brand-font-size-caption)' }}><strong>{reprocessFailures.length} image(s) failed:</strong><ul>{reprocessFailures.map((failure) => <li key={failure.id}>{failure.filename}: {failure.error}</li>)}</ul></div>}
         </section>
         </>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} style={{ padding: '12px 18px', border: 0, borderRadius: 6, background: '#74495a', color: '#fff', fontWeight: 600, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Saving…' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : 'Save compression settings'}</button>
+          <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} style={{ padding: '12px 18px', border: 0, borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)', fontWeight: 600, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Saving…' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : 'Save compression settings'}</button>
           {saveMessage && <span role="status">{saveMessage}</span>}
         </div>
-        {section === 'seo' && <section style={{ marginTop: 22, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 12, overflowX: 'auto' }}>
+        {section === 'seo' && <section style={{ marginTop: 22, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-md)', overflowX: 'auto' }}>
           <h2>Current SEO content</h2>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}><thead><tr><th>Product</th><th>SEO title</th><th>SEO description</th></tr></thead><tbody>
             {seo.products.map((row) => {

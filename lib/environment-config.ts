@@ -15,3 +15,24 @@ export function getEnvironmentVariable(name: string, env: EnvironmentVariables =
   const suffix = environment === 'production' ? '' : `_${environment.toUpperCase()}`
   return env[`${name}${suffix}`]
 }
+
+export function assertRuntimeEnvironmentConfigured(env: EnvironmentVariables = process.env): void {
+  const environment = getRuntimeEnvironment(env)
+  if (environment === 'development') return
+
+  const required = [
+    'DATABASE_URL',
+    'PAYLOAD_SECRET',
+    'R2_BUCKET',
+    'R2_ENDPOINT',
+    'R2_ACCESS_KEY_ID',
+    'R2_SECRET_ACCESS_KEY',
+    'R2_PUBLIC_URL',
+  ]
+  const suffix = environment === 'production' ? '' : '_PREVIEW'
+  const missing = required.filter((name) => !getEnvironmentVariable(name, env))
+
+  if (missing.length) {
+    throw new Error(`Missing required ${environment} environment variables: ${missing.map((name) => `${name}${suffix}`).join(', ')}`)
+  }
+}

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getCheckoutFailure } from '@/lib/checkout-error'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 const matchesRange = (value, min, max) => value >= (min == null ? 0 : Number(min)) && (max == null || max === '' || value <= Number(max))
@@ -67,6 +68,8 @@ export async function POST(request) {
       itemCount: quantity,
     })
   } catch (error) {
-    return NextResponse.json({ error: error.message || '无法计算订单金额。' }, { status: 400 })
+    const failure = getCheckoutFailure(error, '无法计算订单金额。')
+    if (failure.internal) console.error('Checkout quote failed:', error)
+    return NextResponse.json({ error: failure.message }, { status: failure.status })
   }
 }

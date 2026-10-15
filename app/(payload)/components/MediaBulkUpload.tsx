@@ -33,12 +33,12 @@ export function MediaBulkUpload() {
     if (count) router.refresh()
   }
 
-  return <section style={{ marginBlock: 16, padding: 18, border: '1px solid var(--theme-elevation-300, #cbd5e1)', borderRadius: 8 }}>
-    <h2 style={{ margin: '0 0 6px', fontSize: 16 }}>Upload multiple images</h2>
-    <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--theme-elevation-600, #64748b)' }}>Drop several images here or browse. Image title and alt text start from each filename and can be edited after upload.</p>
-    <div onDragOver={(event) => { event.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); void upload(event.dataTransfer.files) }} style={{ padding: 20, textAlign: 'center', border: `1px dashed ${dragging ? '#9b5c72' : 'var(--theme-elevation-400, #94a3b8)'}`, borderRadius: 7, background: dragging ? 'rgba(155,92,114,.08)' : 'transparent' }}>
+  return <section style={{ marginBlock: 16, padding: 18, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)' }}>
+    <h2 style={{ margin: '0 0 6px', fontSize: 'var(--brand-font-size-body)' }}>Upload multiple images</h2>
+    <p style={{ margin: '0 0 12px', fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-text-secondary)' }}>Drop several images here or browse. Image title and alt text start from each filename and can be edited after upload.</p>
+    <div onDragOver={(event) => { event.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); void upload(event.dataTransfer.files) }} style={{ padding: 20, textAlign: 'center', border: `1px dashed ${dragging ? 'var(--brand-highlight)' : 'var(--brand-border)'}`, borderRadius: 'var(--brand-radius-sm)', background: dragging ? 'rgba(155,92,114,.08)' : 'transparent' }}>
       <label style={{ cursor: 'pointer' }}>{busy ? 'Uploading images…' : 'Drop files or browse'}<input type="file" accept="image/*" multiple disabled={busy} onChange={(event) => { if (event.target.files) void upload(event.target.files); event.currentTarget.value = '' }} style={{ display: 'none' }} /></label>
     </div>
-    {message && <p role="status" style={{ marginBottom: 0, fontSize: 12 }}>{message}</p>}
+    {message && <p role="status" style={{ marginBottom: 0, fontSize: 'var(--brand-font-size-caption)' }}>{message}</p>}
   </section>
 }

@@ -1,5 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@/payload.config'
+import { getEnvironmentVariable } from '@/lib/environment-config'
 import { resolveProductMedia } from '@/lib/resolve-product-media'
 
 export const dynamic = 'force-dynamic'
@@ -35,7 +36,7 @@ export async function GET() {
   }
   const productsWithMedia = await resolveProductMedia(payload, products)
 
-  const siteURL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://ginnynana.com').replace(/\/$/, '')
+  const siteURL = (getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com').replace(/\/$/, '')
   const entries = productsWithMedia.flatMap((product) => {
     const image = typeof product.featuredImage === 'object' ? product.featuredImage : null
     const configuredVariants = product.variants || []

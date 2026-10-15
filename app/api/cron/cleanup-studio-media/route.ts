@@ -1,10 +1,11 @@
 import config from '@/payload.config'
 import { getPayload } from 'payload'
+import { getEnvironmentVariable } from '@/lib/environment-config'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET
+  const secret = getEnvironmentVariable('CRON_SECRET')
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const payload = await getPayload({ config })

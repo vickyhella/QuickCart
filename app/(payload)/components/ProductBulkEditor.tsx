@@ -1,11 +1,12 @@
 'use client'
+import { toEditorPriceFields, toStoredPriceFields, type PriceFields } from '@/lib/product-pricing'
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
 import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 
-type Product = Record<string, unknown> & { id: string | number }
+type Product = Record<string, unknown> & PriceFields & { id: string | number; variants?: (Omit<ProductVariant, 'salePrice'> & PriceFields)[] }
 type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
 type ProductVariant = {
   id?: string
@@ -14,7 +15,7 @@ type ProductVariant = {
   shape: string
   size: string
   price?: number | null
-  compareAtPrice?: number | null
+  salePrice?: number | null
   gtin?: string
   mpn?: string
   image?: string | number | Media | null
@@ -30,7 +31,7 @@ type ColumnKey =
   | 'purchaseURL'
   | 'description'
   | 'price'
-  | 'compareAtPrice'
+  | 'salePrice'
   | 'category'
   | 'length'
   | 'shape'
@@ -54,7 +55,7 @@ type ColumnKey =
   | 'seoTitle'
   | 'seoDescription'
 
-type GridRow = Record<ColumnKey, string> & { id: string; featuredImageURL: string; resolvedFeaturedImageID: string }
+type GridRow = Record<ColumnKey, string> & { id: string; featuredImageURL: string; resolvedFeaturedImageID: string; originalPricing?: PriceFields & { variants?: Product['variants'] } }
 
 const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?: boolean }> = [
   { key: 'title', label: 'Title', width: 190 },
@@ -64,7 +65,7 @@ const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?:
   { key: 'purchaseURL', label: 'Purchase URL (admin only)', width: 260 },
   { key: 'description', label: 'Description', width: 280, multiline: true },
   { key: 'price', label: 'Price', width: 100 },
-  { key: 'compareAtPrice', label: 'Compare at price', width: 140 },
+  { key: 'salePrice', label: 'Sale price', width: 120 },
   { key: 'category', label: 'Category', width: 150 },
   { key: 'length', label: 'Length', width: 130 },
   { key: 'shape', label: 'Shape', width: 110 },
@@ -103,13 +104,14 @@ function mediaID(value: unknown): string {
 
 function toGridRow(product: Product): GridRow {
   const row = {} as GridRow
+  const pricing = toEditorPriceFields(product)
   for (const column of columns) {
-    const value = product[column.key]
+    const value = column.key === 'price' || column.key === 'salePrice' ? pricing[column.key] : product[column.key]
     if (column.key === 'featuredImage') row[column.key] = mediaID(value)
     else if (column.key === 'gallery') {
       row[column.key] = Array.isArray(value) ? value.map(mediaID).join('; ') : ''
     } else if (column.key === 'variants') {
-      row[column.key] = JSON.stringify(Array.isArray(value) ? value : [], null, 2)
+      row[column.key] = JSON.stringify((product.variants || []).map(({ compareAtPrice, ...variant }) => ({ ...variant, ...toEditorPriceFields({ ...variant, compareAtPrice }, product) })), null, 2)
     } else if (column.key === 'isNew' || column.key === 'isBestSeller' || column.key === 'adult') {
       row[column.key] = value ? 'true' : 'false'
     } else if (column.key === 'material') {
@@ -125,6 +127,7 @@ function toGridRow(product: Product): GridRow {
     } else row[column.key] = cellValue(value)
   }
   row.id = String(product.id)
+  row.originalPricing = { price: product.price, compareAtPrice: product.compareAtPrice, variants: product.variants }
   const featuredImage = product.featuredImage && typeof product.featuredImage === 'object' ? product.featuredImage as Media : null
   row.featuredImageURL = featuredImage?.url || ''
   row.resolvedFeaturedImageID = featuredImage?.id === undefined ? '' : String(featuredImage.id)
@@ -197,7 +200,10 @@ function getVariantSKU(row: GridRow, shape: string, length: string, size: string
 function toPayloadData(row: GridRow, media: Media[]) {
   const parsedVariants = row.variants.trim() ? JSON.parse(row.variants) : []
   if (!Array.isArray(parsedVariants)) throw new Error('Variants must be a JSON array.')
-  const variants = parsedVariants.map((variant) => ({ ...variant, size: variant.size || 's', image: resolveMedia(mediaID(variant.image), media) }))
+  const variants = parsedVariants.map(({ salePrice, price, ...variant }) => {
+    const old = row.originalPricing?.variants?.find((old) => (variant.id && old.id === variant.id) || (old.length === variant.length && old.shape === variant.shape && old.size === variant.size))
+    return { ...variant, ...toStoredPriceFields({ price: price ?? (salePrice != null ? row.price : null), salePrice }, old, row.originalPricing), size: variant.size || 's', image: resolveMedia(mediaID(variant.image), media) }
+  })
 
   const gallery = row.gallery.trim()
     ? row.gallery.split(';').map((value) => resolveMedia(value, media)).filter((value) => value !== null)
@@ -210,8 +216,7 @@ function toPayloadData(row: GridRow, media: Media[]) {
     supplierSKU: row.supplierSKU || null,
     purchaseURL: row.purchaseURL || null,
     description: row.description,
-    price: Number(row.price),
-    compareAtPrice: row.compareAtPrice.trim() ? Number(row.compareAtPrice) : null,
+    ...toStoredPriceFields({ price: row.price, salePrice: row.salePrice }, row.originalPricing),
     category: row.category,
     length: row.length || null,
     shape: row.shape || null,
@@ -362,7 +367,7 @@ export function ProductBulkEditor() {
     if (!row) return
     try {
       const data = toPayloadData(row, media)
-      const variants = JSON.parse(row.variants || '[]').map(({ id, ...variant }) => variant)
+      const variants = data.variants.map(({ id, sku, ...variant }) => variant)
       const response = await fetch('/api/products', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, title: `${row.title}-duplicate`, slug: '', sku: '', status: 'draft', variants }) })
       const result = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(result.errors?.[0]?.message || result.message || `HTTP ${response.status}`)
@@ -403,8 +408,8 @@ export function ProductBulkEditor() {
         length: variant.length || 'short',
         shape: variant.shape || 'almond',
         size: variant.size || 's',
-        price: variant.price ?? Number(rows[rowIndex].price || 0),
-        compareAtPrice: variant.compareAtPrice ?? (rows[rowIndex].compareAtPrice ? Number(rows[rowIndex].compareAtPrice) : null),
+        price: variant.price ?? null,
+        salePrice: variant.salePrice ?? null,
         image: (() => { const imageID = mediaID(variant.image || rows[rowIndex].featuredImage); return media.find((item) => String(item.id) === imageID)?.filename || imageID })(),
         stock: Number(variant.stock ?? 10),
         trackStock: Boolean(variant.trackStock ?? true),
@@ -436,8 +441,8 @@ export function ProductBulkEditor() {
       next.push(existing.get(key) || {
         sku: getVariantSKU(rows[variantEditor.rowIndex], shape, length, size, [...new Set(variantEditor.values.combinations.map((pair) => pair.shape))], [...new Set(variantEditor.values.combinations.map((pair) => pair.length))]),
         shape, length, size,
-        price: Number(rows[variantEditor.rowIndex]?.price || 0),
-        compareAtPrice: rows[variantEditor.rowIndex]?.compareAtPrice ? Number(rows[variantEditor.rowIndex].compareAtPrice) : null,
+        price: null,
+        salePrice: null,
         image: mediaID(rows[variantEditor.rowIndex]?.featuredImage) || null,
         stock: 10, trackStock: true, enabled: true,
       })
@@ -452,7 +457,7 @@ export function ProductBulkEditor() {
     if (!variantEditor || !Number.isInteger(startRow) || !Number.isInteger(startColumn)) return
     const matrix = parseTSV(event.clipboardData.getData('text/plain'))
     event.preventDefault()
-    const keys: Array<keyof ProductVariant> = ['sku', 'length', 'shape', 'size', 'price', 'compareAtPrice', 'stock', 'image', 'trackStock', 'enabled']
+    const keys: Array<keyof ProductVariant> = ['sku', 'length', 'shape', 'size', 'price', 'salePrice', 'stock', 'image', 'trackStock', 'enabled']
     setVariantEditor((current) => {
       if (!current) return current
       const variants = [...current.variants]
@@ -462,7 +467,7 @@ export function ProductBulkEditor() {
         if (!key) return
         while (variants.length <= rowIndex) variants.push({ sku: '', length: 'short', shape: 'almond', size: 's', stock: 0, trackStock: false, enabled: true })
         const variant = { ...variants[rowIndex] }
-        if (key === 'price' || key === 'compareAtPrice') variant[key] = value.trim() ? Number(value) : null
+        if (key === 'price' || key === 'salePrice') variant[key] = value.trim() ? Number(value) : null
         else if (key === 'stock') variant.stock = Number(value || 0)
         else if (key === 'trackStock' || key === 'enabled') variant[key] = parseBoolean(value)
         else if (key === 'image') variant.image = resolveMedia(value, media)
@@ -518,7 +523,7 @@ export function ProductBulkEditor() {
       if (!dirtyIDs.has(row.id)) continue
       try {
         const data = toPayloadData(row, media)
-        if (!data.title.trim() || !data.slug.trim() || !Number.isFinite(data.price) || data.price < 0) {
+        if (!data.title.trim() || !data.slug.trim() || data.price === null || !Number.isFinite(data.price) || data.price < 0) {
           throw new Error('Title, slug, and a valid non-negative price are required.')
         }
         const response = await fetch(`/api/products/${encodeURIComponent(row.id)}`, {
@@ -746,7 +751,7 @@ export function ProductBulkEditor() {
             <div style={{ overflowX: 'auto' }}>
               <div onPaste={handleVariantPaste}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1200 }}>
-                <thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Compare at', 'Stock', 'Variant image', 'Track stock', 'Enabled', ''].map((label) => <th key={label} style={{ textAlign: 'left', padding: 8, borderBottom: '2px solid var(--brand-border)', whiteSpace: 'nowrap' }}>{label}</th>)}</tr></thead>
+                <thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Sale price', 'Stock', 'Variant image', 'Track stock', 'Enabled', ''].map((label) => <th key={label} style={{ textAlign: 'left', padding: 8, borderBottom: '2px solid var(--brand-border)', whiteSpace: 'nowrap' }}>{label}</th>)}</tr></thead>
                 <tbody>{variantEditor.variants.map((variant, index) => {
                   const edit = (key: keyof ProductVariant, value: string | number | boolean | null) => setVariantEditor((current) => current ? { ...current, variants: current.variants.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item) } : current)
                   const cellInput: React.CSSProperties = { ...inputStyle, minWidth: 90 }
@@ -756,8 +761,8 @@ export function ProductBulkEditor() {
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={1} aria-label={`Variant ${index + 1} length`} placeholder="Length" value={variant.length} onChange={(event) => edit('length', event.target.value)} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={2} aria-label={`Variant ${index + 1} shape`} placeholder="Shape" value={variant.shape} onChange={(event) => edit('shape', event.target.value)} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><select data-variant-row={index} data-variant-column={3} aria-label={`Variant ${index + 1} size`} value={variant.size} onChange={(event) => edit('size', event.target.value)} style={cellInput}>{['xs','s','m','l'].map((value) => <option key={value} value={value}>{value.toUpperCase()}</option>)}</select></td>
-                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={4} aria-label={`Variant ${index + 1} price`} type="number" min="0" value={variant.price ?? ''} onChange={(event) => edit('price', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
-                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={5} aria-label={`Variant ${index + 1} compare at price`} type="number" min="0" value={variant.compareAtPrice ?? ''} onChange={(event) => edit('compareAtPrice', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={4} aria-label={`Variant ${index + 1} price`} type="number" min="0" value={variant.price ?? ''} onWheel={(event) => event.currentTarget.blur()} onChange={(event) => edit('price', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={5} aria-label={`Variant ${index + 1} sale price`} type="number" min="0" value={variant.salePrice ?? ''} onWheel={(event) => event.currentTarget.blur()} onChange={(event) => edit('salePrice', event.target.value === '' ? null : Number(event.target.value))} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={6} aria-label={`Variant ${index + 1} stock`} type="number" min="0" value={variant.stock} onChange={(event) => edit('stock', Number(event.target.value))} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={7} aria-label={`Variant ${index + 1} image filename or media ID`} list="product-media-options" placeholder="Product image" value={typeof variant.image === 'object' ? String(variant.image?.id || '') : String(variant.image || '')} onChange={(event) => edit('image', event.target.value)} style={{ ...cellInput, minWidth: 190 }} /><img src={variantMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={variantMedia?.filename || `Variant ${index + 1} image`} style={{ display: 'block', marginTop: 4, maxWidth: 52, maxHeight: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 'var(--brand-font-size-caption)', marginTop: 4 }}>Upload<input type="file" accept="image/*" aria-label={`Upload image for variant ${index + 1}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, rows[variantEditor.rowIndex]?.id); edit('image', uploaded.id) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: 180, fontSize: 'var(--brand-font-size-caption)' }} /></label></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={8} aria-label={`Variant ${index + 1} track stock`} type="checkbox" checked={variant.trackStock} onChange={(event) => edit('trackStock', event.target.checked)} /></td>
@@ -769,7 +774,7 @@ export function ProductBulkEditor() {
               </div>
             </div>
             <div style={{ ...toolbarStyle, justifyContent: 'space-between' }}>
-              <button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: [...current.variants, { sku: '', length: 'short', shape: 'almond', size: 's', price: Number(rows[current.rowIndex]?.price || 0), compareAtPrice: rows[current.rowIndex]?.compareAtPrice ? Number(rows[current.rowIndex].compareAtPrice) : null, image: mediaID(rows[current.rowIndex]?.featuredImage) || null, stock: 10, trackStock: true, enabled: true }] } : current)} style={buttonStyle}>+ Add variant</button>
+              <button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: [...current.variants, { sku: '', length: 'short', shape: 'almond', size: 's', price: Number(rows[current.rowIndex]?.price || 0), salePrice: rows[current.rowIndex]?.salePrice ? Number(rows[current.rowIndex].salePrice) : null, image: mediaID(rows[current.rowIndex]?.featuredImage) || null, stock: 10, trackStock: true, enabled: true }] } : current)} style={buttonStyle}>+ Add variant</button>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="button" onClick={() => setVariantEditor(null)} style={buttonStyle}>Cancel</button>
                 <button type="button" onClick={applyVariantEditor} style={{ ...buttonStyle, borderColor: 'var(--brand-accent)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)' }}>Apply variants</button>

@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getEnvironmentVariable } from '@/lib/environment-config'
 import { resolveProductMedia } from '@/lib/resolve-product-media'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -45,8 +46,7 @@ export async function GET() {
     const items = configuredVariants.length ? variants : [null]
 
     return items.map((variant) => {
-      const currentPrice = Number(variant?.price ?? product.price)
-      const comparePrice = Number(variant?.compareAtPrice ?? product.compareAtPrice ?? 0)
+      const { price, salePrice, onSale } = getPriceDetails(product, variant)
       const productURL = new URL(`/product/${encodeURIComponent(product.slug || product.id)}/`, siteURL)
       if (variant?.id) productURL.searchParams.set('variant', String(variant.id))
       const variantImage = variant?.image && typeof variant.image === 'object' ? variant.image : null
@@ -61,8 +61,7 @@ export async function GET() {
       const availability = variant?.trackStock && Number(variant.stock || 0) < 1 ? 'out_of_stock' : 'in_stock'
       const gtin = product.gtin
       const mpn = product.mpn
-      const sale = comparePrice > currentPrice ? `<g:sale_price>${amount(currentPrice)}</g:sale_price>` : ''
-      const price = comparePrice > currentPrice ? comparePrice : currentPrice
+      const sale = onSale ? `<g:sale_price>${amount(salePrice)}</g:sale_price>` : ''
       return `<item>
         <g:id>${text(variant?.sku || (variant ? `${product.sku || product.id}-${variant.id}` : product.sku || product.id))}</g:id>
         <g:item_group_id>${text(product.sku || product.id)}</g:item_group_id>

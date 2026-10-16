@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useAllFormFields, useField } from '@payloadcms/ui'
 import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
+import { toEditorPriceFields, toStoredPriceFields, type PriceFields } from '@/lib/product-pricing'
 
 type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
 type Variant = {
@@ -12,13 +13,14 @@ type Variant = {
   shape: string
   size: string
   price?: number | null
-  compareAtPrice?: number | null
+  salePrice?: number | null
   image?: string | number | Media | null
   stock?: number
   trackStock?: boolean
   enabled?: boolean
 }
 type CellRange = { startRow: number; endRow: number; startColumn: number; endColumn: number }
+type StoredVariant = Omit<Variant, 'salePrice'> & PriceFields
 
 const columns: Array<{ key: keyof Variant; label: string }> = [
   { key: 'sku', label: 'SKU' },
@@ -26,7 +28,7 @@ const columns: Array<{ key: keyof Variant; label: string }> = [
   { key: 'shape', label: 'Shape' },
   { key: 'size', label: 'Size' },
   { key: 'price', label: 'Price' },
-  { key: 'compareAtPrice', label: 'Compare at' },
+  { key: 'salePrice', label: 'Sale price' },
   { key: 'stock', label: 'Stock' },
   { key: 'image', label: 'Variant image' },
   { key: 'trackStock', label: 'Track stock' },
@@ -72,11 +74,13 @@ function dimensionCode(value: string, presetsMap: Record<string, string>, values
 }
 
 export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: string; readOnly?: boolean }) {
-  const { value, setValue } = useField<Variant[]>({ path })
+  const { value, setValue } = useField<StoredVariant[]>({ path })
   const { setValue: setProductLength } = useField<string>({ path: 'length' })
   const { setValue: setProductShape } = useField<string>({ path: 'shape' })
   const [fields] = useAllFormFields()
-  const rows = Array.isArray(value) ? value : []
+  const storedRows = useMemo(() => Array.isArray(value) ? value : [], [value])
+  const parentPricing: PriceFields = useMemo(() => ({ price: fields.price?.value as number | null, compareAtPrice: fields.compareAtPrice?.value as number | null }), [fields.price?.value, fields.compareAtPrice?.value])
+  const rows = storedRows.map(({ compareAtPrice, ...variant }) => ({ ...variant, ...toEditorPriceFields({ ...variant, compareAtPrice }, parentPricing) }))
   const [media, setMedia] = useState<Media[]>([])
   const [dimensions, setDimensions] = useState<{ combinations: Array<{ shape: string; length: string }>; size: string[]; newPair: { shape: string; length: string } }>({ combinations: [{ shape: 'almond', length: 'short' }], size: ['xs', 's', 'm'], newPair: { shape: 'almond', length: 'short' } })
   const [dimensionsInitialized, setDimensionsInitialized] = useState(false)
@@ -134,19 +138,29 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
 
   const updateRows = useCallback((next: Variant[]) => {
     if (readOnly) return
+    let stored: StoredVariant[]
+    try {
+      stored = next.map(({ price, salePrice, ...variant }) => {
+        const old = storedRows.find((old) => (variant.id && old.id === variant.id) || (old.length === variant.length && old.shape === variant.shape && old.size === variant.size))
+        return { ...variant, ...toStoredPriceFields({ price, salePrice }, old, parentPricing) }
+      })
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Invalid prices.')
+      return
+    }
     hasEdited.current = true
-    setValue(next)
+    setValue(stored)
     const lengths = [...new Set(next.map((variant) => variant.length).filter(Boolean))]
     const shapes = [...new Set(next.map((variant) => variant.shape).filter(Boolean))]
     setProductLength(lengths.join(', '))
     setProductShape(shapes.join(', '))
     setMessage('Unsaved variant changes. Save the product to apply them.')
-  }, [readOnly, setProductLength, setProductShape, setValue])
+  }, [readOnly, setProductLength, setProductShape, setValue, storedRows, parentPricing])
 
   const updateCell = (rowIndex: number, key: keyof Variant, rawValue: string | boolean) => {
     const next = [...rows]
     const row = { ...next[rowIndex] }
-    if (key === 'price' || key === 'compareAtPrice') row[key] = String(rawValue).trim() === '' ? null : Number(rawValue)
+    if (key === 'price' || key === 'salePrice') row[key] = String(rawValue).trim() === '' ? null : Number(rawValue)
     else if (key === 'stock') row.stock = Number(rawValue || 0)
     else if (key === 'trackStock' || key === 'enabled') row[key] = Boolean(rawValue)
     else if (key === 'image') row.image = rawValue === '' ? null : String(rawValue)
@@ -167,7 +181,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
       const key = `${shape}|${length}|${size}`
       next.push(old.get(key) || {
         sku: productCode ? `${productCode}-${dimensionCode(length, lengthCodes, [...new Set(combinations.map((pair) => pair.length))])}-${dimensionCode(shape, shapeCodes, [...new Set(combinations.map((pair) => pair.shape))])}-${sizeCodes[size] || '02'}` : '',
-        shape, length, size, price: null, compareAtPrice: null,
+        shape, length, size, price: null, salePrice: null,
         image: featuredImage || null, stock: 10, trackStock: true, enabled: true,
       })
     }
@@ -225,10 +239,10 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
       const rowIndex = rowStart + rowOffset
       const column = columns[columnStart + columnOffset]
       if (!column) return
-      while (next.length <= rowIndex) next.push({ sku: '', shape: '', length: '', size: 's', price: null, compareAtPrice: null, stock: 10, image: null, trackStock: true, enabled: true })
+      while (next.length <= rowIndex) next.push({ sku: '', shape: '', length: '', size: 's', price: null, salePrice: null, stock: 10, image: null, trackStock: true, enabled: true })
       const row = { ...next[rowIndex] }
       const key = column.key
-      if (key === 'price' || key === 'compareAtPrice') row[key] = cell.trim() ? Number(cell) : null
+      if (key === 'price' || key === 'salePrice') row[key] = cell.trim() ? Number(cell) : null
       else if (key === 'stock') row.stock = Number(cell || 0)
       else if (key === 'trackStock' || key === 'enabled') row[key] = ['true', '1', 'yes', 'y', '✓'].includes(cell.trim().toLowerCase())
       else if (key === 'image') row.image = media.find((item) => String(item.id) === cell.trim() || item.filename === cell.trim())?.id || cell.trim() || null
@@ -283,7 +297,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
     </div>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 10 }}>
       <button type="button" disabled={readOnly} onClick={syncCombinations} style={styles.button}>Sync combinations &amp; generate SKUs</button>
-      <button type="button" disabled={readOnly} onClick={() => updateRows([...rows, { sku: '', shape: dimensions.combinations[0]?.shape || 'almond', length: dimensions.combinations[0]?.length || 'short', size: dimensions.size[0] || 's', price: null, compareAtPrice: null, image: featuredImage || null, stock: 10, trackStock: true, enabled: true }])} style={styles.button}>+ Add one variant</button>
+      <button type="button" disabled={readOnly} onClick={() => updateRows([...rows, { sku: '', shape: dimensions.combinations[0]?.shape || 'almond', length: dimensions.combinations[0]?.length || 'short', size: dimensions.size[0] || 's', price: null, salePrice: null, image: featuredImage || null, stock: 10, trackStock: true, enabled: true }])} style={styles.button}>+ Add one variant</button>
       <span style={{ color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{rows.length} variant(s)</span>
     </div>
     {message && <p role="status" style={{ color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{message}</p>}
@@ -295,7 +309,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
             {column.key === 'size' ? <select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={variant.size || 's'} onChange={(event) => updateCell(rowIndex, 'size', event.target.value)} style={styles.input}>{presets.size.map((size) => <option key={size} value={size}>{size.toUpperCase()}</option>)}</select>
               : column.key === 'image' ? <><select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={imageID(variant.image)} onChange={(event) => updateCell(rowIndex, 'image', event.target.value)} style={{ ...styles.input, minWidth: 190 }}><option value="">Use product image</option>{mediaOptions.map((item) => <option key={item.id} value={String(item.id)}>{item.filename}</option>)}</select><img src={media.find((item) => String(item.id) === imageID(variant.image))?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt="Variant preview" style={{ display: 'block', marginTop: 5, width: 52, height: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 'var(--brand-font-size-caption)', marginTop: 5 }}>Upload<input type="file" accept="image/*" disabled={readOnly} onChange={(event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) void uploadImage(file, rowIndex).catch((error) => setMessage(error.message)); input.value = '' }} /></label></>
               : column.key === 'trackStock' || column.key === 'enabled' ? <input data-variant-row={rowIndex} data-variant-column={columnIndex} type="checkbox" disabled={readOnly} checked={Boolean(variant[column.key] ?? (column.key === 'enabled'))} onChange={(event) => updateCell(rowIndex, column.key, event.target.checked)} />
-                : <input data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} aria-label={`${column.label} variant ${rowIndex + 1}`} type={['price', 'compareAtPrice', 'stock'].includes(String(column.key)) ? 'number' : 'text'} min="0" value={variant[column.key] === null || variant[column.key] === undefined ? '' : String(variant[column.key])} placeholder={column.key === 'price' ? 'Product price' : ''} onChange={(event) => updateCell(rowIndex, column.key, event.target.value)} style={styles.input} />}
+                : <input data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} aria-label={`${column.label} variant ${rowIndex + 1}`} type={['price', 'salePrice', 'stock'].includes(String(column.key)) ? 'number' : 'text'} min="0" value={variant[column.key] === null || variant[column.key] === undefined ? '' : String(variant[column.key])} placeholder={column.key === 'price' ? 'Product price' : ''} onWheel={(event) => { if (column.key === 'price' || column.key === 'salePrice') event.currentTarget.blur() }} onChange={(event) => updateCell(rowIndex, column.key, event.target.value)} style={styles.input} />}
           </td>)}
           <td style={styles.td}><button type="button" disabled={readOnly} onClick={() => updateRows(rows.filter((_, index) => index !== rowIndex))} style={{ ...styles.button, color: 'var(--brand-danger)' }}>Remove</button></td>
         </tr>)}</tbody>

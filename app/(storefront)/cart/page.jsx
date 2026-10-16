@@ -7,6 +7,7 @@ import SafeImage from "@/components/SafeImage";
 import Navbar from "@/components/Navbar";
 import { useAppContext } from "@/context/AppContext";
 import { formatDimension } from "@/lib/format-dimension";
+import { getPriceDetails } from '@/lib/product-pricing'
 
 const Cart = () => {
 
@@ -46,7 +47,7 @@ const Cart = () => {
                   const line = cartItems[lineKey];
                   const product = products.find(product => product._id === line?.productId);
                   const variant = product?.variants?.find(item => String(item.id) === line?.variantId);
-                  const unitPrice = Number(variant?.price ?? product?.offerPrice ?? 0);
+                  const unitPrice = getPriceDetails(product || {}, variant).currentPrice || 0;
 
                   if (!product || line?.quantity <= 0) return null;
 

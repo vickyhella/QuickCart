@@ -4,9 +4,11 @@ import { mergeProductVariants } from '@/lib/merge-product-variants'
 import { productPublishError } from '@/lib/product-validation'
 import { resolveStudioProductMedia } from '@/lib/studio-product-media'
 import { getEnvironmentVariable } from '@/lib/environment-config'
+import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
 
 const error = (message: string, status = 400) => Response.json({ error: message }, { status })
 const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
+const mediaQueryID = (id: string) => /^\d+$/.test(id) ? Number(id) : id
 const lengths = ['x-short', 'short', 'medium', 'long', 'x-long']
 const shapes = ['square', 'oval', 'almond', 'round']
 const sizesAllowed = ['xs', 's', 'm', 'l']
@@ -22,15 +24,26 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const active = variants.filter((variant: any) => variant.enabled !== false)
     const combinations = [...new Map(active.map((variant: any) => [`${variant.length}|${variant.shape}`, { length: variant.length, shape: variant.shape }])).values()]
     const sizes = [...new Set(active.map((variant: any) => String(variant.size || 's')))]
-    const media = [product.featuredImage, ...(Array.isArray(product.gallery) ? product.gallery : []), ...variants.map((variant: any) => variant.image)]
-      .filter((item: any) => item && typeof item === 'object')
+    const mediaIDs = [...new Set([product.featuredImage, ...(Array.isArray(product.gallery) ? product.gallery : []), ...variants.map((variant: any) => variant.image)].map(relationID).filter(Boolean))]
+    const mediaResult = mediaIDs.length ? await payload.find({
+      collection: 'media', where: { id: { in: mediaIDs.map(mediaQueryID) } }, limit: mediaIDs.length, depth: 0, overrideAccess: false, user,
+    }) : { docs: [] }
+    const mediaByID = new Map<string, any>(mediaResult.docs.map((item: any) => [String(item.id), item] as [string, any]))
+    const media = mediaIDs.flatMap((mediaID) => {
+      const item = mediaByID.get(mediaID)
+      return item ? [item] : []
+    })
     const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: getEnvironmentVariable('R2_PUBLIC_URL'), requestURL: request.url })
+    const pricing = toEditorPriceFields(product)
     return Response.json({
-      id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: product.price ?? '', compareAtPrice: product.compareAtPrice ?? '', status: product.status,
+      id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', status: product.status,
       supplierSKU: product.supplierSKU || '', purchaseURL: product.purchaseURL || '',
       descriptionMode: product.descriptionMode || 'auto', description: product.description || '', seoTitleMode: product.seoTitleMode || 'auto', seoTitle: product.seoTitle || '', seoDescriptionMode: product.seoDescriptionMode || 'auto', seoDescription: product.seoDescription || '',
       media: resolvedMedia.media.map((item) => ({ ...item, existing: true })), unavailableMediaCount: resolvedMedia.unavailableCount,
-      combinations, sizes, variants: variants.map((variant: any) => ({ key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: variant.price ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', purchaseURL: variant.purchaseURL || '' })),
+      combinations, sizes, variants: variants.map((variant: any) => {
+        const pricing = toEditorPriceFields(variant, product)
+        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', purchaseURL: variant.purchaseURL || '' }
+      }),
     })
   } catch {
     return error('Product not found.', 404)
@@ -52,8 +65,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     if (!title) return error('Product name is required.')
     const price = body.price === '' || body.price == null ? undefined : Number(body.price)
     if (price !== undefined && (!Number.isFinite(price) || price < 0)) return error('Price must be a valid non-negative number.')
-    const compareAtPrice = body.compareAtPrice === '' || body.compareAtPrice == null ? undefined : Number(body.compareAtPrice)
-    if (compareAtPrice !== undefined && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0)) return error('Original price must be a valid non-negative number.')
+    const salePrice = body.salePrice === '' || body.salePrice == null ? undefined : Number(body.salePrice)
+    if (salePrice !== undefined && (!Number.isFinite(salePrice) || salePrice < 0 || price === undefined || salePrice >= price)) return error('Sale price must be a valid amount lower than Price.')
     const categories = ['press-on-nails', 'nail-care', 'accessories', 'mystery-box']
     if (!categories.includes(body.category)) return error('Choose a valid product category.')
     const purchaseURL = typeof body.purchaseURL === 'string' ? body.purchaseURL.trim() : ''
@@ -83,6 +96,9 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       const stock = Number(row.stock)
       const variantPrice = row.price === '' || row.price == null ? null : Number(row.price)
       if (!Number.isSafeInteger(stock) || stock < 0 || (variantPrice !== null && (!Number.isFinite(variantPrice) || variantPrice < 0))) return error('Variant stock and price must be valid non-negative numbers.')
+      const variantSalePrice = row.salePrice === '' || row.salePrice == null ? null : Number(row.salePrice)
+      const variantBasePrice = variantPrice ?? price
+      if (variantSalePrice !== null && (!Number.isFinite(variantSalePrice) || variantSalePrice < 0 || variantBasePrice === undefined || variantSalePrice >= variantBasePrice)) return error('Variant Sale price must be lower than Price.')
       const imageID = row.image ? String(row.image) : ''
       if (imageID && !mediaIDs.includes(imageID)) return error('Variant images must be selected from this product’s gallery.')
       const variantPurchaseURL = String(row.purchaseURL || '').trim()
@@ -90,25 +106,29 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         try { if (!['http:', 'https:'].includes(new URL(variantPurchaseURL).protocol)) throw new Error() }
         catch { return error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
       }
-      selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, image: imageID ? Number(imageID) : null, supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
+      selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, salePrice: variantSalePrice, image: imageID ? Number(imageID) : null, supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
     }
     if (rows.length !== combinations.length * sizes.length) return error('Variant rows must match selected combinations and sizes.')
-    const variants = mergeProductVariants(oldVariants, selectedVariants)
     const action = body.action === 'publish' ? 'publish' : 'save'
     if (action === 'publish') {
-      const message = productPublishError({ title, price, hasImage: mediaIDs.length > 0, variants })
+      const message = productPublishError({ title, price, salePrice, hasImage: mediaIDs.length > 0, variants: selectedVariants })
       if (message) return error(message)
     }
+    const storedVariants = selectedVariants.map(({ price: variantPrice, salePrice: variantSalePrice, ...variant }) => {
+      const old = oldVariants.find((old: any) => old.length === variant.length && old.shape === variant.shape && old.size === variant.size)
+      const prices = toStoredPriceFields({ price: variantPrice ?? (variantSalePrice != null ? price : null), salePrice: variantSalePrice }, old, original)
+      return { ...variant, ...prices }
+    })
 
     const updated = await payload.update({
       collection: 'products', id,
       data: {
-        title, category: body.category, ...(price === undefined ? { price: null } : { price }), compareAtPrice: compareAtPrice ?? null,
+        title, category: body.category, ...toStoredPriceFields({ price, salePrice }, original),
         supplierSKU: String(body.supplierSKU || '').trim(), purchaseURL,
         descriptionMode: body.descriptionMode === 'custom' ? 'custom' : 'auto', ...(body.descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),
         seoTitleMode: body.seoTitleMode === 'custom' ? 'custom' : 'auto', seoDescriptionMode: body.seoDescriptionMode === 'custom' ? 'custom' : 'auto',
         ...(body.seoTitleMode === 'custom' ? { seoTitle: String(body.seoTitle || '') } : {}), ...(body.seoDescriptionMode === 'custom' ? { seoDescription: String(body.seoDescription || '') } : {}),
-        featuredImage: mediaIDs[0] ? Number(mediaIDs[0]) : null, gallery: mediaIDs.map(Number), variants,
+        featuredImage: mediaIDs[0] ? Number(mediaIDs[0]) : null, gallery: mediaIDs.map(Number), variants: mergeProductVariants(oldVariants, storedVariants),
         status: action === 'publish' ? 'published' : original.status,
       },
       overrideAccess: false, user,

@@ -1,4 +1,6 @@
 import { ProductSlugField as ProductSlugField_36c2d55279d64603ec421ede181e93e5 } from '../components/ProductSlugField'
+import { ProductPriceCell as ProductPriceCell_b7e504afc4a2f5d8991eaa5f4303c0bf } from '../components/ProductPricingField'
+import { ProductPricingField as ProductPricingField_b7e504afc4a2f5d8991eaa5f4303c0bf } from '../components/ProductPricingField'
 import { ProductVariantsSpreadsheetField as ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d } from '../components/ProductVariantsSpreadsheetField'
 import { ProductThumbnailCell as ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a } from '../components/ProductThumbnailCell'
 import { ProductMediaField as ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e } from '../components/ProductMediaField'
@@ -28,6 +30,8 @@ import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc056
 /** @type import('payload').ImportMap */
 export const importMap = {
   "/components/ProductSlugField#ProductSlugField": ProductSlugField_36c2d55279d64603ec421ede181e93e5,
+  "/components/ProductPricingField#ProductPriceCell": ProductPriceCell_b7e504afc4a2f5d8991eaa5f4303c0bf,
+  "/components/ProductPricingField#ProductPricingField": ProductPricingField_b7e504afc4a2f5d8991eaa5f4303c0bf,
   "/components/ProductVariantsSpreadsheetField#ProductVariantsSpreadsheetField": ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d,
   "/components/ProductThumbnailCell#ProductThumbnailCell": ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a,
   "/components/ProductMediaField#ProductMediaField": ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e,

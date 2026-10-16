@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
 import { hideSupplierDetails } from '@/lib/product-privacy'
-import { productPublishError } from '@/lib/product-validation'
+import { storedProductPublishError } from '@/lib/product-validation'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
 
 const lengthCodeMap: Record<string, string> = {
@@ -182,9 +182,10 @@ export const Products: CollectionConfig = {
         const product = { ...originalDoc, ...data }
         if (product.status === 'published') {
           const hasImage = Boolean(relationID(product.featuredImage) || (Array.isArray(product.gallery) && product.gallery.some((image) => relationID(image))))
-          const message = productPublishError({
+          const message = storedProductPublishError({
             title: product.title,
             price: product.price,
+            compareAtPrice: product.compareAtPrice,
             hasImage,
             variants: product.variants,
           })
@@ -268,13 +269,13 @@ export const Products: CollectionConfig = {
               ],
               admin: { hidden: true },
             },
-            { name: 'price', type: 'number', min: 0 },
+            { name: 'price', type: 'number', min: 0, label: 'Price', admin: { components: { Field: '/components/ProductPricingField#ProductPricingField', Cell: '/components/ProductPricingField#ProductPriceCell' } } },
             {
               name: 'compareAtPrice',
               type: 'number',
               min: 0,
               admin: {
-                description: 'Optional original price, shown crossed out.',
+                hidden: true,
               },
             },
             {
@@ -358,7 +359,7 @@ export const Products: CollectionConfig = {
                     { label: 'L', value: 'l' },
                   ],
                 },
-                { name: 'price', type: 'number', min: 0 },
+                { name: 'price', type: 'number', min: 0, label: 'Price' },
                 { name: 'compareAtPrice', type: 'number', min: 0 },
                 { name: 'gtin', type: 'text', admin: { hidden: true } },
                 { name: 'mpn', type: 'text', admin: { hidden: true } },

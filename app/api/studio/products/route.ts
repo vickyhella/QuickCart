@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { productPublishError } from '@/lib/product-validation'
 import { resolveProductSeoTemplates } from '@/lib/product-seo-templates'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE } from '@/lib/studio-description-template'
+import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status })
@@ -46,7 +47,7 @@ export async function GET(request: Request) {
         title: product.title,
         slug: product.slug,
         sku: product.sku,
-        price: product.price,
+        ...toEditorPriceFields(product),
         status: product.status,
         updatedAt: product.updatedAt,
         variantCount: product.variants?.length || 0,
@@ -84,10 +85,10 @@ export async function POST(request: Request) {
     price = Number(body.price)
     if (!Number.isFinite(price) || price < 0) return jsonError('Price must be a valid non-negative number.', 400)
   }
-  let compareAtPrice: number | undefined
-  if (body.compareAtPrice !== undefined && body.compareAtPrice !== null && body.compareAtPrice !== '') {
-    compareAtPrice = Number(body.compareAtPrice)
-    if (!Number.isFinite(compareAtPrice) || compareAtPrice < 0) return jsonError('Original price must be a valid non-negative number.', 400)
+  let salePrice: number | undefined
+  if (body.salePrice !== undefined && body.salePrice !== null && body.salePrice !== '') {
+    salePrice = Number(body.salePrice)
+    if (!Number.isFinite(salePrice) || salePrice < 0 || price === undefined || salePrice >= price) return jsonError('Sale price must be a valid amount lower than Price.', 400)
   }
 
   const category = typeof body.category === 'string' ? body.category : 'press-on-nails'
@@ -118,7 +119,7 @@ export async function POST(request: Request) {
   if (combinations.some((item) => !allowedLengths.includes(String(item.length)) || !allowedShapes.includes(String(item.shape)))) return jsonError('Choose valid length and shape combinations.', 400)
   if (sizes.some((size) => !allowedSizes.includes(size))) return jsonError('Choose valid sizes.', 400)
   const keys = new Set<string>()
-  let safeVariants: { length: string; shape: string; size: 'xs' | 's' | 'm' | 'l'; stock: number; trackStock: true; enabled: boolean; price?: number; image?: number; supplierSKU?: string; purchaseURL?: string }[]
+  let safeVariants: { length: string; shape: string; size: 'xs' | 's' | 'm' | 'l'; stock: number; trackStock: true; enabled: boolean; price?: number; salePrice?: number; image?: number; supplierSKU?: string; purchaseURL?: string }[]
   try { safeVariants = variants.map((item) => {
     const length = String(item.length || '')
     const shape = String(item.shape || '')
@@ -127,8 +128,9 @@ export async function POST(request: Request) {
     if (!allowedLengths.includes(length) || !allowedShapes.includes(shape) || !allowedSizes.includes(size) || keys.has(key)) throw new Error('Invalid or duplicate variant combination.')
     keys.add(key)
     const stock = item.stock === undefined || item.stock === '' ? 10 : Number(item.stock)
-    const variantPrice = item.price === undefined || item.price === '' ? undefined : Number(item.price)
-    if (!Number.isSafeInteger(stock) || stock < 0 || (variantPrice !== undefined && (!Number.isFinite(variantPrice) || variantPrice < 0))) throw new Error('Variant stock and price must be valid non-negative numbers.')
+    const variantPrice = item.price == null || item.price === '' ? undefined : Number(item.price)
+    const variantSalePrice = item.salePrice == null || item.salePrice === '' ? undefined : Number(item.salePrice)
+    if (!Number.isSafeInteger(stock) || stock < 0 || (variantPrice !== undefined && (!Number.isFinite(variantPrice) || variantPrice < 0)) || (variantSalePrice !== undefined && (!Number.isFinite(variantSalePrice) || variantSalePrice < 0 || (variantPrice ?? price) === undefined || variantSalePrice >= (variantPrice ?? price ?? 0)))) throw new Error('Variant prices and stock must be valid; Sale price must be lower than Price.')
     const image = item.image ? String(item.image) : null
     if (image && !mediaIDs.includes(image)) throw new Error('A variant image must be one of this product’s uploaded images.')
     const variantPurchaseURL = String(item.purchaseURL || '').trim()
@@ -136,14 +138,14 @@ export async function POST(request: Request) {
       try { if (!['http:', 'https:'].includes(new URL(variantPurchaseURL).protocol)) throw new Error() }
       catch { throw new Error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
     }
-    return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), purchaseURL: variantPurchaseURL }
+    return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(variantSalePrice === undefined ? {} : { salePrice: variantSalePrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), purchaseURL: variantPurchaseURL }
   }) } catch (error) { return jsonError(error instanceof Error ? error.message : 'Invalid variants.', 400) }
   if (safeVariants.length !== combinations.length * sizes.length || safeVariants.some((item) => !combinations.some((combo) => combo.length === item.length && combo.shape === item.shape) || !sizes.includes(item.size))) return jsonError('Variant rows must match the selected combinations and sizes.', 400)
   const action = body.action === 'publish' ? 'publish' : 'draft'
   const requestID = typeof body.requestID === 'string' ? body.requestID.trim() : ''
   if (requestID && !/^[0-9a-f-]{36}$/i.test(requestID)) return jsonError('Invalid save request identifier.', 400)
   if (action === 'publish') {
-    const message = productPublishError({ title, price, hasImage: mediaIDs.length > 0, variants: safeVariants })
+    const message = productPublishError({ title, price, salePrice, hasImage: mediaIDs.length > 0, variants: safeVariants })
     if (message) return jsonError(message, 400)
   }
 
@@ -152,6 +154,11 @@ export async function POST(request: Request) {
     if (previous.docs[0]) return Response.json({ id: previous.docs[0].id, existing: true }, { status: 200 })
   }
 
+  const storedPricing = toStoredPriceFields({ price, salePrice })
+  const storedVariants = safeVariants.map(({ price: variantPrice, salePrice: variantSalePrice, ...variant }) => ({
+    ...variant,
+    ...toStoredPriceFields({ price: variantPrice, salePrice: variantSalePrice }, undefined, storedPricing),
+  }))
   let result: Awaited<ReturnType<typeof payload.create>>
   try { result = await payload.create({
     collection: 'products',
@@ -159,8 +166,7 @@ export async function POST(request: Request) {
       title,
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product',
       category: validCategory,
-      ...(price === undefined ? {} : { price }),
-      ...(compareAtPrice === undefined ? {} : { compareAtPrice }),
+      ...storedPricing,
       descriptionMode,
       ...(descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),
       seoTitleMode,
@@ -168,7 +174,7 @@ export async function POST(request: Request) {
       ...(seoTitleMode === 'custom' ? { seoTitle: String(body.seoTitle || '') } : {}),
       ...(seoDescriptionMode === 'custom' ? { seoDescription: String(body.seoDescription || '') } : {}),
       ...(mediaIDs.length ? { featuredImage: Number(mediaIDs[0]), gallery: mediaIDs.map(Number) } : {}),
-      ...(safeVariants.length ? { variants: safeVariants } : {}),
+      ...(storedVariants.length ? { variants: storedVariants } : {}),
       supplierSKU: typeof body.supplierSKU === 'string' ? body.supplierSKU.trim() : '',
       purchaseURL,
       ...(requestID ? { studioRequestID: requestID } : {}),

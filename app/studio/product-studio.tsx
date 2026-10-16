@@ -18,6 +18,7 @@ type ProductRow = {
   slug: string
   sku?: string | null
   price?: number | null
+  salePrice?: number | null
   status: string
   updatedAt: string
   variantCount: number
@@ -36,13 +37,9 @@ type DimensionOption = { value: string; label: string }
 
 const responseData = readJSONResponse
 
-function notifyStudioError(
-  setError: (message: string) => void,
-  message: string,
-  toastMessage = message.length > 140 ? '操作失败，请查看页面内的详细错误信息。' : message,
-) {
+function notifyStudioError(setError: (message: string) => void, message: string) {
   setError(message)
-  toast.error(toastMessage, { duration: 6000 })
+  toast.error(message, { duration: 6000 })
 }
 
 const categories = [
@@ -61,6 +58,20 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
 }
 
 const inputClass = 'w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522] outline-none transition focus:border-[#b57d72] focus:ring-2 focus:ring-[#b57d72]/15'
+
+function PriceInput({ value, onChange, label, placeholder, prefix = false, inputClassName = inputClass }: {
+  value: string
+  onChange: (value: string) => void
+  label: string
+  placeholder?: string
+  prefix?: boolean
+  inputClassName?: string
+}) {
+  return <div className="relative mt-1">
+    {prefix && <span className="absolute left-3 top-3 text-sm text-[#9a8882]">$</span>}
+    <input aria-label={label} className={`product-studio-price-input ${inputClassName} ${prefix ? 'pl-7' : ''}`} type="number" min="0" step="1" value={value} onWheel={(event) => event.currentTarget.blur()} onChange={(event) => onChange(event.target.value)} placeholder={placeholder} />
+  </div>
+}
 
 export default function ProductStudio() {
   const router = useRouter()
@@ -85,7 +96,7 @@ export default function ProductStudio() {
   const [title, setTitle] = useState('')
   const [category, setCategory] = useState('press-on-nails')
   const [price, setPrice] = useState('')
-  const [compareAtPrice, setCompareAtPrice] = useState('')
+  const [salePrice, setSalePrice] = useState('')
   const [supplierSKU, setSupplierSKU] = useState('')
   const [purchaseURL, setPurchaseURL] = useState('')
   const [descriptionMode, setDescriptionMode] = useState<'auto' | 'custom'>('auto')
@@ -106,6 +117,7 @@ export default function ProductStudio() {
   const [combinations, setCombinations] = useState<{ length: string; shape: string }[]>([])
   const [sizes, setSizes] = useState<string[]>(['xs', 's', 'm', 'l'])
   const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({})
+  const [salePriceOverrides, setSalePriceOverrides] = useState<Record<string, number>>({})
   const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({})
   const [stockOverrides, setStockOverrides] = useState<Record<string, number>>({})
   const [variantSupplierSKUs, setVariantSupplierSKUs] = useState<Record<string, string>>({})
@@ -123,6 +135,7 @@ export default function ProductStudio() {
   const [librarySearch, setLibrarySearch] = useState('')
   const [libraryPage, setLibraryPage] = useState(1)
   const [libraryImages, setLibraryImages] = useState<StudioImage[]>([])
+
   const [libraryTotalPages, setLibraryTotalPages] = useState(1)
   const [librarySelected, setLibrarySelected] = useState<string[]>([])
 
@@ -208,14 +221,14 @@ export default function ProductStudio() {
       const response = await fetch(editingId ? `/api/studio/products/${editingId}` : '/api/studio/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, category, price, compareAtPrice, supplierSKU, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes, variants: combinations.flatMap((combo) => sizes.map((size) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], purchaseURL: variantPurchaseURLs[key] } })), action }),
+        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, category, price, salePrice, supplierSKU, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes, variants: combinations.flatMap((combo) => sizes.map((size) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], purchaseURL: variantPurchaseURLs[key] } })), action }),
       })
       const data = await responseData(response)
       const wasEditing = Boolean(editingId)
       if (!wasEditing) requestID.current = ''
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setCompareAtPrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
-      setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setSalePrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
+      setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
       if (wasEditing) { setCombinations([]); setSizes(['xs', 's', 'm', 'l']) }
       const successMessage = action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.'
       setNotice(successMessage)
@@ -251,7 +264,7 @@ export default function ProductStudio() {
           setImages((current) => [...current, { id: data.doc.id, url: data.doc.url, name: data.doc.filename || file.name }])
         } catch (cause) { failures.push(`${file.name}: ${cause instanceof Error ? cause.message : 'upload failed'}`) }
       }
-      if (failures.length) notifyStudioError(setError, `Some images could not be uploaded. Successful images remain attached to this form. ${failures.join(' · ')}`, `${failures.length} image(s) failed to upload. See the form for details.`)
+      if (failures.length) notifyStudioError(setError, `Some images could not be uploaded. Successful images remain attached to this form. ${failures.join(' · ')}`)
     }
     finally { setUploading(false) }
   }
@@ -284,7 +297,7 @@ export default function ProductStudio() {
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product to duplicate.'); return }
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setCompareAtPrice(data.compareAtPrice === '' ? '' : String(data.compareAtPrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(data.priceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
       setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
@@ -304,9 +317,10 @@ export default function ProductStudio() {
       const response = await fetch(`/api/studio/products/${id}`)
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product.'); return }
-      const prices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
+      const prices: Record<string, number> = {}; const salePrices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
       for (const variant of data.variants) {
         if (variant.price !== '') prices[variant.key] = Number(variant.price)
+        if (variant.salePrice !== '') salePrices[variant.key] = Number(variant.salePrice)
         if (variant.image) imagesByVariant[variant.key] = String(variant.image)
         stocks[variant.key] = Number(variant.stock)
         if (variant.supplierSKU) supplierSKUs[variant.key] = variant.supplierSKU
@@ -314,9 +328,9 @@ export default function ProductStudio() {
         if (variant.enabled) enabled[variant.key] = true
       }
       setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
-      setTitle(data.title || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setCompareAtPrice(data.compareAtPrice === '' ? '' : String(data.compareAtPrice))
+      setTitle(data.title || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
       setSupplierSKU(data.supplierSKU); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
-      setImages(data.media); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(prices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
+      setImages(data.media); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
     } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load product.') }
@@ -380,7 +394,7 @@ export default function ProductStudio() {
 
   function cancelEditing() {
     requestID.current = ''
-    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setPrice(''); setCompareAtPrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
+    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
   }
 
   return (
@@ -417,10 +431,10 @@ export default function ProductStudio() {
                   <option value="all">All statuses</option><option value="draft">Draft</option><option value="published">Published</option>
                 </select>
                 <select aria-label="Sort products" className={`${inputClass} sm:w-48`} value={sort} onChange={(event) => { setSort(event.target.value); setPage(1); setSelectedIDs([]); setSelectedProducts({}) }}>
-                  <option value="-updatedAt">Recently updated</option><option value="updatedAt">Least recently updated</option><option value="-createdAt">Recently created</option><option value="createdAt">Oldest created</option><option value="title">Name A–Z</option><option value="-title">Name Z–A</option><option value="price">Price low to high</option><option value="-price">Price high to low</option>
+                  <option value="-updatedAt">Recently updated</option><option value="updatedAt">Least recently updated</option><option value="-createdAt">Recently created</option><option value="createdAt">Oldest created</option><option value="title">Name A–Z</option><option value="-title">Name Z–A</option><option value="price">Price after sale: low to high</option><option value="-price">Price after sale: high to low</option>
                 </select>
               </div>
-              {selectedIDs.length > 0 && <div className="flex flex-wrap items-end gap-3 border-b border-[#f0e9e5] bg-[#fcfaf9] px-5 py-4 sm:px-7"><p className="mr-auto self-center text-sm">{selectedIDs.length} selected</p><label className="text-sm text-[#766762]">Set base price<input aria-label="Bulk base price" className="mt-1 block w-28 rounded-lg border border-[#e7ddd8] bg-white px-2 py-2" type="number" min="0" step="0.01" value={bulkPrice} onChange={(event) => setBulkPrice(event.target.value)} placeholder="No change" /></label><label className="text-sm text-[#766762]">Set enabled variant stock<input aria-label="Bulk variant stock" className="mt-1 block w-28 rounded-lg border border-[#e7ddd8] bg-white px-2 py-2" type="number" min="0" step="1" value={bulkStock} onChange={(event) => setBulkStock(event.target.value)} placeholder="No change" /></label><label className="text-sm text-[#766762]">Set status<select aria-label="Bulk product status" className="mt-1 block w-32 rounded-lg border border-[#e7ddd8] bg-white px-2 py-2" value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value)}><option value="">No change</option><option value="draft">Draft</option><option value="published">Published</option></select></label><button type="button" onClick={() => void bulkUpdate()} className="rounded-lg bg-[#8b5d53] px-3 py-2 text-sm font-medium text-white">Apply</button></div>}
+              {selectedIDs.length > 0 && <div className="flex flex-wrap items-end gap-3 border-b border-[#f0e9e5] bg-[#fcfaf9] px-5 py-4 sm:px-7"><p className="mr-auto self-center text-sm">{selectedIDs.length} selected</p><label className="text-sm text-[#766762]">Set price<input aria-label="Bulk price" className="mt-1 block w-28 rounded-lg border border-[#e7ddd8] bg-white px-2 py-2" type="number" min="0" step="0.01" value={bulkPrice} onWheel={(event) => event.currentTarget.blur()} onChange={(event) => setBulkPrice(event.target.value)} placeholder="No change" /></label><label className="text-sm text-[#766762]">Set enabled variant stock<input aria-label="Bulk variant stock" className="mt-1 block w-28 rounded-lg border border-[#e7ddd8] bg-white px-2 py-2" type="number" min="0" step="1" value={bulkStock} onChange={(event) => setBulkStock(event.target.value)} placeholder="No change" /></label><label className="text-sm text-[#766762]">Set status<select aria-label="Bulk product status" className="mt-1 block w-32 rounded-lg border border-[#e7ddd8] bg-white px-2 py-2" value={bulkStatus} onChange={(event) => setBulkStatus(event.target.value)}><option value="">No change</option><option value="draft">Draft</option><option value="published">Published</option></select></label><button type="button" onClick={() => void bulkUpdate()} className="rounded-lg bg-[#8b5d53] px-3 py-2 text-sm font-medium text-white">Apply</button></div>}
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[780px] text-left text-sm">
                   <thead className="bg-[#fcfaf9] text-sm uppercase tracking-[0.14em] text-[#9a8882]"><tr><th className="px-4 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={products.length > 0 && products.every((product) => selectedIDs.includes(String(product.id)))} onChange={(event) => { const pageIDs = products.map((product) => String(product.id)); setSelectedIDs((current) => event.target.checked ? [...new Set([...current, ...pageIDs])] : current.filter((id) => !pageIDs.includes(id))); setSelectedProducts((current) => event.target.checked ? { ...current, ...Object.fromEntries(products.map((product) => [String(product.id), product])) } : Object.fromEntries(Object.entries(current).filter(([id]) => !pageIDs.includes(id)))) }} /></th><th className="px-6 py-3 font-medium">Product</th><th className="px-4 py-3 font-medium">SKU</th><th className="px-4 py-3 font-medium">Price</th><th className="px-4 py-3 font-medium">Variants</th><th className="px-4 py-3 font-medium">Status</th><th className="px-6 py-3 font-medium">Updated</th><th className="px-3 py-3 font-medium">Action</th></tr></thead>
@@ -433,7 +447,7 @@ export default function ProductStudio() {
                             <span className="max-w-[240px] truncate">{product.title || 'Untitled product'}</span>
                           </a></td>
                           <td className="px-4 py-4 text-sm text-[#897a75]">{product.sku || '—'}</td>
-                          <td className="px-4 py-4">{product.price == null ? '—' : `$${Number(product.price).toFixed(2)}`}</td>
+                          <td className="px-4 py-4">{product.price == null ? '—' : <><span aria-label={product.salePrice == null ? 'Price' : 'Sale price'}>${Number(product.salePrice ?? product.price).toFixed(2)}</span>{product.salePrice != null && <del aria-label="Price" className="ml-2 text-sm text-[#968680]">${Number(product.price).toFixed(2)}</del>}</>}</td>
                           <td className="px-4 py-4 text-[#766762]">{product.variantCount}</td>
                           <td className="px-4 py-4"><span className={`rounded-full px-2.5 py-1 text-sm font-medium ${product.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-[#f5efec] text-[#8b5d53]'}`}>{product.status === 'published' ? 'Published' : 'Draft'}</span></td>
                           <td className="px-6 py-4 text-sm text-[#897a75]">{new Date(product.updatedAt).toLocaleDateString()}</td><td className="px-3 py-4"><div className="flex gap-2"><button type="button" onClick={() => void editProduct(product.id)} className="appearance-none border-0 bg-transparent px-0 py-0 text-sm font-medium text-[#8b5d53] hover:underline" style={{ backgroundColor: 'transparent', color: '#8b5d53' }}>Edit</button><button type="button" onClick={() => void duplicateProduct(product.id)} className="appearance-none border-0 bg-transparent px-0 py-0 text-sm font-medium text-[#8b5d53] hover:underline" style={{ backgroundColor: 'transparent', color: '#8b5d53' }}>Duplicate</button><button type="button" onClick={() => void deleteProductByID(product.id, product.title)} className="appearance-none border-0 bg-transparent px-0 py-0 text-sm font-medium text-red-700 hover:underline">Delete</button></div></td>
@@ -456,10 +470,10 @@ export default function ProductStudio() {
                 <div><FieldLabel>Product name <span className="text-[#b45749]">*</span></FieldLabel><input className={inputClass} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Rosewater" /></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
                   <div><FieldLabel>Category</FieldLabel><select className={inputClass} value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
-                  <div><FieldLabel>Sale price</FieldLabel><div className="relative"><span className="absolute left-3 top-3 text-sm text-[#9a8882]">$</span><input className={`${inputClass} pl-7`} type="number" min="0" step="0.01" value={price} onChange={(event) => setPrice(event.target.value)} placeholder="Optional" /></div></div>
-                  <div><FieldLabel>Original price</FieldLabel><div className="relative"><span className="absolute left-3 top-3 text-sm text-[#9a8882]">$</span><input className={`${inputClass} pl-7`} type="number" min="0" step="0.01" value={compareAtPrice} onChange={(event) => setCompareAtPrice(event.target.value)} placeholder="Optional" /></div></div>
+                  <div><FieldLabel>Price <span className="text-sm font-normal text-[#968680]">(required to publish)</span></FieldLabel><PriceInput label="Price" value={price} onChange={setPrice} placeholder="Optional for drafts" prefix /></div>
+                  <div><FieldLabel>Sale price <span className="text-sm font-normal text-[#968680]">(optional)</span></FieldLabel><PriceInput label="Sale price" value={salePrice} onChange={setSalePrice} placeholder="Leave blank when not on sale" prefix /></div>
                 </div>
-                <p className="-mt-3 text-sm text-[#968680]">When original price is higher than sale price, the storefront shows it crossed out.</p>
+                <div className="-mt-3 text-sm text-[#968680]">Price is the regular price. Optional Sale price must be lower; the regular price is shown crossed out when on sale. Use the arrows to adjust each price by $1.</div>
 
                 <details open className="rounded-xl border border-[#eee5e0] px-4 py-3">
                   <summary className="cursor-pointer text-sm font-medium">Supplier information <span className="text-sm font-normal text-[#968680]">(admin only)</span></summary>
@@ -488,7 +502,25 @@ export default function ProductStudio() {
                   <div className="mt-3 flex gap-4 text-sm">{[['xs','XS'],['s','S'],['m','M'],['l','L']].map(([value,label]) => <label key={value} className="flex items-center gap-1.5"><input type="checkbox" checked={sizes.includes(value)} onChange={(event) => setSizes((current) => event.target.checked ? [...current, value] : current.filter((item) => item !== value))} />{label}</label>)}</div>
                   {combinations.length > 0 && sizes.length > 0 && <div className="mt-3 space-y-2">{combinations.flatMap((combo) => sizes.map((size) => {
                     const key = `${combo.length}|${combo.shape}|${size}`
-                    return <div key={key}><div className="grid grid-cols-[1fr_72px_90px] gap-2"><label className="flex items-center justify-between gap-2 text-sm text-[#766762]"><span className="min-w-0 truncate">{combo.length}/{combo.shape} · {size.toUpperCase()} $</span><input aria-label={`${combo.length} ${combo.shape} ${size} variant price`} className="w-20 rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-right" type="number" min="0" step="0.01" placeholder="Inherit" value={priceOverrides[key] ?? ''} onChange={(event) => setPriceOverrides((current) => { const next = { ...current }; if (event.target.value === '') delete next[key]; else next[key] = Number(event.target.value); return next })} /></label><input aria-label={`${combo.length} ${combo.shape} ${size} variant stock`} className="w-[72px] rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-right text-sm" type="number" min="0" step="1" value={stockOverrides[key] ?? 10} onChange={(event) => setStockOverrides((current) => ({ ...current, [key]: Number(event.target.value) }))} /><select aria-label={`${combo.length} ${combo.shape} ${size} variant image`} className="rounded-lg border border-[#e7ddd8] px-1.5 py-1 text-sm" value={imageOverrides[key] || ''} onChange={(event) => setImageOverrides((current) => ({ ...current, [key]: event.target.value }))}><option value="">Product image</option>{images.map((image, index) => <option key={image.id} value={String(image.id)}>Image {index + 1}</option>)}</select></div><label className="ml-2 mt-1 flex items-center gap-1.5 text-sm text-[#968680]"><input type="checkbox" checked={variantEnabled[key] !== false} onChange={(event) => setVariantEnabled((current) => ({ ...current, [key]: event.target.checked }))} />Enabled</label><details className="ml-2 mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier info</summary><div className="mt-2 grid grid-cols-2 gap-2"><input aria-label="Variant supplier SKU" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" placeholder="Supplier SKU" value={variantSupplierSKUs[key] || ''} onChange={(event) => setVariantSupplierSKUs((current) => ({ ...current, [key]: event.target.value }))} /><input aria-label="Variant purchase URL" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" type="url" placeholder="Purchase URL" value={variantPurchaseURLs[key] || ''} onChange={(event) => setVariantPurchaseURLs((current) => ({ ...current, [key]: event.target.value }))} /></div></details></div>
+                    return <div key={key} className="rounded-lg border border-[#e7ddd8] p-3">
+                      <p className="mb-2 text-sm text-[#766762]">{combo.length}/{combo.shape} · {size.toUpperCase()}</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="text-sm text-[#766762]">Price
+                          <PriceInput label={`${combo.length} ${combo.shape} ${size} variant Price`} prefix inputClassName="w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm outline-none focus:border-[#b57d72] focus:ring-2 focus:ring-[#b57d72]/15" placeholder="Inherit" value={priceOverrides[key] == null ? '' : String(priceOverrides[key])} onChange={(value) => setPriceOverrides((current) => { const next = { ...current }; if (value === '') delete next[key]; else next[key] = Number(value); return next })} />
+                        </div>
+                        <div className="text-sm text-[#766762]">Sale price
+                          <PriceInput label={`${combo.length} ${combo.shape} ${size} variant Sale price`} prefix inputClassName="w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm outline-none focus:border-[#b57d72] focus:ring-2 focus:ring-[#b57d72]/15" placeholder="Optional" value={salePriceOverrides[key] == null ? '' : String(salePriceOverrides[key])} onChange={(value) => setSalePriceOverrides((current) => { const next = { ...current }; if (value === '') delete next[key]; else next[key] = Number(value); return next })} />
+                        </div>
+                        <label className="text-sm text-[#766762]">Stock
+                          <input aria-label={`${combo.length} ${combo.shape} ${size} variant stock`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5" type="number" min="0" step="1" value={stockOverrides[key] ?? 10} onChange={(event) => setStockOverrides((current) => ({ ...current, [key]: Number(event.target.value) }))} />
+                        </label>
+                        <label className="text-sm text-[#766762]">Image
+                          <select aria-label={`${combo.length} ${combo.shape} ${size} variant image`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-1.5 py-1.5" value={imageOverrides[key] || ''} onChange={(event) => setImageOverrides((current) => ({ ...current, [key]: event.target.value }))}><option value="">Product image</option>{images.map((image, index) => <option key={image.id} value={String(image.id)}>Image {index + 1}</option>)}</select>
+                        </label>
+                      </div>
+                      <label className="mt-2 flex items-center gap-1.5 text-sm text-[#968680]"><input type="checkbox" checked={variantEnabled[key] !== false} onChange={(event) => setVariantEnabled((current) => ({ ...current, [key]: event.target.checked }))} />Enabled</label>
+                      <details className="mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier info</summary><div className="mt-2 grid grid-cols-2 gap-2"><input aria-label="Variant supplier SKU" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" placeholder="Supplier SKU" value={variantSupplierSKUs[key] || ''} onChange={(event) => setVariantSupplierSKUs((current) => ({ ...current, [key]: event.target.value }))} /><input aria-label="Variant purchase URL" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" type="url" placeholder="Purchase URL" value={variantPurchaseURLs[key] || ''} onChange={(event) => setVariantPurchaseURLs((current) => ({ ...current, [key]: event.target.value }))} /></div></details>
+                    </div>
                   }))}</div>}
                   <p className="mt-2 text-sm text-[#968680]">{combinations.length * sizes.length} variants · stock defaults to 10 · price and image inherit from the product</p>
                 </div>

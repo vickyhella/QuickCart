@@ -3,10 +3,12 @@ import SafeImage from '@/components/SafeImage'
 import { useAppContext } from '@/context/AppContext';
 import { formatDimension } from '@/lib/format-dimension'
 import { productCardDimensions } from '@/lib/product-dimensions'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 const ProductCard = ({ product }) => {
 
     const { currency, router } = useAppContext()
+    const pricing = getPriceDetails(product)
 
     return (
         <div
@@ -23,15 +25,15 @@ const ProductCard = ({ product }) => {
                     height={900}
                 />
                 {product.isNew && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-[9px] uppercase tracking-[.16em] text-[#392631] backdrop-blur">New</span>}
-                {product.price > product.offerPrice && <span className="absolute right-3 top-3 rounded-full bg-[#985c70] px-3 py-1.5 text-[9px] uppercase tracking-[.16em] text-white">Sale</span>}
+                {pricing.onSale && <span className="absolute right-3 top-3 rounded-full bg-[#985c70] px-3 py-1.5 text-[9px] uppercase tracking-[.16em] text-white">Sale</span>}
             </div>
 
             <div className="w-full pt-1">
                 <p className="font-medium text-[#302522] truncate">{product.name}</p>
                 <p className="text-xs text-[#827873] mt-1">{productCardDimensions(product).map(formatDimension).join(' · ') || 'Handmade press-on nails'}</p>
                 <div className="flex items-center gap-2 mt-2 text-sm">
-                    <p className="font-medium">{currency || '$'}{Number(product.offerPrice).toFixed(2)}</p>
-                    {product.price > product.offerPrice && <p className="text-[#998f89] line-through">{currency || '$'}{Number(product.price).toFixed(2)}</p>}
+                    <p className="font-medium">{currency || '$'}{Number(pricing.currentPrice).toFixed(2)}</p>
+                    {pricing.onSale && <p className="text-[#998f89] line-through">{currency || '$'}{Number(pricing.price).toFixed(2)}</p>}
                 </div>
             </div>
         </div>

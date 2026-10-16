@@ -17,3 +17,20 @@ test('keeps available WebP objects, maps legacy local URLs to R2, and excludes m
   assert.deepEqual(result.media.map((media) => [media.id, media.url]), [[1, 'https://cdn.example.test/dual-french-tip.webp']])
   assert.equal(result.unavailableCount, 2)
 })
+
+test('keeps same-origin media without making a server-side request to itself', async () => {
+  let requested = false
+  const result = await resolveStudioProductMedia([
+    { id: 1, filename: 'test1.webp', mimeType: 'image/webp', url: '/api/media/file/test1.webp/' },
+  ], {
+    requestURL: 'http://localhost:3000/api/studio/products/1',
+    fetcher: async () => {
+      requested = true
+      return new Response(null, { status: 404 })
+    },
+  })
+
+  assert.equal(requested, false)
+  assert.deepEqual(result.media.map((media) => media.id), [1])
+  assert.equal(result.unavailableCount, 0)
+})

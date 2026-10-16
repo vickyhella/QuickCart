@@ -10,6 +10,7 @@ import { shippingCountries as defaultShippingCountries } from '@/lib/countries'
 import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
 import PayPalCardButton from '@/components/PayPalCardButton'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 const emptyAddress = { fullName: '', phone: '', address1: '', address2: '', city: '', state: '', postalCode: '', country: 'US' }
 
@@ -36,7 +37,7 @@ export default function CheckoutPage() {
     const product = products.find((item) => item._id === line?.productId)
     if (!product || !line?.quantity) return []
     const variant = product.variants?.find((item) => String(item.id) === line.variantId)
-    return [{ lineKey, line, product, variant, unitPrice: Number(variant?.price ?? product.offerPrice) }]
+    return [{ lineKey, line, product, variant, unitPrice: getPriceDetails(product, variant).currentPrice }]
   }), [cartItems, products])
 
   useEffect(() => {

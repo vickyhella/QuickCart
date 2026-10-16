@@ -1,7 +1,8 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { productPublishError } from '@/lib/product-validation'
+import { storedProductPublishError } from '@/lib/product-validation'
 import { deleteProduct } from '@/lib/delete-product'
+import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
 
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
@@ -55,14 +56,15 @@ export async function POST(request: Request) {
       product = await payload.findByID({ collection: 'products', id: String(item.id), depth: 1, overrideAccess: false, user })
       if (item.updatedAt !== product.updatedAt) throw new Error('Product changed since the list loaded. Refresh and try again.')
       const variants = (product.variants || []).map((variant: any) => stock === undefined || variant.enabled === false ? variant : { ...variant, stock })
+      const prices = price === undefined ? {} : toStoredPriceFields({ ...toEditorPriceFields(product), price }, product)
       if (status === 'published') {
         const hasImage = Boolean(product.featuredImage || product.gallery?.length)
-        const message = productPublishError({ title: product.title, price: price ?? product.price, hasImage, variants })
+        const message = storedProductPublishError({ ...product, ...prices, hasImage, variants })
         if (message) throw new Error(message)
       }
       await payload.update({
         collection: 'products', id: product.id,
-        data: { ...(price === undefined ? {} : { price }), ...(stock === undefined ? {} : { variants }), ...(status ? { status } : {}) },
+        data: { ...prices, ...(stock === undefined ? {} : { variants }), ...(status ? { status } : {}) },
         overrideAccess: false, user,
       })
       updated += 1

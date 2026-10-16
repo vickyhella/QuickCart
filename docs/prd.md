@@ -203,8 +203,11 @@ Product Studio 的 Supplier information 默认展开。
 #### 发布必填字段
 
 - Product Name
-- Base Price
-- Optional original price (`compareAtPrice`) for discounts. `price` remains the actual sale price; when the original price is higher, storefront and product feeds show both values.
+- The editor uses GMC terminology: Price is the regular price and is required to publish; optional Sale price must be lower than Price.
+- Preserve Payload storage: `price` is the actual selling price and `compareAtPrice` is the optional regular price. A shared adapter maps editor Price / Sale price to these existing fields. Without a sale, store Price in `price` and clear `compareAtPrice`; with a sale, store Sale price in `price` and Price in `compareAtPrice`. No price data migration is required.
+- Storefront, cart, checkout and feeds use the same adapter; actual checkout prices remain `variant.price ?? product.price`. Preserve variant overrides and inheritance when editing or duplicating. Emit GMC `sale_price` only when `compareAtPrice` exceeds the actual price, otherwise omit it.
+- Product Studio price inputs use the browser's native up/down controls with a $1 step; mouse-wheel price changes are disabled. Apply the same control to regular and sale prices on the product and each variant, independently.
+- When editing a product, restore its featured image, gallery images, and variant image selections whether Payload returns media relations as IDs or populated records.
 - 至少一张商品图片
 - 至少一个 Length + Shape 组合
 - 至少一个 Size

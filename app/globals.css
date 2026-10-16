@@ -17,6 +17,20 @@
     }
   }
 
+.product-studio-price-input {
+  appearance: auto;
+  -moz-appearance: number-input;
+}
+
+input.product-studio-price-input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: inner-spin-button;
+  opacity: 1;
+}
+
+input.product-studio-price-input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+}
+
 ::-webkit-scrollbar {
   display: none;
 }

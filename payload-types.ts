@@ -199,9 +199,6 @@ export interface Product {
   description?: string | null;
   descriptionMode?: ('auto' | 'custom') | null;
   price?: number | null;
-  /**
-   * Optional original price, shown crossed out.
-   */
   compareAtPrice?: number | null;
   category: 'press-on-nails' | 'nail-care' | 'accessories' | 'mystery-box';
   /**

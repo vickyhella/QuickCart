@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { resolveProductMedia } from '@/lib/resolve-product-media'
 import { getEnvironmentVariable } from '@/lib/environment-config'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -62,10 +63,7 @@ export async function GET() {
       const variantImage = mediaDoc(variant?.image)
       const mainImage = variantImage || featured || gallery[0]
       const imageURL = urlFor(mainImage?.url, siteURL)
-      const salePrice = Number(variant?.price ?? product.price)
-      const regularPrice = Number(variant?.compareAtPrice ?? product.compareAtPrice ?? 0)
-      const hasSalePrice = regularPrice > salePrice
-      const price = hasSalePrice ? regularPrice : salePrice
+      const { price, salePrice, onSale } = getPriceDetails(product, variant)
       if (!imageURL || !Number.isFinite(price) || price <= 0) return null
       const additionalImages = [...new Set([featured, ...gallery].map((image) => urlFor(image?.url, siteURL)).filter((url) => url && url !== imageURL))].slice(0, 10)
       const nameParts = [variant?.length, variant?.shape, variant?.size?.toUpperCase()].filter(Boolean)
@@ -88,7 +86,7 @@ export async function GET() {
         ${moreImages}
         <g:alt_text>${xml(altTexts.join(', '))}</g:alt_text>
         <g:price>${price.toFixed(2)} ${xml(currency)}</g:price>
-        ${hasSalePrice ? `<g:sale_price>${salePrice.toFixed(2)} ${xml(currency)}</g:sale_price>` : ''}
+        ${onSale ? `<g:sale_price>${salePrice.toFixed(2)} ${xml(currency)}</g:sale_price>` : ''}
         <g:availability>${available ? 'in stock' : 'out of stock'}</g:availability>
         <g:condition>${xml(product.condition || 'new')}</g:condition>
         <g:shipping_weight>${shippingWeight} kg</g:shipping_weight>

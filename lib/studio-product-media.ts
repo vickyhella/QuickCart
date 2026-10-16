@@ -42,7 +42,8 @@ export async function resolveStudioProductMedia(
   const checked = await Promise.all(candidates.map(async (candidate) => {
     try {
       const target = new URL(candidate.url, options.requestURL)
-      if (!r2PublicURL && target.origin !== new URL(options.requestURL).origin) return candidate
+      const requestOrigin = new URL(options.requestURL).origin
+      if (target.origin === requestOrigin || !r2PublicURL) return candidate
       const response = await fetcher(target, { method: 'HEAD', cache: 'no-store' })
       if (response.status === 404) {
         return null

@@ -1,5 +1,6 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
+import { toEditorPriceFields } from '@/lib/product-pricing'
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
@@ -11,8 +12,11 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const variants = Array.isArray(product.variants) ? product.variants.filter((variant: any) => variant.enabled !== false) : []
     const combinations = [...new Map(variants.map((variant: any) => [`${variant.length}|${variant.shape}`, { length: variant.length, shape: variant.shape }])).values()]
     const sizes = [...new Set(variants.map((variant: any) => String(variant.size || 's')))]
-    const priceOverrides = Object.fromEntries(variants.filter((variant: any) => variant.price != null).map((variant: any) => [`${variant.length}|${variant.shape}|${variant.size}`, variant.price]))
-    return Response.json({ category: product.category, price: product.price ?? '', compareAtPrice: product.compareAtPrice ?? '', combinations, sizes, priceOverrides })
+    const mapped = variants.map((variant: any) => ({ key: `${variant.length}|${variant.shape}|${variant.size}`, ...toEditorPriceFields(variant, product) }))
+    const priceOverrides = Object.fromEntries(mapped.filter((variant: any) => variant.price != null).map((variant: any) => [variant.key, variant.price]))
+    const salePriceOverrides = Object.fromEntries(mapped.filter((variant: any) => variant.salePrice != null).map((variant: any) => [variant.key, variant.salePrice]))
+    const pricing = toEditorPriceFields(product)
+    return Response.json({ category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', combinations, sizes, priceOverrides, salePriceOverrides })
   } catch {
     return Response.json({ error: 'Could not load product for duplication.' }, { status: 404 })
   }

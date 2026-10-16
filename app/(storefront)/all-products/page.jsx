@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
 import { useAppContext } from '@/context/AppContext'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 export default function AllProducts() {
   const { products } = useAppContext()
@@ -24,7 +25,7 @@ export default function AllProducts() {
     const enabledVariants = (product.variants || []).filter((variant) => variant.enabled !== false)
     if (filters.length && !String(product.length || '').split(',').map((item) => item.trim()).includes(filters.length) && !enabledVariants.some((variant) => variant.length === filters.length)) return false
     if (filters.shape && !String(product.shape || '').split(',').map((item) => item.trim()).includes(filters.shape) && !enabledVariants.some((variant) => variant.shape === filters.shape)) return false
-    if (filters.sale && !(product.price > product.offerPrice)) return false
+    if (filters.sale && !getPriceDetails(product).onSale) return false
     if (filters.isNew && !product.isNew) return false
     return true
   }), [products, filters])

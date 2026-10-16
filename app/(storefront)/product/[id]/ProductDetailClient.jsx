@@ -12,6 +12,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -49,8 +50,7 @@ export default function ProductPage() {
   if (!product) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center"><h1 className="font-serif text-3xl">This design is unavailable</h1><Link href="/all-products" className="inline-block mt-5 underline">Browse all designs</Link></div><Footer /></main>
 
   const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`
-  const unitPrice = Number(selectedVariant?.price ?? product.offerPrice)
-  const compareAtPrice = Number(selectedVariant?.compareAtPrice ?? product.compareAtPrice ?? product.price)
+  const pricing = getPriceDetails(product, selectedVariant)
   const availableLengths = [...new Set(variants.filter((variant) => variant.shape === selectedShape && (variant.size || 's') === selectedSize).map((variant) => variant.length))]
   const availableShapes = [...new Set(variants.filter((variant) => variant.length === selectedLength && (variant.size || 's') === selectedSize).map((variant) => variant.shape))]
   const sizeOrder = ['xs', 's', 'm', 'l']
@@ -82,7 +82,7 @@ export default function ProductPage() {
           <div className="min-w-0 w-full max-w-2xl lg:py-3">
             <p className="text-xs uppercase tracking-[0.24em] text-[#9a756d]">Handmade press-on nails</p>
             <h1 className="font-serif text-3xl md:text-4xl mt-3">{product.name}</h1>
-            <div className="flex items-baseline gap-3 mt-5"><span className="text-xl">{money(unitPrice)}</span>{compareAtPrice > unitPrice && <span className="text-[#998f89] line-through">{money(compareAtPrice)}</span>}</div>
+            <div className="flex items-baseline gap-3 mt-5"><span className="text-xl">{money(pricing.currentPrice)}</span>{pricing.onSale && <span className="text-[#998f89] line-through">{money(pricing.price)}</span>}</div>
             {variants.length > 0 && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
               <label className="text-sm text-[#6e5c55]">Shape
                 <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2 capitalize" value={selectedShape} onChange={(event) => chooseVariant('shape', event.target.value)}>

@@ -6,6 +6,7 @@ import { getCheckoutFailure } from '@/lib/checkout-error'
 import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
 import { shippingCountries } from '@/lib/countries'
 import { calculateShippingCharge } from '@/lib/shipping-tiers'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 const amountText = (value) => roundMoney(value).toFixed(2)
@@ -50,7 +51,9 @@ export async function POST(request) {
         if (!variant) throw new Error(`${product.title} 的规格已不可用，请返回商品页重新选择。`)
         if (variant.trackStock && Number(variant.stock || 0) < quantity) throw new Error(`${product.title} 的所选规格库存不足。`)
       }
-      const unitPrice = roundMoney(variant?.price ?? product.price)
+      const currentPrice = getPriceDetails(product, variant).currentPrice
+      if (currentPrice === null) throw new Error(`${product.title} 没有有效价格，暂时不可购买。`)
+      const unitPrice = roundMoney(currentPrice)
       lines.push({
         product,
         variant,

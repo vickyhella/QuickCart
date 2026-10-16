@@ -2,6 +2,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
+import { getPriceDetails } from '@/lib/product-pricing'
 
 export const AppContext = createContext();
 
@@ -60,15 +61,12 @@ export const AppContextProvider = (props) => {
                     ...(Array.isArray(product.gallery) ? product.gallery.map((image) => typeof image === 'object' ? image?.altText : null) : []),
                 ]
                 const images = [featured, ...gallery].filter(Boolean)
-                const currentPrice = Number(product.price || 0)
                 return {
                     ...product,
                     _id: String(product.id),
                     name: product.title,
                     image: images.length ? images : ['/nail-placeholder.svg'],
                     imageAlt,
-                    offerPrice: currentPrice,
-                    price: Number(product.compareAtPrice || currentPrice),
                 }
             }))
         } catch (error) {
@@ -127,7 +125,7 @@ export const AppContextProvider = (props) => {
             const line = cartItems[lineKey]
             const product = products.find((item) => item._id === line?.productId)
             const variant = product?.variants?.find((item) => String(item.id) === line?.variantId)
-            const price = Number(variant?.price ?? product?.offerPrice ?? 0)
+            const price = getPriceDetails(product || {}, variant).currentPrice || 0
             if (product && line?.quantity > 0) totalAmount += price * line.quantity
         }
         return Math.round(totalAmount * 100) / 100;

@@ -6,6 +6,7 @@ import SafeImage from "@/components/SafeImage";
 import { useAppContext } from "@/context/AppContext";
 import { formatDimension } from "@/lib/format-dimension";
 import useCartShippingQuote from "@/hooks/useCartShippingQuote";
+import { getPriceDetails } from '@/lib/product-pricing'
 
 export default function CartDrawer({ open, onClose }) {
   const {
@@ -24,7 +25,7 @@ export default function CartDrawer({ open, onClose }) {
     const variant = product.variants?.find(
       (item) => String(item.id) === line.variantId,
     );
-    const price = Number(variant?.price ?? product.offerPrice ?? 0);
+    const price = getPriceDetails(product, variant).currentPrice || 0;
     return [{ key, line, product, variant, price }];
   });
 

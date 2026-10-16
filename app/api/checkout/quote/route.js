@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCheckoutFailure } from '@/lib/checkout-error'
 import { calculateShippingCharge } from '@/lib/shipping-tiers'
+import { getPriceDetails } from '@/lib/product-pricing'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 export async function POST(request) {
@@ -24,7 +25,9 @@ export async function POST(request) {
       const count = Math.floor(Number(item.quantity))
       if (!Number.isInteger(count) || count < 1 || count > 99) throw new Error('商品数量必须介于 1 和 99 之间。')
       if (variant?.trackStock && Number(variant.stock || 0) < count) throw new Error(`${product.title} 的所选规格库存不足。`)
-      subtotal += roundMoney(variant?.price ?? product.price) * count
+      const currentPrice = getPriceDetails(product, variant).currentPrice
+      if (currentPrice === null) throw new Error(`${product.title} 没有有效价格，暂时不可购买。`)
+      subtotal += roundMoney(currentPrice) * count
       quantity += count
       lines.push({ product, quantity: count })
     }

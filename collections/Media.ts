@@ -76,7 +76,7 @@ export const Media: CollectionConfig = {
     }],
   },
   admin: {
-    group: 'Catalog',
+    group: 'Media',
     useAsTitle: 'title',
     defaultColumns: ['filename', 'title', 'altText', 'createdAt'],
     description: 'Reusable product images with editable search and accessibility metadata.',

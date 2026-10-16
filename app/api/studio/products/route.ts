@@ -44,6 +44,7 @@ export async function GET(request: Request) {
       return {
         id: product.id,
         title: product.title,
+        slug: product.slug,
         sku: product.sku,
         price: product.price,
         status: product.status,
@@ -82,6 +83,11 @@ export async function POST(request: Request) {
   if (body.price !== undefined && body.price !== null && body.price !== '') {
     price = Number(body.price)
     if (!Number.isFinite(price) || price < 0) return jsonError('Price must be a valid non-negative number.', 400)
+  }
+  let compareAtPrice: number | undefined
+  if (body.compareAtPrice !== undefined && body.compareAtPrice !== null && body.compareAtPrice !== '') {
+    compareAtPrice = Number(body.compareAtPrice)
+    if (!Number.isFinite(compareAtPrice) || compareAtPrice < 0) return jsonError('Original price must be a valid non-negative number.', 400)
   }
 
   const category = typeof body.category === 'string' ? body.category : 'press-on-nails'
@@ -154,6 +160,7 @@ export async function POST(request: Request) {
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product',
       category: validCategory,
       ...(price === undefined ? {} : { price }),
+      ...(compareAtPrice === undefined ? {} : { compareAtPrice }),
       descriptionMode,
       ...(descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),
       seoTitleMode,

@@ -1,13 +1,16 @@
-import { ProductTitleCell as ProductTitleCell_271e4356fd195c654ba9663b74a95b8d } from '../components/ProductTitleCell'
 import { ProductSlugField as ProductSlugField_36c2d55279d64603ec421ede181e93e5 } from '../components/ProductSlugField'
 import { ProductVariantsSpreadsheetField as ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d } from '../components/ProductVariantsSpreadsheetField'
 import { ProductThumbnailCell as ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a } from '../components/ProductThumbnailCell'
 import { ProductMediaField as ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e } from '../components/ProductMediaField'
 import { GoogleProductCategoryField as GoogleProductCategoryField_5125fd73abe0827af1f5c7a04f2fa7ef } from '../components/GoogleProductCategoryField'
-import { ProductBulkEditLink as ProductBulkEditLink_9420406cae87749115868821fce0f84f } from '../components/ProductBulkEditor'
+import { ProductActionCell as ProductActionCell_086ca6d8b8da5793fc741493d722bdba } from '../components/ProductActionCell'
+import { ProductWorkspaceTabs as ProductWorkspaceTabs_fa95963d5356c9b1a1929c27b3255d14 } from '../components/ProductWorkspaceTabs'
+import { ProductListActions as ProductListActions_17ac1f03dc2d74ea060fad049215d136 } from '../components/ProductListActions'
+import { ProductMediaAudit as ProductMediaAudit_9420406cae87749115868821fce0f84f } from '../components/ProductBulkEditor'
 import { ProductDeleteControl as ProductDeleteControl_b55a099709b09a611cd7f9c84729a21e } from '../components/ProductDeleteControl'
 import { ProductStudioView as ProductStudioView_10c85732f2eea616635ce8b94f8ee3fc } from '../components/ProductStudioView'
 import { ProductSpreadsheetView as ProductSpreadsheetView_b326187171f517a2b22b0af78924b398 } from '../components/ProductSpreadsheetView'
+import { ProductCategoriesView as ProductCategoriesView_4d74db79c1c650fb8f1844efc9af8c99 } from '../components/ProductCategoriesView'
 import { MediaWorkspaceTabs as MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62 } from '../components/MediaWorkspaceTabs'
 import { MediaBulkUpload as MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f } from '../components/MediaBulkUpload'
 import { MediaReprocessButton as MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7 } from '../components/MediaReprocessButton'
@@ -24,16 +27,19 @@ import { S3ClientUploadHandler as S3ClientUploadHandler_f97aa6c64367fa259c5bc056
 
 /** @type import('payload').ImportMap */
 export const importMap = {
-  "/components/ProductTitleCell#ProductTitleCell": ProductTitleCell_271e4356fd195c654ba9663b74a95b8d,
   "/components/ProductSlugField#ProductSlugField": ProductSlugField_36c2d55279d64603ec421ede181e93e5,
   "/components/ProductVariantsSpreadsheetField#ProductVariantsSpreadsheetField": ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d,
   "/components/ProductThumbnailCell#ProductThumbnailCell": ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a,
   "/components/ProductMediaField#ProductMediaField": ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e,
   "/components/GoogleProductCategoryField#GoogleProductCategoryField": GoogleProductCategoryField_5125fd73abe0827af1f5c7a04f2fa7ef,
-  "/components/ProductBulkEditor#ProductBulkEditLink": ProductBulkEditLink_9420406cae87749115868821fce0f84f,
+  "/components/ProductActionCell#ProductActionCell": ProductActionCell_086ca6d8b8da5793fc741493d722bdba,
+  "/components/ProductWorkspaceTabs#ProductWorkspaceTabs": ProductWorkspaceTabs_fa95963d5356c9b1a1929c27b3255d14,
+  "/components/ProductListActions#ProductListActions": ProductListActions_17ac1f03dc2d74ea060fad049215d136,
+  "/components/ProductBulkEditor#ProductMediaAudit": ProductMediaAudit_9420406cae87749115868821fce0f84f,
   "/components/ProductDeleteControl#ProductDeleteControl": ProductDeleteControl_b55a099709b09a611cd7f9c84729a21e,
   "/components/ProductStudioView#ProductStudioView": ProductStudioView_10c85732f2eea616635ce8b94f8ee3fc,
   "/components/ProductSpreadsheetView#ProductSpreadsheetView": ProductSpreadsheetView_b326187171f517a2b22b0af78924b398,
+  "/components/ProductCategoriesView#ProductCategoriesView": ProductCategoriesView_4d74db79c1c650fb8f1844efc9af8c99,
   "/components/MediaWorkspaceTabs#MediaWorkspaceTabs": MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62,
   "/components/MediaBulkUpload#MediaBulkUpload": MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f,
   "/components/MediaReprocessButton#MediaReprocessButton": MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7,

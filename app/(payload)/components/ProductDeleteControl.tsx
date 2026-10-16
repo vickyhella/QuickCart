@@ -9,13 +9,13 @@ export function ProductDeleteControl() {
   if (collectionSlug !== 'products' || !id) return null
 
   const remove = async () => {
-    if (!window.confirm('Delete this product?')) return
+    if (!window.confirm('Permanently delete this product? Images and originals used only by it will also be removed. Shared or referenced images will be kept.')) return
     setBusy(true)
     try {
       let response = await fetch(`/api/products/${encodeURIComponent(String(id))}/delete`, { method: 'DELETE', credentials: 'same-origin' })
       let result = await response.json()
       if (response.status === 409 && result.requiresForce) {
-        const confirmed = window.confirm(`This product is referenced by ${result.referenceCount} record(s) (orders, Pinterest posts, or media). Force delete? Those records remain and may show an unresolved product link; order title and price snapshots remain.`)
+        const confirmed = window.confirm(`This product is referenced by ${result.referenceCount} order or Pinterest post record(s). Delete it anyway? Historical records remain; order title and price snapshots remain. Shared or referenced images will be kept.`)
         if (!confirmed) return
         response = await fetch(`/api/products/${encodeURIComponent(String(id))}/delete?force=true`, { method: 'DELETE', credentials: 'same-origin' })
         result = await response.json()

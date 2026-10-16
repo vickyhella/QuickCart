@@ -26,7 +26,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       .filter((item: any) => item && typeof item === 'object')
     const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: getEnvironmentVariable('R2_PUBLIC_URL'), requestURL: request.url })
     return Response.json({
-      id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: product.price ?? '', status: product.status,
+      id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: product.price ?? '', compareAtPrice: product.compareAtPrice ?? '', status: product.status,
       supplierSKU: product.supplierSKU || '', purchaseURL: product.purchaseURL || '',
       descriptionMode: product.descriptionMode || 'auto', description: product.description || '', seoTitleMode: product.seoTitleMode || 'auto', seoTitle: product.seoTitle || '', seoDescriptionMode: product.seoDescriptionMode || 'auto', seoDescription: product.seoDescription || '',
       media: resolvedMedia.media.map((item) => ({ ...item, existing: true })), unavailableMediaCount: resolvedMedia.unavailableCount,
@@ -52,6 +52,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     if (!title) return error('Product name is required.')
     const price = body.price === '' || body.price == null ? undefined : Number(body.price)
     if (price !== undefined && (!Number.isFinite(price) || price < 0)) return error('Price must be a valid non-negative number.')
+    const compareAtPrice = body.compareAtPrice === '' || body.compareAtPrice == null ? undefined : Number(body.compareAtPrice)
+    if (compareAtPrice !== undefined && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0)) return error('Original price must be a valid non-negative number.')
     const categories = ['press-on-nails', 'nail-care', 'accessories', 'mystery-box']
     if (!categories.includes(body.category)) return error('Choose a valid product category.')
     const purchaseURL = typeof body.purchaseURL === 'string' ? body.purchaseURL.trim() : ''
@@ -101,7 +103,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const updated = await payload.update({
       collection: 'products', id,
       data: {
-        title, category: body.category, ...(price === undefined ? { price: null } : { price }),
+        title, category: body.category, ...(price === undefined ? { price: null } : { price }), compareAtPrice: compareAtPrice ?? null,
         supplierSKU: String(body.supplierSKU || '').trim(), purchaseURL,
         descriptionMode: body.descriptionMode === 'custom' ? 'custom' : 'auto', ...(body.descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),
         seoTitleMode: body.seoTitleMode === 'custom' ? 'custom' : 'auto', seoDescriptionMode: body.seoDescriptionMode === 'custom' ? 'custom' : 'auto',

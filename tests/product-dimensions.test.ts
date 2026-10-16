@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { productCardDimensions, productDimensionValues, productMatchesDimension, uniqueLengthShapePairs } from '../lib/product-dimensions'
+import { defaultProductDimensionOptions, productCardDimensions, productDimensionValues, productMatchesDimension, productUsesDimensionValue, uniqueLengthShapePairs } from '../lib/product-dimensions'
 import { renderStudioDescription } from '../lib/studio-description-template'
 
 test('keeps explicitly selected length and shape pairs without creating cross-pairs', () => {
@@ -30,6 +30,13 @@ test('does not fall back to stale product dimensions when all variants are disab
   const product = { length: 'short', variants: [{ length: 'short', enabled: false }] }
   assert.deepEqual(productDimensionValues([product], 'length'), [])
   assert.equal(productMatchesDimension(product, 'length', 'short'), false)
+})
+
+test('category values remain protected while any variant or legacy product field uses them', () => {
+  assert.equal(productUsesDimensionValue({ variants: [{ length: 'medium', enabled: false }] }, 'length', 'medium'), true)
+  assert.equal(productUsesDimensionValue({ shape: 'square, almond' }, 'shape', 'almond'), true)
+  assert.equal(productUsesDimensionValue({ variants: [{ shape: 'oval' }] }, 'shape', 'square'), false)
+  assert.deepEqual(defaultProductDimensionOptions.lengths.map(({ value }) => value), ['x-short', 'short', 'medium', 'long', 'x-long'])
 })
 
 test('shows unique enabled variant shapes on product cards', () => {

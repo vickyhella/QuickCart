@@ -74,14 +74,19 @@
 - Description / SEO 自动生成
 - 商品复制
 - 商品发布
-- 高级 Spreadsheet Editor（支持分页、筛选、TSV 粘贴与批量字段编辑，包含后台供应商信息），入口为 `/admin/collections/products/spreadsheet`
+- Product Studio 商品标题链接到 Storefront 商品详情页；列表 Action 内提供 Edit / Duplicate / Delete 和多选批量删除。Products Payload 列表使用独立 Action 列提供相同操作，标题不承载隐藏的后台编辑入口；单商品编辑页也提供删除操作。
+- 删除商品时，只有确认的关联记录后才执行删除；订单、Pinterest post 等历史记录保留。仅当图片不再被其他商品、Variant、Pinterest post 或媒体商品归属引用时，才同步删除 WebP；其原图仅在没有其他 WebP 引用时一并删除。
+- Product Studio 工作区包含 `Product Studio`、`Products`、`Categories`、`Spreadsheet` 四个标签；Spreadsheet 支持分页、筛选、TSV 粘贴与批量字段编辑，并包含后台供应商信息，入口为 `/admin/collections/products/spreadsheet`
+- Categories 标签统一维护 Length 和 Shape 选项，显示每个选项关联的商品；支持新增选项和修改显示名称，删除仍被任意商品 Variant（含停用 Variant）使用的选项时必须阻止并说明关联商品。
 - Length + Shape 规格按明确选择的配对生成，避免自动产生未选择的组合
 
 Product Studio 使用现有 Payload API，不直接操作 PostgreSQL 数据表。
 
-所有管理页面使用同一套 Payload Admin 外框、唯一左侧导航和顶栏。Product Studio、Marketing Studio 与 Spreadsheet Editor 保留各自已经验证的主体界面和业务逻辑，仅通过 Admin 内的入口访问；开发阶段不保留旧独立页面或兼容重定向。
+商品删除必须二次确认。若商品被订单、Pinterest post 或媒体记录引用，先明确告警并要求再次确认；共享或仍被引用的图片 / 原图必须保留，清理失败不得回滚或误报商品删除失败。
 
-左侧导航与 Dashboard 卡片使用相同的分组、项目和顺序：Studio（Product Studio、Marketing Studio、Spreadsheet Editor）；Store（Users、Contact forms）；Catalog（Products、Media）；Website（Pages）；Commerce（Orders、Discounts、Store settings）。Marketing Studio 使用 `/admin/collections/marketing/studio`，不挂在 Pinterest Posts 下；Media 内含 Media、Media Originals、Image compression、Image names & metadata 四个标签；Store settings 内把 Countries 作为底部配置项展示。Publishing posts、Media Originals、Marketing settings 等底层 collection/global 保留数据和原生管理能力，但不再作为重复的独立侧栏分组。
+所有管理页面使用同一套 Payload Admin 外框、唯一左侧导航和顶栏。Product Studio 与 Marketing Studio 保留各自已经验证的主体界面和业务逻辑；Spreadsheet 保留原有编辑能力并作为 Product Studio 工作区标签访问；开发阶段不保留旧独立页面或兼容重定向。
+
+左侧导航与 Dashboard 卡片使用相同的分组、项目和顺序：Studio（Product Studio、Marketing Studio）；Store（Users、Contact forms）；Media（Media）；Website（Pages）；Commerce（Orders、Discounts、Store settings）。Product Studio 内通过 `Product Studio`、`Products`、`Categories`、`Spreadsheet` 标签统一进入商品工作台、Payload 商品列表、Length / Shape 分类管理和表格编辑器；Products collection 不单独出现在侧栏。Marketing Studio 使用 `/admin/collections/marketing/studio`，不挂在 Pinterest Posts 下；Media 内含 Media、Media Originals、Image compression、Image names & metadata 四个标签；Store settings 内把 Countries 作为底部配置项展示。Publishing posts、Media Originals、Marketing settings、Product dimensions 等底层 collection/global 保留数据和管理能力，但不再作为重复的独立侧栏分组。
 
 重复功能优先使用已验证的 Product Studio、Marketing Studio 和现有媒体工作流，不复制或重写其商品保存、Pinterest 发布、图片转换与压缩逻辑。Payload Admin 顶栏在用户图标左侧并排提供 Admin home 和 Storefront homepage；所有 Admin 页面共用这两个入口，不重复显示跳转。
 
@@ -199,6 +204,7 @@ Product Studio 的 Supplier information 默认展开。
 
 - Product Name
 - Base Price
+- Optional original price (`compareAtPrice`) for discounts. `price` remains the actual sale price; when the original price is higher, storefront and product feeds show both values.
 - 至少一张商品图片
 - 至少一个 Length + Shape 组合
 - 至少一个 Size

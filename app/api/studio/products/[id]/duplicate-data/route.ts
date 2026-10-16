@@ -12,7 +12,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const combinations = [...new Map(variants.map((variant: any) => [`${variant.length}|${variant.shape}`, { length: variant.length, shape: variant.shape }])).values()]
     const sizes = [...new Set(variants.map((variant: any) => String(variant.size || 's')))]
     const priceOverrides = Object.fromEntries(variants.filter((variant: any) => variant.price != null).map((variant: any) => [`${variant.length}|${variant.shape}|${variant.size}`, variant.price]))
-    return Response.json({ category: product.category, price: product.price ?? '', combinations, sizes, priceOverrides })
+    return Response.json({ category: product.category, price: product.price ?? '', compareAtPrice: product.compareAtPrice ?? '', combinations, sizes, priceOverrides })
   } catch {
     return Response.json({ error: 'Could not load product for duplication.' }, { status: 404 })
   }

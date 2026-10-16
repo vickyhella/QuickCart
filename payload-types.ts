@@ -106,10 +106,12 @@ export interface Config {
   globals: {
     'store-settings': StoreSetting;
     'marketing-settings': MarketingSetting;
+    'product-dimensions': ProductDimension;
   };
   globalsSelect: {
     'store-settings': StoreSettingsSelect<false> | StoreSettingsSelect<true>;
     'marketing-settings': MarketingSettingsSelect<false> | MarketingSettingsSelect<true>;
+    'product-dimensions': ProductDimensionsSelect<false> | ProductDimensionsSelect<true>;
   };
   locale: null;
   widgets: {
@@ -1048,6 +1050,29 @@ export interface MarketingSetting {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-dimensions".
+ */
+export interface ProductDimension {
+  id: number;
+  lengths?:
+    | {
+        value: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  shapes?:
+    | {
+        value: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "store-settings_select".
  */
 export interface StoreSettingsSelect<T extends boolean = true> {
@@ -1094,6 +1119,29 @@ export interface MarketingSettingsSelect<T extends boolean = true> {
   pinterestTitleTemplate?: T;
   pinterestDescriptionTemplate?: T;
   pinterestPublishingSetup?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "product-dimensions_select".
+ */
+export interface ProductDimensionsSelect<T extends boolean = true> {
+  lengths?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
+  shapes?:
+    | T
+    | {
+        value?: T;
+        label?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

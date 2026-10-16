@@ -1,6 +1,7 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { productPublishError } from '@/lib/product-validation'
+import { deleteProduct } from '@/lib/delete-product'
 
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
@@ -9,6 +10,34 @@ export async function POST(request: Request) {
   let body: any
   try { body = await request.json() } catch { return Response.json({ error: 'Invalid request body.' }, { status: 400 }) }
   const items = Array.isArray(body.items) ? body.items : []
+  if (body.action === 'delete') {
+    const ids: string[] = [...new Set<string>(items.map((item: any) => String(item?.id || '')).filter(Boolean))]
+    if (!ids.length || ids.length > 100) return Response.json({ error: 'Select between 1 and 100 products.' }, { status: 400 })
+    const force = body.force === true
+    if (!force) {
+      const referenced = []
+      for (const id of ids) {
+        const [orders, pins] = await Promise.all([
+          payload.find({ collection: 'orders', where: { 'items.product': { equals: id } }, limit: 1, depth: 0, overrideAccess: true }),
+          payload.find({ collection: 'pinterest-posts', where: { product: { equals: id } }, limit: 1, depth: 0, overrideAccess: true }),
+        ])
+        const count = orders.totalDocs + pins.totalDocs
+        if (count) referenced.push({ id, referenceCount: count })
+      }
+      if (referenced.length) return Response.json({ requiresForce: true, referenced }, { status: 409 })
+    }
+    const deleted: any[] = []
+    const failed: { id: string; error: string }[] = []
+    for (const id of ids) {
+      try {
+        const result = await deleteProduct(payload, id, true)
+        deleted.push({ id, ...result })
+      } catch (cause) {
+        failed.push({ id, error: cause instanceof Error ? cause.message : 'Could not delete product.' })
+      }
+    }
+    return Response.json({ deleted, failed })
+  }
   const price = body.price === undefined || body.price === '' ? undefined : Number(body.price)
   const stock = body.stock === undefined || body.stock === '' ? undefined : Number(body.stock)
   const status = body.status === 'draft' || body.status === 'published' ? body.status : undefined

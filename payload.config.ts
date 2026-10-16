@@ -18,6 +18,7 @@ import { PinterestPosts } from './collections/PinterestPosts'
 import { Users } from './collections/Users'
 import { StoreSettings } from './globals/StoreSettings'
 import { MarketingSettings } from './globals/MarketingSettings'
+import { ProductDimensions } from './globals/ProductDimensions'
 import { assertRuntimeEnvironmentConfigured, getEnvironmentVariable, getRuntimeEnvironment } from './lib/environment-config'
 
 const filename = fileURLToPath(import.meta.url)
@@ -60,7 +61,7 @@ export default buildConfig({
     },
   },
   collections: [Users, ContactMessages, Products, Media, MediaOriginals, MarketingWorkspace, Pages, Orders, Discounts, PinterestPosts],
-  globals: [StoreSettings, MarketingSettings],
+  globals: [StoreSettings, MarketingSettings, ProductDimensions],
   plugins: [
     s3Storage({
       enabled: r2Enabled,

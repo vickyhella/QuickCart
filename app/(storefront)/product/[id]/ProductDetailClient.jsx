@@ -50,7 +50,7 @@ export default function ProductPage() {
 
   const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`
   const unitPrice = Number(selectedVariant?.price ?? product.offerPrice)
-  const compareAtPrice = Number(selectedVariant?.compareAtPrice ?? product.price)
+  const compareAtPrice = Number(selectedVariant?.compareAtPrice ?? product.compareAtPrice ?? product.price)
   const availableLengths = [...new Set(variants.filter((variant) => variant.shape === selectedShape && (variant.size || 's') === selectedSize).map((variant) => variant.length))]
   const availableShapes = [...new Set(variants.filter((variant) => variant.length === selectedLength && (variant.size || 's') === selectedSize).map((variant) => variant.shape))]
   const sizeOrder = ['xs', 's', 'm', 'l']

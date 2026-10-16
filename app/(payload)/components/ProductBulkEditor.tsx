@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
+import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 
 type Product = Record<string, unknown> & { id: string | number }
 type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
@@ -236,7 +237,7 @@ function toPayloadData(row: GridRow, media: Media[]) {
   }
 }
 
-export function ProductBulkEditLink() {
+export function ProductMediaAudit() {
   const [imageIssues, setImageIssues] = useState<Array<{ id: string; title: string; slot: string; reason: string }> | null>(null)
   useEffect(() => {
     fetch('/api/marketing/media-audit', { credentials: 'same-origin' })
@@ -247,7 +248,6 @@ export function ProductBulkEditLink() {
   return (
     <div style={{ marginBlock: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-        <Link className="btn btn--style-primary btn--size-medium" href="/admin/collections/products/spreadsheet">Open spreadsheet editor</Link>
         {imageIssues && imageIssues.length > 0 && <details style={{ alignSelf: 'center' }}>
           <summary style={{ cursor: 'pointer', color: 'var(--brand-danger)', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
           <ul style={{ margin: '8px 0', paddingInlineStart: 20 }}>
@@ -262,7 +262,7 @@ export function ProductBulkEditLink() {
   )
 }
 
-export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) {
+export function ProductBulkEditor() {
   const [rows, setRows] = useState<GridRow[]>([])
   const [originalRows, setOriginalRows] = useState<GridRow[]>([])
   const [media, setMedia] = useState<Media[]>([])
@@ -577,17 +577,18 @@ export function ProductBulkEditor({ inStudio = false }: { inStudio?: boolean }) 
   }
 
   return (
-    <main style={{ padding: '2rem clamp(1rem, 3vw, 3rem)' }}>
-      <h1 style={{ marginBlock: '1rem 0.5rem' }}>Product spreadsheet editor</h1>
-      <p style={{ maxWidth: 1000, lineHeight: 1.6 }}>
+    <main className="product-studio min-h-screen bg-[#f7f3f0] px-5 py-10 font-sans text-base antialiased text-[#302522] md:px-8 lg:px-10">
+      <header className="mb-8">
+        <h1 className="text-3xl font-semibold tracking-tight">Spreadsheet</h1>
+        <p className="mt-2 max-w-[1000px] text-sm text-[#766966]">
         Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename.
-      </p>
+        </p>
+      </header>
+      <ProductWorkspaceTabs />
       <p style={{ maxWidth: 1100, lineHeight: 1.6, opacity: 0.8 }}>
         Variants can be edited in a table per product. Separate multiple gallery images with semicolons. See the Media collection for filenames and IDs.
       </p>
       <div style={toolbarStyle}>
-        <Link href={inStudio ? '/admin/collections/products/studio' : '/admin/collections/products/'} style={{ ...buttonStyle, textDecoration: 'none' }}>{inStudio ? '← Product Studio' : '← Products'}</Link>
-        {!inStudio && <Link href="/admin/collections/marketing/studio?tab=seo" style={{ ...buttonStyle, textDecoration: 'none' }}>Marketing Studio</Link>}
         <button type="button" onClick={exportTSV} style={buttonStyle} disabled={loading || rows.length === 0}>Export TSV</button>
         <button type="button" onClick={() => void load()} style={buttonStyle} disabled={loading || saving}>Reload</button>
         <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: 'var(--brand-accent)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)' }} disabled={loading || saving || dirtyIDs.size === 0}>

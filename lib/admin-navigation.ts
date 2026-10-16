@@ -14,10 +14,16 @@ export const mediaWorkspaceTabs = [
   { label: 'Image names & metadata', href: '/admin/collections/media/metadata', matches: (path: string) => path === '/admin/collections/media/metadata' },
 ] as const
 
+export const productWorkspaceTabs = [
+  { label: 'Product Studio', href: '/admin/collections/products/studio' },
+  { label: 'Products', href: '/admin/collections/products' },
+  { label: 'Categories', href: '/admin/collections/products/categories' },
+  { label: 'Spreadsheet', href: '/admin/collections/products/spreadsheet' },
+] as const
+
 export const studioLinks = [
-  { label: 'Product Studio', href: '/admin/collections/products/studio', description: 'Create, edit, and publish products.' },
+  { label: 'Product Studio', href: '/admin/collections/products/studio', description: 'Create, manage, publish, and bulk edit products.' },
   { label: 'Marketing Studio', href: '/admin/collections/marketing/studio', description: 'Manage Pinterest, SEO, and product feeds.' },
-  { label: 'Spreadsheet Editor', href: '/admin/collections/products/spreadsheet', description: 'Review and update product and variant data in bulk.' },
 ] as const
 
 export const adminDashboardSections = [
@@ -30,9 +36,8 @@ export const adminDashboardSections = [
     ],
   },
   {
-    title: 'Catalog',
+    title: 'Media',
     links: [
-      { label: 'Products', href: '/admin/collections/products', description: 'Maintain products, variants, prices, and publishing status.' },
       { label: 'Media', href: '/admin/collections/media', description: 'Manage images, originals, compression, filenames, and metadata.' },
     ],
   },

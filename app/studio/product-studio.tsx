@@ -36,6 +36,15 @@ type DimensionOption = { value: string; label: string }
 
 const responseData = readJSONResponse
 
+function notifyStudioError(
+  setError: (message: string) => void,
+  message: string,
+  toastMessage = message.length > 140 ? '操作失败，请查看页面内的详细错误信息。' : message,
+) {
+  setError(message)
+  toast.error(toastMessage, { duration: 6000 })
+}
+
 const categories = [
   ['press-on-nails', 'Press-on Nails'],
   ['nail-care', 'Nail Care'],
@@ -164,7 +173,7 @@ export default function ProductStudio() {
         setTotalDocs(data.totalDocs || 0)
         if (data.templates) setTemplates(data.templates)
       })
-      .catch((cause: Error) => { if (active) setError(cause.message) })
+      .catch((cause: Error) => { if (active) notifyStudioError(setError, cause.message) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
   }, [page, search, status, sort])
@@ -222,7 +231,7 @@ export default function ProductStudio() {
         setTotalDocs(result.totalDocs || 0)
       } catch { setNotice((current) => `${current} List refresh failed; your changes were saved.`) }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save the draft.')
+      notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not save the draft.')
     } finally {
       setSaving(false)
     }
@@ -242,17 +251,19 @@ export default function ProductStudio() {
           setImages((current) => [...current, { id: data.doc.id, url: data.doc.url, name: data.doc.filename || file.name }])
         } catch (cause) { failures.push(`${file.name}: ${cause instanceof Error ? cause.message : 'upload failed'}`) }
       }
-      if (failures.length) setError(`Some images could not be uploaded. Successful images remain attached to this form. ${failures.join(' · ')}`)
+      if (failures.length) notifyStudioError(setError, `Some images could not be uploaded. Successful images remain attached to this form. ${failures.join(' · ')}`, `${failures.length} image(s) failed to upload. See the form for details.`)
     }
     finally { setUploading(false) }
   }
 
   async function removeImage(image: StudioImage) {
     if (image.existing) { setImages((current) => current.filter((item) => item.id !== image.id)); setImageOverrides((current) => Object.fromEntries(Object.entries(current).filter(([, mediaID]) => String(mediaID) !== String(image.id)))); return }
-    const response = await fetch(`/api/media/${image.id}/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deleteOriginal: true }) })
-    const data = await response.json()
-    if (!response.ok) { setError(data.error || 'Could not remove image.'); return }
-    setImages((current) => current.filter((item) => item.id !== image.id))
+    try {
+      const response = await fetch(`/api/media/${image.id}/delete`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ deleteOriginal: true }) })
+      const data = await response.json()
+      if (!response.ok) { notifyStudioError(setError, data.error || 'Could not remove image.'); return }
+      setImages((current) => current.filter((item) => item.id !== image.id))
+    } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not remove image.') }
   }
 
   function moveImage(index: number, offset: number) {
@@ -268,14 +279,16 @@ export default function ProductStudio() {
   const duplicateProduct = useCallback(async (id: string | number) => {
     setError(''); setNotice('')
     requestID.current = ''
-    const response = await fetch(`/api/studio/products/${id}/duplicate-data`)
-    const data = await response.json()
-    if (!response.ok) { setError(data.error || 'Could not load product to duplicate.'); return }
-    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-    setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setCompareAtPrice(data.compareAtPrice === '' ? '' : String(data.compareAtPrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(data.priceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
-    setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
-    document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
-    setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
+    try {
+      const response = await fetch(`/api/studio/products/${id}/duplicate-data`)
+      const data = await response.json()
+      if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product to duplicate.'); return }
+      setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
+      setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setCompareAtPrice(data.compareAtPrice === '' ? '' : String(data.compareAtPrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(data.priceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
+      document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
+      setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
+    } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load product to duplicate.') }
   }, [])
 
   useEffect(() => {
@@ -287,24 +300,26 @@ export default function ProductStudio() {
 
   async function editProduct(id: string | number) {
     setError(''); setNotice('')
-    const response = await fetch(`/api/studio/products/${id}`)
-    const data = await response.json()
-    if (!response.ok) { setError(data.error || 'Could not load product.'); return }
-    const prices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
-    for (const variant of data.variants) {
-      if (variant.price !== '') prices[variant.key] = Number(variant.price)
-      if (variant.image) imagesByVariant[variant.key] = String(variant.image)
-      stocks[variant.key] = Number(variant.stock)
-      if (variant.supplierSKU) supplierSKUs[variant.key] = variant.supplierSKU
-      if (variant.purchaseURL) purchaseURLs[variant.key] = variant.purchaseURL
-      if (variant.enabled) enabled[variant.key] = true
-    }
-    setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
-    setTitle(data.title || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setCompareAtPrice(data.compareAtPrice === '' ? '' : String(data.compareAtPrice))
-    setSupplierSKU(data.supplierSKU); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
-    setImages(data.media); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(prices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
-    document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
-    setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
+    try {
+      const response = await fetch(`/api/studio/products/${id}`)
+      const data = await response.json()
+      if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product.'); return }
+      const prices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
+      for (const variant of data.variants) {
+        if (variant.price !== '') prices[variant.key] = Number(variant.price)
+        if (variant.image) imagesByVariant[variant.key] = String(variant.image)
+        stocks[variant.key] = Number(variant.stock)
+        if (variant.supplierSKU) supplierSKUs[variant.key] = variant.supplierSKU
+        if (variant.purchaseURL) purchaseURLs[variant.key] = variant.purchaseURL
+        if (variant.enabled) enabled[variant.key] = true
+      }
+      setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
+      setTitle(data.title || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setCompareAtPrice(data.compareAtPrice === '' ? '' : String(data.compareAtPrice))
+      setSupplierSKU(data.supplierSKU); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
+      setImages(data.media); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(prices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
+      document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
+      setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
+    } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load product.') }
   }
 
   async function bulkUpdate() {
@@ -321,7 +336,7 @@ export default function ProductStudio() {
       if (search.trim()) params.set('search', search.trim())
       const refresh = await fetch(`/api/studio/products?${params}`, { cache: 'no-store' }); const result = await responseData(refresh)
       setProducts(result.docs)
-    } catch (cause) { setError(cause instanceof Error ? cause.message : 'Bulk update failed.') }
+    } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Bulk update failed.') }
   }
 
   async function deleteProducts(ids: string[], force = false) {
@@ -350,7 +365,7 @@ export default function ProductStudio() {
   async function deleteProductByID(id: string | number, title: string) {
     if (!window.confirm(`Delete “${title}” and any images used only by this product?`)) return
     try { await deleteProducts([String(id)]) }
-    catch (cause) { setError(cause instanceof Error ? cause.message : 'Could not delete product.') }
+    catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not delete product.') }
   }
 
   useEffect(() => {
@@ -360,7 +375,7 @@ export default function ProductStudio() {
     fetch(`/api/studio/media?${params}`, { cache: 'no-store' }).then(responseData).then((data) => {
       setLibraryImages(data.docs.map((image: any) => ({ id: image.id, url: image.url, name: image.filename || image.title || 'Product image', existing: true })))
       setLibraryTotalPages(data.totalPages || 1)
-    }).catch((cause) => setError(cause instanceof Error ? cause.message : 'Could not load images.'))
+    }).catch((cause) => notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load images.'))
   }, [libraryOpen, libraryPage, librarySearch])
 
   function cancelEditing() {
@@ -394,7 +409,7 @@ export default function ProductStudio() {
                   <h2 className="font-serif text-xl">Products</h2>
                   <p className="mt-1 text-sm text-[#968680]">Search and manage your catalog</p>
                 </div>
-                <div className="flex gap-2"><button type="button" disabled={!selectedIDs.length || loading} onClick={() => { if (window.confirm(`Permanently delete ${selectedIDs.length} selected product(s)? Unshared images and originals will also be removed.`)) void deleteProducts(selectedIDs).catch((cause) => setError(cause instanceof Error ? cause.message : 'Could not delete products.')) }} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700 disabled:opacity-40">Delete selected{selectedIDs.length ? ` (${selectedIDs.length})` : ''}</button><a href="#quick-add" className="rounded-xl bg-[#8b5d53] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#754a41]">＋ Add product</a></div>
+                <div className="flex gap-2"><button type="button" disabled={!selectedIDs.length || loading} onClick={() => { if (window.confirm(`Permanently delete ${selectedIDs.length} selected product(s)? Unshared images and originals will also be removed.`)) void deleteProducts(selectedIDs).catch((cause) => notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not delete products.')) }} className="rounded-xl border border-red-200 px-4 py-2.5 text-sm font-medium text-red-700 disabled:opacity-40">Delete selected{selectedIDs.length ? ` (${selectedIDs.length})` : ''}</button><a href="#quick-add" className="rounded-xl bg-[#8b5d53] px-4 py-2.5 text-sm font-medium text-white transition hover:bg-[#754a41]">＋ Add product</a></div>
               </div>
               <div className="flex flex-col gap-3 border-b border-[#f0e9e5] px-5 py-4 sm:flex-row sm:px-7">
                 <input aria-label="Search products" className={`${inputClass} sm:max-w-sm`} placeholder="Search name or SKU" value={search} onChange={(event) => { setSearch(event.target.value); setPage(1); setSelectedIDs([]); setSelectedProducts({}) }} />

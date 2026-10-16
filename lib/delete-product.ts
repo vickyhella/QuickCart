@@ -81,6 +81,13 @@ export async function deleteProduct(
   let cleanupFailures = 0
   for (const mediaID of mediaIDs) {
     try {
+      const media: any = await payload.findByID({
+        collection: 'media',
+        id: mediaID,
+        depth: 0,
+        overrideAccess: true,
+      })
+      if (!media) continue
       const [products, pinImages] = await Promise.all([
         // shortcut: the reference scan is capped at 10,000 products; paginate if the catalog approaches that size.
         payload.find({
@@ -92,7 +99,12 @@ export async function deleteProduct(
         }),
         payload.find({
           collection: 'pinterest-posts',
-          where: { imageMedia: { equals: mediaID } },
+          where: {
+            or: [
+              { imageMedia: { equals: mediaID } },
+              ...(media.url ? [{ imageURL: { equals: media.url } }] : []),
+            ],
+          },
           limit: 1,
           depth: 0,
           overrideAccess: true,
@@ -107,15 +119,6 @@ export async function deleteProduct(
         continue
       }
 
-      const media: any = await payload
-        .findByID({
-          collection: 'media',
-          id: mediaID,
-          depth: 0,
-          overrideAccess: true,
-        })
-        .catch(() => null)
-      if (!media) continue
       if (relationID(media.product) && relationID(media.product) !== id) {
         keptReferencedMedia++
         continue

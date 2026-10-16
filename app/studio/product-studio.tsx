@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 import { readJSONResponse } from '@/lib/read-json-response'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
 import { defaultProductDimensionOptions } from '@/lib/product-dimensions'
+import { orderedVariantRows, sortProductSizes } from '@/lib/product-size-order'
 import { ProductWorkspaceTabs } from '../(payload)/components/ProductWorkspaceTabs'
 
 type ProductRow = {
@@ -139,8 +140,10 @@ export default function ProductStudio() {
   const [libraryTotalPages, setLibraryTotalPages] = useState(1)
   const [librarySelected, setLibrarySelected] = useState<string[]>([])
 
-  const enabledCombinations = combinations.filter((combo) => sizes.some((size) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
-  const enabledSizes = sizes.filter((size) => enabledCombinations.some((combo) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
+  const orderedSizes = sortProductSizes(sizes)
+  const variantRows = orderedVariantRows(combinations, orderedSizes)
+  const enabledCombinations = combinations.filter((combo) => orderedSizes.some((size) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
+  const enabledSizes = orderedSizes.filter((size) => enabledCombinations.some((combo) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
   const combinationLengths = [...new Set(enabledCombinations.map((item) => item.length))].join(', ')
   const combinationShapes = [...new Set(enabledCombinations.map((item) => item.shape))].join(', ')
   const availableCombinations = enabledCombinations.map((item) => `${item.length} ${item.shape}`).join(', ')
@@ -221,7 +224,7 @@ export default function ProductStudio() {
       const response = await fetch(editingId ? `/api/studio/products/${editingId}` : '/api/studio/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, category, price, salePrice, supplierSKU, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes, variants: combinations.flatMap((combo) => sizes.map((size) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], purchaseURL: variantPurchaseURLs[key] } })), action }),
+        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, category, price, salePrice, supplierSKU, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], purchaseURL: variantPurchaseURLs[key] } }), action }),
       })
       const data = await responseData(response)
       const wasEditing = Boolean(editingId)
@@ -297,7 +300,7 @@ export default function ProductStudio() {
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product to duplicate.'); return }
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
       setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
@@ -325,12 +328,12 @@ export default function ProductStudio() {
         stocks[variant.key] = Number(variant.stock)
         if (variant.supplierSKU) supplierSKUs[variant.key] = variant.supplierSKU
         if (variant.purchaseURL) purchaseURLs[variant.key] = variant.purchaseURL
-        if (variant.enabled) enabled[variant.key] = true
+        enabled[variant.key] = variant.enabled !== false
       }
       setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
       setTitle(data.title || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
       setSupplierSKU(data.supplierSKU); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
-      setImages(data.media); setCombinations(data.combinations); setSizes(data.sizes); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
+      setImages(data.media); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
     } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load product.') }
@@ -470,7 +473,7 @@ export default function ProductStudio() {
                 <div><FieldLabel>Product name <span className="text-[#b45749]">*</span></FieldLabel><input className={inputClass} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Rosewater" /></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
                   <div><FieldLabel>Category</FieldLabel><select className={inputClass} value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
-                  <div><FieldLabel>Price <span className="text-sm font-normal text-[#968680]">(required to publish)</span></FieldLabel><PriceInput label="Price" value={price} onChange={setPrice} placeholder="Optional for drafts" prefix /></div>
+                  <div><FieldLabel>Price <span className="text-[#b45749]">*</span> <span className="text-sm font-normal text-[#968680]">(required to publish)</span></FieldLabel><PriceInput label="Price" value={price} onChange={setPrice} placeholder="Optional for drafts" prefix /></div>
                   <div><FieldLabel>Sale price <span className="text-sm font-normal text-[#968680]">(optional)</span></FieldLabel><PriceInput label="Sale price" value={salePrice} onChange={setSalePrice} placeholder="Leave blank when not on sale" prefix /></div>
                 </div>
                 <div className="-mt-3 text-sm text-[#968680]">Price is the regular price. Optional Sale price must be lower; the regular price is shown crossed out when on sale. Use the arrows to adjust each price by $1.</div>
@@ -499,8 +502,13 @@ export default function ProductStudio() {
                     <button type="button" onClick={() => setCombinations((current) => current.some((item) => item.length === length && item.shape === shape) ? current : [...current, { length, shape }])} className="rounded-xl border border-[#e7ddd8] px-3 text-sm">Add</button>
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">{combinations.map((item) => <button type="button" key={`${item.length}-${item.shape}`} onClick={() => setCombinations((current) => current.filter((entry) => entry !== item))} className="rounded-full bg-[#f5efec] px-3 py-1.5 text-sm">{item.length} / {item.shape} ×</button>)}</div>
-                  <div className="mt-3 flex gap-4 text-sm">{[['xs','XS'],['s','S'],['m','M'],['l','L']].map(([value,label]) => <label key={value} className="flex items-center gap-1.5"><input type="checkbox" checked={sizes.includes(value)} onChange={(event) => setSizes((current) => event.target.checked ? [...current, value] : current.filter((item) => item !== value))} />{label}</label>)}</div>
-                  {combinations.length > 0 && sizes.length > 0 && <div className="mt-3 space-y-2">{combinations.flatMap((combo) => sizes.map((size) => {
+                  <div className="mt-3 flex gap-4 text-sm">{[['xs','XS'],['s','S'],['m','M'],['l','L']].map(([value,label]) => <label key={value} className="flex items-center gap-1.5"><input type="checkbox" checked={sizes.includes(value)} onChange={(event) => {
+                    if (event.target.checked) {
+                      setSizes((current) => sortProductSizes([...current, value]))
+                      setVariantEnabled((current) => ({ ...current, ...Object.fromEntries(combinations.map((combo) => [`${combo.length}|${combo.shape}|${value}`, true])) }))
+                    } else setSizes((current) => current.filter((item) => item !== value))
+                  }} />{label}</label>)}</div>
+                  {variantRows.length > 0 && <div className="mt-3 space-y-2">{variantRows.map(({ combo, size }) => {
                     const key = `${combo.length}|${combo.shape}|${size}`
                     return <div key={key} className="rounded-lg border border-[#e7ddd8] p-3">
                       <p className="mb-2 text-sm text-[#766762]">{combo.length}/{combo.shape} · {size.toUpperCase()}</p>
@@ -521,7 +529,7 @@ export default function ProductStudio() {
                       <label className="mt-2 flex items-center gap-1.5 text-sm text-[#968680]"><input type="checkbox" checked={variantEnabled[key] !== false} onChange={(event) => setVariantEnabled((current) => ({ ...current, [key]: event.target.checked }))} />Enabled</label>
                       <details className="mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier info</summary><div className="mt-2 grid grid-cols-2 gap-2"><input aria-label="Variant supplier SKU" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" placeholder="Supplier SKU" value={variantSupplierSKUs[key] || ''} onChange={(event) => setVariantSupplierSKUs((current) => ({ ...current, [key]: event.target.value }))} /><input aria-label="Variant purchase URL" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" type="url" placeholder="Purchase URL" value={variantPurchaseURLs[key] || ''} onChange={(event) => setVariantPurchaseURLs((current) => ({ ...current, [key]: event.target.value }))} /></div></details>
                     </div>
-                  }))}</div>}
+                  })}</div>}
                   <p className="mt-2 text-sm text-[#968680]">{combinations.length * sizes.length} variants · stock defaults to 10 · price and image inherit from the product</p>
                 </div>
 

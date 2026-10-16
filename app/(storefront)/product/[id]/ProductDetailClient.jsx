@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm'
 import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { sortProductSizes } from '@/lib/product-size-order'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -53,8 +54,7 @@ export default function ProductPage() {
   const pricing = getPriceDetails(product, selectedVariant)
   const availableLengths = [...new Set(variants.filter((variant) => variant.shape === selectedShape && (variant.size || 's') === selectedSize).map((variant) => variant.length))]
   const availableShapes = [...new Set(variants.filter((variant) => variant.length === selectedLength && (variant.size || 's') === selectedSize).map((variant) => variant.shape))]
-  const sizeOrder = ['xs', 's', 'm', 'l']
-  const availableSizes = [...new Set(variants.filter((variant) => variant.length === selectedLength && variant.shape === selectedShape).map((variant) => variant.size || 's'))].sort((a, b) => sizeOrder.indexOf(a) - sizeOrder.indexOf(b))
+  const availableSizes = sortProductSizes(variants.filter((variant) => variant.length === selectedLength && variant.shape === selectedShape).map((variant) => variant.size || 's'))
   const galleryImages = [...new Set([selectedVariant?.image?.url, ...product.image].filter(Boolean))]
   const chooseVariant = (dimension, value) => {
     const proposed = { length: selectedLength, shape: selectedShape, size: selectedSize, [dimension]: value }

@@ -207,6 +207,7 @@ Product Studio 的 Supplier information 默认展开。
 - Preserve Payload storage: `price` is the actual selling price and `compareAtPrice` is the optional regular price. A shared adapter maps editor Price / Sale price to these existing fields. Without a sale, store Price in `price` and clear `compareAtPrice`; with a sale, store Sale price in `price` and Price in `compareAtPrice`. No price data migration is required.
 - Storefront, cart, checkout and feeds use the same adapter; actual checkout prices remain `variant.price ?? product.price`. Preserve variant overrides and inheritance when editing or duplicating. Emit GMC `sale_price` only when `compareAtPrice` exceeds the actual price, otherwise omit it.
 - Product Studio price inputs use the browser's native up/down controls with a $1 step; mouse-wheel price changes are disabled. Apply the same control to regular and sale prices on the product and each variant, independently.
+- Mark Product Studio Price with an asterisk because it is required for publishing, while drafts may leave it blank. Show selected sizes and variant preview cards in XS, S, M, L order across all Length + Shape combinations, including after a size is re-enabled; use the same order on product pages. Re-selecting a size enables its variants for the selected combinations.
 - When editing a product, restore its featured image, gallery images, and variant image selections whether Payload returns media relations as IDs or populated records.
 - 至少一张商品图片
 - 至少一个 Length + Shape 组合
@@ -417,6 +418,7 @@ Auto 描述模板在 Admin → Studio → Marketing Studio → SEO 标签的 Pro
 
 - Payload Admin 的 Media Originals 列表支持批量清理原图，并显示 WebP 引用检查结果。
 - 系统通过 `sourceOriginal` 找到对应 WebP；若 WebP 被商品主图、Gallery、Variant 或 Pinterest Pin 使用，则将该原图标记为已引用，并显示具体商品或 Pin 名称。Media 记录自身的 `product` 辅助关系不能单独作为引用依据。
+- 商品删除清理图片时，同时检查 Pinterest 的 `imageMedia` 和 `imageURL` 引用；仅保存图片 URL 的旧 Pin 仍须保护对应 WebP 及原图，商品名称和图片文件名无需一致。
 - 默认仅删除未被使用 WebP 引用的原图；已引用原图保留，并显示关联数量和对象名称。部分被引用时，清理未引用原图并报告保留数量。
 - 勾选明确的风险确认后，才允许删除已引用 WebP 对应的原图；确认说明 WebP 和商品展示仍保留，但之后无法从该原图重新压缩。
 - 删除只移除原图文件和 Media Originals 记录，并清除对应 WebP 的 `sourceOriginal` 关系；不得删除 WebP、商品、Variant、Pin 或其媒体引用。

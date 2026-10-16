@@ -18,6 +18,7 @@ test('rejects publishing when every enabled variant is out of stock', () => {
 test('rejects publishing without an image or a valid price', () => {
   assert.ok(productPublishError({ ...validProduct, hasImage: false }))
   assert.ok(productPublishError({ ...validProduct, price: -1 }))
+  assert.equal(productPublishError({ ...validProduct, price: undefined }), 'To publish, enter a valid Price.')
 })
 
 test('allows publishing without an optional sale price', () => {

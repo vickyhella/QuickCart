@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { getCheckoutFailure } from '@/lib/checkout-error'
-import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
+import { getPayPalPublicConfig, isPayPalConfigured, paypalRequest } from '@/lib/paypal'
 import { shippingCountries } from '@/lib/countries'
 import { calculateShippingCharge } from '@/lib/shipping-tiers'
 import { getPriceDetails } from '@/lib/product-pricing'
@@ -18,6 +18,10 @@ export async function POST(request) {
 
   try {
     const body = await request.json()
+    const cardPayment = body.paymentMethod === 'card'
+    if (cardPayment && !getPayPalPublicConfig().cardPaymentsEnabled) {
+      return NextResponse.json({ error: 'Card payments are not enabled.' }, { status: 503 })
+    }
     const customerNote = String(body.customerNote || '').trim()
     if (customerNote.length > 1000) return NextResponse.json({ error: '订单备注最多 1000 个字符。' }, { status: 400 })
     const email = String(body.email || '').trim().toLowerCase()
@@ -147,6 +151,9 @@ export async function POST(request) {
         requestId: `create-${orderNumber}`,
         body: {
           intent: 'CAPTURE',
+          ...(cardPayment ? {
+            payment_source: { card: { attributes: { verification: { method: 'SCA_WHEN_REQUIRED' } } } },
+          } : {}),
           purchase_units: [{
             reference_id: orderNumber,
             custom_id: String(order.id),
@@ -194,7 +201,7 @@ export async function POST(request) {
         overrideAccess: true,
       })
       const approvalURL = paypalOrder.links?.find((link) => link.rel === 'approve')?.href
-      if (!approvalURL) throw new Error('PayPal 没有返回付款链接。')
+      if (!paypalOrder.id || (!cardPayment && !approvalURL)) throw new Error('PayPal 没有返回有效的付款订单。')
       return NextResponse.json({ approvalURL, orderId: paypalOrder.id })
     } catch (error) {
       await payload.update({ collection: 'orders', id: order.id, data: { paymentStatus: 'failed' }, overrideAccess: true })

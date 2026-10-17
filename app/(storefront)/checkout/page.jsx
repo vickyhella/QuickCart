@@ -80,7 +80,7 @@ export default function CheckoutPage() {
     const response = await fetch('/api/checkout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, address, promoCode, customerNote: addOrderNote ? customerNote : '', items: lines.map(({ line }) => line) }),
+      body: JSON.stringify({ paymentMethod: 'card', email, address, promoCode, customerNote: addOrderNote ? customerNote : '', items: lines.map(({ line }) => line) }),
     })
     const result = await response.json()
     if (!response.ok) throw new Error(result.error || 'Unable to start card payment.')

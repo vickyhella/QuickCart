@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { markOrderPaid } from '@/lib/complete-order'
+import { assertPayPalOrderMatches } from '@/lib/paypal-order'
 import { isPayPalConfigured, paypalRequest } from '@/lib/paypal'
 import { getEnvironmentVariable } from '@/lib/environment-config'
 
@@ -41,7 +42,11 @@ export async function POST(request) {
           overrideAccess: true,
         })
         const order = matches.docs[0]
-        if (order) await markOrderPaid(payload, order.id, paypalOrderId)
+        if (order) {
+          const paypalOrder = await paypalRequest(`/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`)
+          assertPayPalOrderMatches(order, paypalOrder, true)
+          await markOrderPaid(payload, order.id, paypalOrderId)
+        }
       }
     }
 

@@ -48,11 +48,11 @@
 - PayPal 支付
 - 订单创建
 - 商品详情页不向顾客展示后台编辑提示或其他内部管理文案。
-- 商品详情页、购物车和 Checkout 均展示当前支持的支付方式。Checkout 支持 PayPal 付款，并在 PayPal 商户账户获准且启用银行卡支付时提供 PayPal Debit or Credit Card 按钮；卡组织图标仅在启用银行卡支付后展示，且按钮需遵循 PayPal SDK 的买家/商户资格判断。
+- 商品详情页、购物车和 Checkout 均展示当前支持的支付方式。Checkout 保留 PayPal 跳转付款，并在商户账户获准且启用高级银行卡支付时提供 PayPal 托管 Card Fields；卡组织图标仅在启用银行卡支付后展示，表单遵循 SDK 资格判断，不可用时提示使用 PayPal。
 - Checkout 展示配送目的国家、按订单规则计算的运费、免邮门槛和配送政策入口；顾客提交订单前可在订单摘要中看到实际运费。
 - 顾客可从全站导航栏打开侧边购物车；侧边购物车、购物车页和 Checkout 的运费行显示运费金额及 “(estimated 7-15 business days)”，并提供进入完整购物车及 Checkout 的入口。运费无法预估时应说明将在 Checkout 确认，不阻断购物。
 - Checkout 提供 “Add note to your order” 复选框；勾选后显示最多 1000 字的备注输入框，并将备注保存在订单的 `customerNote` 字段。
-- PayPal 商户凭据已配置并在账户侧启用卡支付后，设置 `PAYPAL_CARD_PAYMENTS_ENABLED=true`；Checkout 加载 PayPal SDK 卡按钮，并依据 SDK 资格检查决定是否向当前买家显示。该开关关闭时，商品页和购物车不展示 Visa / Mastercard 标识。
+- PayPal 商户凭据已配置并在账户侧启用高级卡支付后，设置 `PAYPAL_CARD_PAYMENTS_ENABLED=true`；Checkout 加载 PayPal Card Fields，服务端创建订单、按需请求 3D Secure 并核验实际扣款金额及币种。该开关关闭时，商品页和购物车不展示 Visa / Mastercard 标识。环境变量、Webhook 与联调清单见 `docs/paypal-advanced-checkout.md`；缺少凭证时不能视为已通过支付联调。
 
 不因本项目重建商城前端。
 

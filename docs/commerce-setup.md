@@ -1,32 +1,31 @@
-# Commerce setup
+# 电商配置指南
 
-## PayPal
+**状态：** 本文说明当前已有功能的常用配置方法，不是验收记录。功能完成情况和待办见[文档索引](./README.md)及[PRD 首页待办](./prd.md#当前待办与开放讨论)。PayPal Card Fields 的完整变量说明以[PayPal 专项文档](./paypal-advanced-checkout.md)为准。
 
-The checkout uses PayPal Orders v2. Keep the first integration in Sandbox and add these values to the local `.env.local` file. Do not commit the file or send credentials in chat.
+## PayPal 付款
 
-```dotenv
-PAYPAL_ENV=sandbox
-PAYPAL_CLIENT_ID=your_sandbox_client_id
-PAYPAL_CLIENT_SECRET=your_sandbox_client_secret
-PAYPAL_WEBHOOK_ID=your_sandbox_webhook_id
-```
+Checkout 使用 PayPal Orders v2。初次集成应使用 Sandbox；本地、Preview 和 Production 使用各自环境的变量，不要把凭证写进 Git 或发到聊天中。银行卡收款还要求商户账户获批并开启 Card Fields。
 
-After deploying, create a webhook in the PayPal developer account for `PAYMENT.CAPTURE.COMPLETED` and point it to `https://your-domain/api/checkout/paypal-webhook`. Store its webhook ID in `PAYPAL_WEBHOOK_ID`. Use a separate live app and live webhook ID when switching `PAYPAL_ENV=live`.
+部署后，在 PayPal Developer 创建订阅 `PAYMENT.CAPTURE.COMPLETED` 的 Webhook，并将地址设为 `https://你的域名/api/checkout/paypal-webhook`。Webhook ID 要与相应 Sandbox / Live 应用匹配。
 
-For a mainland-China merchant account, confirm that the account is enabled for the PayPal China cross-border checkout/API product before switching to live. PayPal documents that China Platform merchants receive cross-border payments and settle foreign-currency payments in CNY. PayPal receiving preferences also need to allow any currency used by the store; otherwise a payment can remain pending. See [PayPal country and currency support](https://developer.paypal.com/payouts/supported-features/) and [currency receiving preferences](https://developer.paypal.com/api/codes/currency/).
+中国大陆商户切换 Live 前，确认账户已开通 PayPal 中国跨境收款 / API 产品，并检查收款偏好支持商店使用的币种，否则付款可能处于 Pending。
 
-## Shipping and tax
+## 配送与税费
 
-Open **Admin → Store settings** (`/admin/globals/store-settings`). Configure the two optional order value conditions first: free shipping above a set order value (defaults to USD 50) and no shipping below a minimum order value. Then select the shipping cost type: Free shipping, Flat rate, Price, Weight, Number of items, or Advanced cost table. Only fields for the selected type appear. Weight ranges use kg and total package weight is calculated from each product's shipping weight times quantity. Advanced cost table matches two selected dimensions against each rate row. Checkout blocks orders below the minimum value and when no rate row matches. Prices are tax-inclusive, so checkout does not add a second tax charge.
+在 **Admin → Store settings**（`/admin/globals/store-settings`）中先配置可选条件：订单金额达到指定值免运费（默认 USD 50），以及订单低于最低金额时不允许配送。然后选择配送费类型：Free shipping、Flat rate、Price、Weight、Number of items 或 Advanced cost table；页面只显示所选方式需要的字段。
 
-## Product variants and bulk editing
+重量范围使用 kg，订单总重量按商品每件重量乘购买数量计算。Advanced cost table 按选定的两个维度匹配费率行；低于最低金额或没有匹配费率时，Checkout 会阻止下单。商品价格含税，Checkout 不会再次加税。
 
-Open **Admin → Products**. Add one row in **Variants** for each purchasable shape/length combination. Each row has its own SKU, optional price overrides, stock tracking, and enabled flag. Leave variant prices empty to inherit the product price. If a product has variants, customers must choose an enabled combination before adding it to the cart.
+## 商品规格与批量编辑
 
-Payload's product list supports selecting multiple documents and bulk-editing shared fields. For spreadsheet import/export, install the Payload Import/Export plugin separately; it is not required for the built-in bulk editor.
+在 **Admin → Product Studio → Products** 管理商品。当前变体编辑器支持明确选择 Length + Shape 配对和 Size；每个 Variant 可维护 SKU、价格覆盖、库存跟踪和启用状态。Variant 价格留空时沿用商品价格。新增 Color、Pack quantity 等通用选项与变体生成、前台选择及结账校验列在[PRD 待办](./prd.md#当前待办与开放讨论)，完成验收前不要依赖其正式售卖。
 
-The Merchant Center feed is available at `/api/merchant/feed.xml`. Set `NEXT_PUBLIC_SITE_URL=https://ginnynana.com` in the production environment so item links and images use the preserved domain. Add real product photos before submitting items; products without a featured image are omitted. Configure shipping rates separately in Merchant Center to match the shipping conditions and method configured in Payload; these settings do not sync automatically. The product editor includes optional GTIN, MPN, and Google category fields; do not invent identifiers for handmade products.
+Products Payload 列表可多选文档并批量编辑共同字段；Product Studio 的 Spreadsheet 支持商品字段筛选和批量编辑。现有内置工作流不要求安装 Payload Import/Export 插件。
 
-## Orders and discounts
+## Google Merchant Center Feed
 
-Paid and pending checkouts are stored in **Admin → Orders**. PayPal confirmation updates payment status; the fulfillment status and tracking number can be maintained there. Customers can use **Order status** with their order number and checkout email to see payment/fulfillment state and tracking number. Create codes under **Admin → Discounts**. Discounts are recalculated on the server at checkout, and usage counts increase after PayPal confirms payment.
+商品 Feed 地址为 `/api/merchant/feed.xml`。Production 环境需设置 `NEXT_PUBLIC_SITE_URL=https://ginnynana.com`，让商品链接和图片使用正式域名。没有主图的商品不会进入 Feed。Merchant Center 配送费需单独配置，并与 Payload 的配送规则保持一致；两边设置不会自动同步。商品支持选填 GTIN、MPN 和 Google 商品分类；手工商品没有真实标识时不要编造。
+
+## 订单与折扣
+
+Paid 和 Pending 订单保存在 **Admin → Orders**。PayPal 确认后更新付款状态；履约状态和物流追踪号可在订单中维护。顾客可通过订单号和结账邮箱进入 **Order status** 查看付款 / 履约状态及物流追踪号。折扣码在 **Admin → Discounts** 创建；Checkout 在服务端重新计算折扣，PayPal 确认付款后才增加使用次数。

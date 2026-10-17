@@ -1,5 +1,7 @@
 # PayPal 高级银行卡收款
 
+**状态：代码路径已实现，Sandbox / Live 端到端验收待凭证、账号资格和完整测试；已知订单完成事务风险尚未解决。** 待办总表见 [PRD 首页](./prd.md#当前待办与开放讨论)，文档索引见 [docs/README.md](./README.md)。
+
 保留现有 PayPal 跳转付款，银行卡使用 PayPal JavaScript SDK v5 Card Fields（官方仍支持）。不安装新的支付依赖，不迁移 Payload 订单。参考 Payload 官方支付适配器的创建支付、验证支付、完成订单流程；其电商插件目前仅内置 Stripe，项目未安装该插件。
 
 ## 配置

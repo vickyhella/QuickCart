@@ -4,6 +4,50 @@
 **Project:** [vickyhella/QuickCart](https://github.com/vickyhella/QuickCart)  
 **Tech Stack:** Next.js + Payload CMS + Neon PostgreSQL + Cloudflare R2
 
+文档入口和各文件状态见 [docs/README.md](./README.md)。
+
+---
+
+## 当前待办与开放讨论
+
+**更新日期：2026-10-17。** 本节是当前唯一待办清单。已完成且有验收记录的事项移除；状态不明的事项列为“待核验”，不默认视为完成。
+
+### 已确认方案，待开发
+
+- [ ] **商品自定义变体选项与完整交易链路**：参考 WooCommerce / Shopify 的“公共属性 + 商品选项 + 具体变体”模式。Categories 管理可复用的规格维度及选项；商品编辑页选择该商品实际使用的维度和值，并生成商品专属的变体组合。
+  - Color 是商品级商品信息；仅当顾客需要选择不同颜色，且颜色需要独立库存、价格、图片或 SKU 时，才加入变体选项。与现有 Google Merchant Center 商品级 `color` 字段保持清楚区分。
+  - 将套装件数命名为 **Pack quantity**，和购物车购买数量分开；只有不同套装是不同售卖规格时，才为它生成变体。
+  - Length + Shape 继续按明确勾选的配对生成，不能自动扩成所有排列；Size 和其他已启用选项再与其组合。
+  - 变体匹配须包含全部启用的选项。匹配到的现有变体保留 ID、SKU、价格、库存和图片；移除组合时停用旧变体；新组合分配唯一 SKU。
+  - 商品前台展示对应选择器；服务端发布、购物车、报价、结账、订单记录、库存扣减及支付失败 / 重试流程均按商品所属的有效变体校验。顾客提交的价格不能作为计价来源。
+  - 维度或选项仍被商品使用时，阻止删除并显示关联商品。保存配置或变体如需新增数据结构，先做向后兼容的增量 migration，并在测试环境验证后再部署。
+  - 验收覆盖：只有 Size、Color + Size、Pack quantity + Size、Length + Shape + Size；编辑保留已有数据；无效 / 停用 / 缺货组合无法购买；订单准确记录所选组合并正确扣减库存。
+
+### 商品迁移
+
+- [ ] **完成剩余 WooCommerce 已发布商品迁移**：仅迁移 `published` 商品及其实际引用的图片；已单独迁移的 Mystery Box（旧商品 5439）不重复创建，迁移后另行核对其发布资料。
+  - 以新站现行 slug 规则为主，仅为匹配旧 URL 做必要调整；不要求每个 slug 完全一致。
+  - Description 使用现有 Auto 模板；币种为 USD；旧站有货商品库存设为 10，缺货商品库存设为 0。
+  - 按英文商品名优先、独立站链接辅助匹配供应商；`Supplier` 对应 supplier map 的供应商字段，商品级 `Purchase URL` 从 1688 URL 选主链接。
+  - 映射商品 Chinese Name 到商品字段，不对顾客展示；报告未匹配供应商、缺少字段、异常和缺失的采购链接。
+  - 图片导入 Payload Media，并按新站命名规则设置媒体文件名与 R2 对象 key；不迁移未被商品引用的媒体。
+  - 导入后抽样核对商品详情、slug、图片、变体、价格、库存和购物流程。
+
+### 待讨论或待决定
+
+- [ ] **Supplier 删除规则**：当前关联删除使用 `ON DELETE SET NULL`。建议优先提供归档以保留商品关联；仍被商品引用时阻止硬删除并列出商品，未被引用时才允许永久删除。确认是否按此规则实现。
+- [ ] **Instagram 发布能力**：先核实账号类型、授权和 Instagram API 发布权限，再决定是否实现可用的发布流程；目前代码库没有 Instagram API 发布实现。
+- [ ] **媒体库虚拟分组**：评估是否需要按商品名称、Supplier SKU 或自选顺序浏览媒体；若需要，仅改变后台展示，不改 R2 对象名、URL 或商品 / Variant 引用。
+- [ ] **原图存储方式**：评估是否将 originals 改为仅保存在管理员本地；评估完成前继续使用现有媒体存储，保障线上重新压缩可读取原图。
+
+### 上线与运营验收（当前状态待核验）
+
+- [ ] 核验 R2 正式、Preview、开发环境隔离；确认本地或 Preview 的上传、替换、删除、重新压缩不会改动生产媒体及引用。
+- [ ] 核验 Google Merchant Center Feed、商品诊断、价格 / 库存、图片、落地页和配送设置。
+- [ ] 核验 Pinterest 实际发布、图片 / 文案 / 落地页、Variant 参数、发布记录和失败重试。
+- [ ] 核验 PayPal Sandbox 支付、符合账户资格时的银行卡支付、成功订单、库存扣减及失败 / 取消流程。
+- [ ] 完成商城端到端验收：商品页、购物车、结账、运费与免邮、订单创建及订单确认。
+
 ---
 
 ## 1. 项目目标
@@ -214,7 +258,7 @@ Product Studio 的 Supplier information 默认展开。
 - 至少一个 Length + Shape 组合
 - 至少一个 Size
 
-Save Draft 和 Save & Add Another 至少需要 Product Name，其余字段可暂缺；草稿不得出现在商城或商品 Feed。Publish 必须在服务端校验上述字段、价格有效性，以及至少一个已启用且库存大于 0 的 Variant。Phase 1A 可先保存不完整草稿，Phase 1B 补齐图片和 Variant 后才能发布。
+Save Draft 和 Save & Add Another 至少需要 Product Name，其余字段可暂缺；草稿不得出现在商城或商品 Feed。Publish 必须在服务端校验上述字段、价格有效性，以及至少一个已启用且库存大于 0 的 Variant。草稿可先不填写图片和 Variant，补齐后才能发布。
 
 Advanced Settings 可填写可选的供应商货号和进货 URL。整款商品共用的信息填在商品上；不同规格对应不同货号或链接时，填在相应 Variant 上。这些字段不影响草稿保存或发布。
 
@@ -409,11 +453,6 @@ Auto 描述模板在 Admin → Studio → Marketing Studio → SEO 标签的 Pro
 
 - Supplier SKU 属于后台信息，不得写入公开图片文件名或 URL；若需要按 Supplier SKU 分组，应通过后台映射显示，R2 对象 key 保持不含原始供应商信息。
 - R2 内的 WebP 与原图使用可配对的稳定命名；通过 R2 覆盖原图后，后台重新压缩流程读取更新后的原图并覆盖原 WebP key。
-
-待评估想法（暂不纳入当前实现和验收）：
-
-- 后台媒体库可配置虚拟层级顺序，例如 Supplier SKU → 商品名称，或商品名称 → Supplier SKU；若实现，不移动或改写现有 R2 对象、公共 URL 或商品 / Variant 媒体引用。
-- 仅将 originals 保存在管理员本地存储，压缩图片仍存 R2。评估前继续将 originals 保存在当前媒体存储中，确保线上重新压缩流程能够读取。
 
 ### 6.4 原图批量清理
 
@@ -624,84 +663,9 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 
 ---
 
-## 11. 开发计划
+## 11. 待办维护
 
-### Phase 1A — Product Studio 基础
-
-- `/admin/collections/products/studio` Product collection 自定义 view（由 Payload Admin 统一认证）
-- 商品列表
-- Quick Add 基础表单
-- Description / SEO 自动生成
-- 仅填写名称即可保存 Draft，草稿不进入商城和 Feed
-- Save & Add Another 沿用分类与规格选择并清空其他商品信息
-- 商品创建与草稿状态的针对性测试
-
-**验收：可以在 Studio 中新增并保存商品草稿。**
-
-### Phase 1B — 图片与 Variants
-
-- 多图上传与 WebP
-- 上传失败、取消创建及超时临时图片的清理
-- 图片缩略图及排序
-- Length + Shape 组合选择
-- Size Variant 自动生成
-- 默认库存 10
-- Variant 图片继承
-- Duplicate Product
-- Publish 流程
-- 复制后的新 ID / SKU、图片继承及发布校验测试
-
-**验收：无需进入 Payload 原生商品编辑页面，即可在 Product Studio 连续创建并发布 5 款商品。**
-
-### Phase 2 — 商品编辑完善
-
-- 已有商品编辑
-- Variant 差异更新
-- 数据保留与冲突检查
-- 图片替换
-- 商品列表快速编辑
-- 批量价格 / 库存操作
-- 多选商品后批量设为 Draft / Published，并逐商品报告发布校验结果
-- 编辑商品时一次操作完成保存与发布；失败后保留表单并展示可理解的服务端错误
-- SEO 自动模板按实际启用 Variant 的 Length + Shape 组合和 Size 填充 `{availableLengthShapeCombinations}` / `{availableSizes}`
-- 从现有 Media 库搜索、预览并选择图片
-- 统一 Storefront、Product Studio、Marketing Studio 和 Payload Admin 的品牌字体及全局 CSS tokens
-- Advanced Settings 中的商品级与 Variant 级供应商信息
-- 自动化测试
-- Variant 差异更新、价格继承、停用恢复和并发库存保护测试
-
-**验收：修改规格不会意外重建已有 Variant 或覆盖库存；移除再选回组合可恢复原 Variant。**
-
-### Phase 3 — Marketing Studio
-
-- 独立营销管理界面
-- 迁移 Pinterest 发布
-- 发布队列与状态管理
-- 定时执行与失败重试
-- Instagram API 验证及发布
-
-**验收：营销发布不依赖商品管理后台。**
-
-### Phase 4 — Commerce Core
-
-- PayPal 支付可靠性
-- 库存一致性
-- 并发与重复回调测试
-- 生产环境检查
-- 性能优化
-
-高风险支付问题可根据上线情况提前处理。
-
-### 上线前待办
-
-- [ ] 讨论并确定 Supplier 删除规则：当前数据库外键使用 `ON DELETE SET NULL`，删除 Supplier 会从关联商品上清除该 Supplier。建议优先支持归档以保留商品关联；仍被商品引用时禁止硬删除并提示关联商品，未被引用时才允许永久删除。
-- [ ] 完成 Cloudflare R2 配置：创建存储桶和仅限该 bucket 的 Object Read & Write API Token，将 bucket、endpoint、Access Key ID、Secret Access Key 和公开访问 URL 配入部署环境变量；测试上传、图片访问、替换和删除。开发阶段可先用 `r2.dev`，正式上线前绑定自定义媒体域名并更新 `R2_PUBLIC_URL`。
-- [ ] 环境隔离验收：本地 `DATABASE_URL_DEVELOPMENT` / SQLite 与 `R2_*_DEVELOPMENT`、Vercel Preview 的 `*_PREVIEW` 均不读取 Production 数据库或 R2；验证本地上传、替换、删除和重新压缩不会改动 Production 文件及引用。
-- [ ] 盘点并迁移 WooCommerce 旧商品：整理商品字段、图片、分类、Length + Shape / Size Variants、价格和库存映射；导入后抽样核对商品详情及购物流程。
-- [ ] 验证 Google Merchant Center（GMC）：检查 Feed 可抓取与处理状态、商品诊断、价格和库存一致性、图片、落地页链接及配送设置；修复拒登和警告后确认商品通过审核。
-- [ ] 验证 Pinterest：确认账号、Board 和发布权限，实际发布测试 Pin，检查图片、文案和商品落地页 URL；Variant Pin 应保留对应 Variant 参数，并确认发布记录与失败重试正常。
-- [ ] 验证 PayPal Sandbox：分别测试 PayPal 付款和符合账户资格时的银行卡付款，并确认成功订单、库存扣减及取消/失败流程。
-- [ ] 完成商城端到端检查：商品页、购物车、结账页、运费与免邮规则、订单创建及订单确认。
+所有尚未完成、讨论中或状态待核验的事项集中维护在文档开头的“当前待办与开放讨论”。本 PRD 不再维护重复的分阶段计划或第二份上线清单；实施完成并核验后，从待办清单中移除或标记完成，并将稳定要求保留在对应功能章节。
 
 ---
 

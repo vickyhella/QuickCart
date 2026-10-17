@@ -36,6 +36,7 @@ export async function GET(request: Request) {
     overrideAccess: false,
     user,
   })
+  const allProducts = await payload.count({ collection: 'products', overrideAccess: false, user })
   const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: false, user }).catch(() => null)
   const seoTemplates = resolveProductSeoTemplates(marketing)
 
@@ -57,6 +58,7 @@ export async function GET(request: Request) {
     page: result.page,
     totalPages: result.totalPages,
     totalDocs: result.totalDocs,
+    totalProducts: allProducts.totalDocs,
     templates: {
       description: typeof marketing?.studioDescriptionTemplate === 'string' && marketing.studioDescriptionTemplate.trim() ? marketing.studioDescriptionTemplate : DEFAULT_STUDIO_DESCRIPTION_TEMPLATE,
       seoTitle: seoTemplates.title,

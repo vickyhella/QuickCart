@@ -4,10 +4,12 @@ import { toEditorPriceFields, toStoredPriceFields, type PriceFields } from '@/li
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
+import { matchesProductBulkFilters } from '@/lib/product-bulk-filters'
 import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 
 type Product = Record<string, unknown> & PriceFields & { id: string | number; variants?: (Omit<ProductVariant, 'salePrice'> & PriceFields)[] }
 type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
+type SupplierOption = { id: string | number; name: string }
 type ProductVariant = {
   id?: string
   sku: string
@@ -20,7 +22,7 @@ type ProductVariant = {
   mpn?: string
   supplierSKU?: string
   purchaseURL?: string
-  suppliers?: Array<string | number | { id: string | number }>
+  suppliers?: Array<string | number | { id: string | number }> | string
   image?: string | number | Media | null
   stock: number
   trackStock: boolean
@@ -28,8 +30,11 @@ type ProductVariant = {
 }
 type ColumnKey =
   | 'title'
+  | 'chineseName'
   | 'slug'
   | 'sku'
+  | 'supplierSKU'
+  | 'suppliers'
   | 'purchaseURL'
   | 'description'
   | 'price'
@@ -56,13 +61,19 @@ type ColumnKey =
   | 'isBestSeller'
   | 'seoTitle'
   | 'seoDescription'
+  | 'seoCanonicalUrl'
+  | 'seoNoIndex'
+  | 'shippingWeight'
 
 type GridRow = Record<ColumnKey, string> & { id: string; featuredImageURL: string; resolvedFeaturedImageID: string; originalPricing?: PriceFields & { variants?: Product['variants'] } }
 
 const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?: boolean }> = [
   { key: 'title', label: 'Title', width: 190 },
+  { key: 'chineseName', label: 'Chinese Name (internal)', width: 190 },
   { key: 'slug', label: 'Slug', width: 180 },
   { key: 'sku', label: 'SKU', width: 140 },
+  { key: 'supplierSKU', label: 'Legacy Supplier SKU', width: 160 },
+  { key: 'suppliers', label: 'Suppliers (IDs or names separated by ;)', width: 260 },
   { key: 'purchaseURL', label: 'Product Purchase URL (admin only)', width: 260 },
   { key: 'description', label: 'Description', width: 280, multiline: true },
   { key: 'price', label: 'Price', width: 100 },
@@ -86,6 +97,9 @@ const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?:
   { key: 'googleProductCategory', label: 'Google category', width: 190 },
   { key: 'seoTitle', label: 'SEO title', width: 200 },
   { key: 'seoDescription', label: 'SEO description', width: 260, multiline: true },
+  { key: 'seoCanonicalUrl', label: 'SEO canonical URL', width: 240 },
+  { key: 'seoNoIndex', label: 'SEO no index (true/false)', width: 170 },
+  { key: 'shippingWeight', label: 'Shipping weight (kg)', width: 160 },
   { key: 'status', label: 'Status (draft/published)', width: 170 },
   { key: 'isNew', label: 'New (true/false)', width: 130 },
   { key: 'isBestSeller', label: 'Best seller (true/false)', width: 160 },
@@ -109,11 +123,11 @@ function toGridRow(product: Product): GridRow {
   for (const column of columns) {
     const value = column.key === 'price' || column.key === 'salePrice' ? pricing[column.key] : product[column.key]
     if (column.key === 'featuredImage') row[column.key] = mediaID(value)
-    else if (column.key === 'gallery') {
+    else if (column.key === 'gallery' || column.key === 'suppliers') {
       row[column.key] = Array.isArray(value) ? value.map(mediaID).join('; ') : ''
     } else if (column.key === 'variants') {
-      row[column.key] = JSON.stringify((product.variants || []).map(({ compareAtPrice, supplierSKU, purchaseURL, ...variant }) => ({ ...variant, suppliers: (variant.suppliers || []).map((supplier: any) => mediaID(supplier)), ...toEditorPriceFields({ ...variant, compareAtPrice }, product) })), null, 2)
-    } else if (column.key === 'isNew' || column.key === 'isBestSeller' || column.key === 'adult') {
+      row[column.key] = JSON.stringify((product.variants || []).map(({ compareAtPrice, ...variant }) => ({ ...variant, suppliers: (Array.isArray(variant.suppliers) ? variant.suppliers : []).map((supplier: any) => mediaID(supplier)), ...toEditorPriceFields({ ...variant, compareAtPrice }, product) })), null, 2)
+    } else if (column.key === 'isNew' || column.key === 'isBestSeller' || column.key === 'adult' || column.key === 'seoNoIndex') {
       row[column.key] = value ? 'true' : 'false'
     } else if (column.key === 'material') {
       row[column.key] = cellValue(value) || 'ABS Plastic'
@@ -198,22 +212,37 @@ function getVariantSKU(row: GridRow, shape: string, length: string, size: string
   return `${productCode}-${customCode(length, lengthCodes, lengthValues)}-${customCode(shape, shapeCodes, shapeValues)}-${sizeCode[size] || '02'}`
 }
 
-function toPayloadData(row: GridRow, media: Media[]) {
+function toPayloadData(row: GridRow, media: Media[], supplierOptions: SupplierOption[]) {
   const parsedVariants = row.variants.trim() ? JSON.parse(row.variants) : []
   if (!Array.isArray(parsedVariants)) throw new Error('Variants must be a JSON array.')
   const variants = parsedVariants.map(({ salePrice, price, ...variant }) => {
     const old = row.originalPricing?.variants?.find((old) => (variant.id && old.id === variant.id) || (old.length === variant.length && old.shape === variant.shape && old.size === variant.size))
-    return { ...variant, supplierSKU: old?.supplierSKU, purchaseURL: old?.purchaseURL, ...toStoredPriceFields({ price: price ?? (salePrice != null ? row.price : null), salePrice }, old, row.originalPricing), size: variant.size || 's', image: resolveMedia(mediaID(variant.image), media) }
+    const supplierRefs = Array.isArray(variant.suppliers) ? variant.suppliers : String(variant.suppliers || '').split(';').map((value) => value.trim()).filter(Boolean)
+    const variantSuppliers = supplierRefs.map((value: any) => {
+      const reference = mediaID(value)
+      const match = supplierOptions.find((supplier) => String(supplier.id) === reference || supplier.name.toLowerCase() === reference.toLowerCase())
+      if (!match) throw new Error(`Unknown variant supplier “${reference}”. Use its ID or exact name.`)
+      return match.id
+    })
+    return { ...variant, suppliers: variantSuppliers, supplierSKU: variant.supplierSKU ?? old?.supplierSKU, purchaseURL: variant.purchaseURL ?? old?.purchaseURL, ...toStoredPriceFields({ price: price ?? (salePrice != null ? row.price : null), salePrice }, old, row.originalPricing), size: variant.size || 's', image: resolveMedia(mediaID(variant.image), media) }
   })
 
   const gallery = row.gallery.trim()
     ? row.gallery.split(';').map((value) => resolveMedia(value, media)).filter((value) => value !== null)
     : []
+  const suppliers = row.suppliers.split(';').map((value) => value.trim()).filter(Boolean).map((value) => {
+    const match = supplierOptions.find((supplier) => String(supplier.id) === value || supplier.name.toLowerCase() === value.toLowerCase())
+    if (!match) throw new Error(`Unknown supplier “${value}”. Use its ID or exact name.`)
+    return match.id
+  })
 
   return {
     title: row.title,
+    chineseName: row.chineseName || null,
     slug: row.slug,
     sku: row.sku || null,
+    supplierSKU: row.supplierSKU || null,
+    suppliers,
     purchaseURL: row.purchaseURL || null,
     description: row.description,
     ...toStoredPriceFields({ price: row.price, salePrice: row.salePrice }, row.originalPricing),
@@ -236,6 +265,9 @@ function toPayloadData(row: GridRow, media: Media[]) {
     googleProductCategory: row.googleProductCategory || 'Health & Beauty > Personal Care > Cosmetics > Nail Care > False Nails',
     seoTitle: row.seoTitle || null,
     seoDescription: row.seoDescription || null,
+    seoCanonicalUrl: row.seoCanonicalUrl || null,
+    seoNoIndex: parseBoolean(row.seoNoIndex),
+    shippingWeight: row.shippingWeight.trim() ? Number(row.shippingWeight) : 0.2,
     status: row.status,
     isNew: parseBoolean(row.isNew),
     isBestSeller: parseBoolean(row.isBestSeller),
@@ -271,6 +303,7 @@ export function ProductBulkEditor() {
   const [rows, setRows] = useState<GridRow[]>([])
   const [originalRows, setOriginalRows] = useState<GridRow[]>([])
   const [media, setMedia] = useState<Media[]>([])
+  const [supplierOptions, setSupplierOptions] = useState<SupplierOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(1)
@@ -296,18 +329,21 @@ export function ProductBulkEditor() {
     setError('')
     try {
       const productOnly = new URLSearchParams(window.location.search).get('product')
-      const [productsResponse, mediaResponse] = await Promise.all([
+      const [productsResponse, mediaResponse, suppliersResponse] = await Promise.all([
         fetch(productOnly ? `/api/products/${encodeURIComponent(productOnly)}?depth=1` : `/api/products?limit=${PAGE_SIZE}&page=${page}&depth=1&sort=title`, { credentials: 'same-origin' }),
         fetch('/api/media?limit=1000&depth=0&sort=filename', { credentials: 'same-origin' }),
+        fetch('/api/studio/suppliers', { credentials: 'same-origin' }),
       ])
       if (!productsResponse.ok) throw new Error('Could not load products. Check that you are logged in to the admin.')
       const productsResult = await productsResponse.json()
       const mediaResult = mediaResponse.ok ? await mediaResponse.json() : { docs: [] }
+      const supplierResult = suppliersResponse.ok ? await suppliersResponse.json() : { docs: [] }
       const productDocs = productOnly ? (productsResult?.id ? [productsResult] : []) : (productsResult.docs || [])
       const nextRows = (productDocs as Product[]).map(toGridRow)
       setRows(nextRows)
       setOriginalRows(nextRows)
       setMedia((mediaResult.docs || []) as Media[])
+      setSupplierOptions((supplierResult.docs || []) as SupplierOption[])
       setTotalPages(productOnly ? 1 : productsResult.totalPages || 1)
       setTotalProducts(productOnly ? nextRows.length : productsResult.totalDocs || nextRows.length)
       setMessage(`Loaded page ${page} with ${nextRows.length} products.`)
@@ -342,14 +378,7 @@ export function ProductBulkEditor() {
   }, [media, rows])
 
   const visibleRows = useMemo(() => {
-    const needle = search.trim().toLowerCase()
-    return rows.filter((row) => (!needle || row.title.toLowerCase().includes(needle) || row.sku.toLowerCase().includes(needle))
-      && (!filters.status || row.status === filters.status)
-      && (!filters.category || row.category === filters.category)
-      && (!filters.shape || row.shape.toLowerCase().includes(filters.shape.toLowerCase()))
-      && (!filters.length || row.length.toLowerCase().includes(filters.length.toLowerCase()))
-      && (!filters.color || row.color.toLowerCase().includes(filters.color.toLowerCase()))
-      && (!filters.brand || row.brand.toLowerCase().includes(filters.brand.toLowerCase())))
+    return rows.filter((row) => matchesProductBulkFilters(row, search, filters))
   }, [rows, search, filters])
 
   const setVariantDefault = (value: 'collapsed' | 'expanded') => {
@@ -366,7 +395,7 @@ export function ProductBulkEditor() {
     const row = rows[rowIndex]
     if (!row) return
     try {
-      const data = toPayloadData(row, media)
+      const data = toPayloadData(row, media, supplierOptions)
       const variants = data.variants.map(({ id, sku, ...variant }) => variant)
       const response = await fetch('/api/products', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, title: `${row.title}-duplicate`, slug: '', sku: '', status: 'draft', variants }) })
       const result = await response.json().catch(() => ({}))
@@ -408,6 +437,7 @@ export function ProductBulkEditor() {
         length: variant.length || 'short',
         shape: variant.shape || 'almond',
         size: variant.size || 's',
+        suppliers: Array.isArray(variant.suppliers) ? variant.suppliers.map(mediaID).join('; ') : '',
         price: variant.price ?? null,
         salePrice: variant.salePrice ?? null,
         image: (() => { const imageID = mediaID(variant.image || rows[rowIndex].featuredImage); return media.find((item) => String(item.id) === imageID)?.filename || imageID })(),
@@ -457,7 +487,7 @@ export function ProductBulkEditor() {
     if (!variantEditor || !Number.isInteger(startRow) || !Number.isInteger(startColumn)) return
     const matrix = parseTSV(event.clipboardData.getData('text/plain'))
     event.preventDefault()
-    const keys: Array<keyof ProductVariant> = ['sku', 'length', 'shape', 'size', 'price', 'salePrice', 'stock', 'image', 'trackStock', 'enabled']
+    const keys: Array<keyof ProductVariant> = ['sku', 'length', 'shape', 'size', 'price', 'salePrice', 'stock', 'image', 'trackStock', 'enabled', 'supplierSKU', 'suppliers', 'purchaseURL', 'gtin', 'mpn']
     setVariantEditor((current) => {
       if (!current) return current
       const variants = [...current.variants]
@@ -522,7 +552,7 @@ export function ProductBulkEditor() {
     for (const row of rows) {
       if (!dirtyIDs.has(row.id)) continue
       try {
-        const data = toPayloadData(row, media)
+        const data = toPayloadData(row, media, supplierOptions)
         if (!data.title.trim() || !data.slug.trim() || data.price === null || !Number.isFinite(data.price) || data.price < 0) {
           throw new Error('Title, slug, and a valid non-negative price are required.')
         }
@@ -751,8 +781,8 @@ export function ProductBulkEditor() {
             <button type="button" onClick={syncVariantCombinations} style={{ ...buttonStyle, marginBottom: 12 }}>Sync combinations &amp; generate SKUs</button>
             <div style={{ overflowX: 'auto' }}>
               <div onPaste={handleVariantPaste}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1200 }}>
-                <thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Sale price', 'Stock', 'Variant image', 'Track stock', 'Enabled', ''].map((label) => <th key={label} style={{ textAlign: 'left', padding: 8, borderBottom: '2px solid var(--brand-border)', whiteSpace: 'nowrap' }}>{label}</th>)}</tr></thead>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1900 }}>
+                <thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Sale price', 'Stock', 'Variant image', 'Track stock', 'Enabled', 'Legacy Supplier SKU', 'Suppliers (IDs or names; separated by ;)', 'Product Purchase URL', 'GTIN', 'MPN', ''].map((label) => <th key={label} style={{ textAlign: 'left', padding: 8, borderBottom: '2px solid var(--brand-border)', whiteSpace: 'nowrap' }}>{label}</th>)}</tr></thead>
                 <tbody>{variantEditor.variants.map((variant, index) => {
                   const edit = (key: keyof ProductVariant, value: string | number | boolean | null) => setVariantEditor((current) => current ? { ...current, variants: current.variants.map((item, itemIndex) => itemIndex === index ? { ...item, [key]: value } : item) } : current)
                   const cellInput: React.CSSProperties = { ...inputStyle, minWidth: 90 }
@@ -768,6 +798,11 @@ export function ProductBulkEditor() {
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={7} aria-label={`Variant ${index + 1} image filename or media ID`} list="product-media-options" placeholder="Product image" value={typeof variant.image === 'object' ? String(variant.image?.id || '') : String(variant.image || '')} onChange={(event) => edit('image', event.target.value)} style={{ ...cellInput, minWidth: 190 }} /><img src={variantMedia?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={variantMedia?.filename || `Variant ${index + 1} image`} style={{ display: 'block', marginTop: 4, maxWidth: 52, maxHeight: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 'var(--brand-font-size-caption)', marginTop: 4 }}>Upload<input type="file" accept="image/*" aria-label={`Upload image for variant ${index + 1}`} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; try { const uploaded = await uploadMedia(file, rows[variantEditor.rowIndex]?.id); edit('image', uploaded.id) } catch (uploadError) { setError(uploadError instanceof Error ? uploadError.message : 'Image upload failed') } input.value = '' }} style={{ display: 'block', maxWidth: 180, fontSize: 'var(--brand-font-size-caption)' }} /></label></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={8} aria-label={`Variant ${index + 1} track stock`} type="checkbox" checked={variant.trackStock} onChange={(event) => edit('trackStock', event.target.checked)} /></td>
                     <td style={{ padding: 5, textAlign: 'center' }}><input data-variant-row={index} data-variant-column={9} aria-label={`Variant ${index + 1} enabled`} type="checkbox" checked={variant.enabled} onChange={(event) => edit('enabled', event.target.checked)} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={10} aria-label={`Variant ${index + 1} legacy supplier SKU`} value={variant.supplierSKU || ''} onChange={(event) => edit('supplierSKU', event.target.value)} style={cellInput} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={11} aria-label={`Variant ${index + 1} suppliers`} placeholder="ID or exact name; separate with ;" value={Array.isArray(variant.suppliers) ? variant.suppliers.map(mediaID).join('; ') : variant.suppliers || ''} onChange={(event) => edit('suppliers', event.target.value)} style={{ ...cellInput, minWidth: 230 }} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={12} aria-label={`Variant ${index + 1} product purchase URL`} value={variant.purchaseURL || ''} onChange={(event) => edit('purchaseURL', event.target.value)} style={{ ...cellInput, minWidth: 220 }} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={13} aria-label={`Variant ${index + 1} GTIN`} value={variant.gtin || ''} onChange={(event) => edit('gtin', event.target.value)} style={cellInput} /></td>
+                    <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={14} aria-label={`Variant ${index + 1} MPN`} value={variant.mpn || ''} onChange={(event) => edit('mpn', event.target.value)} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: current.variants.filter((_, itemIndex) => itemIndex !== index) } : current)} style={{ ...buttonStyle, color: 'var(--brand-danger)' }}>Remove</button></td>
                   </tr>
                 })}</tbody>

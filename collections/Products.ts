@@ -23,6 +23,19 @@ const sizeCodeMap: Record<string, string> = {
   l: '04',
 }
 
+async function syncLinkedProductCounts(req: any, values: unknown[]) {
+  const ids = new Set(values.map((value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')).filter(Boolean))
+  for (const id of ids) {
+    const [{ totalDocs }, supplier] = await Promise.all([
+      req.payload.count({ collection: 'products', where: { suppliers: { equals: Number(id) } }, overrideAccess: true, req }),
+      req.payload.findByID({ collection: 'suppliers', id, depth: 0, overrideAccess: true, req }).catch(() => null),
+    ])
+    if (supplier && supplier.linkedProductsCount !== totalDocs) {
+      await req.payload.update({ collection: 'suppliers', id, data: { linkedProductsCount: totalDocs }, overrideAccess: true, req })
+    }
+  }
+}
+
 function dimensionCode(value: string, presets: Record<string, string>, values: string[]) {
   if (presets[value]) return presets[value]
   const customValues = [...new Set(values.filter((entry) => !presets[entry]))].sort()
@@ -90,6 +103,13 @@ async function nextProductCode(req: any) {
 export const Products: CollectionConfig = {
   slug: 'products',
   hooks: {
+    afterChange: [async ({ doc, previousDoc, req }) => {
+      await syncLinkedProductCounts(req, [...(previousDoc?.suppliers || []), ...(doc?.suppliers || [])])
+      return doc
+    }],
+    afterDelete: [async ({ doc, req }) => {
+      await syncLinkedProductCounts(req, doc?.suppliers || [])
+    }],
     afterRead: [
       ({ doc, req }) => {
         if (!req.user && doc) return hideSupplierDetails(doc as any)

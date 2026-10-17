@@ -31,6 +31,7 @@ type ProductResponse = {
   page: number
   totalPages: number
   totalDocs: number
+  totalProducts: number
   templates?: { description: string; seoTitle: string; seoDescription: string }
 }
 type StudioImage = { id: string | number; url: string; name: string; existing?: boolean }
@@ -132,6 +133,7 @@ export default function ProductStudio() {
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [totalDocs, setTotalDocs] = useState(0)
+  const [totalProducts, setTotalProducts] = useState(0)
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('all')
   const [sort, setSort] = useState('-updatedAt')
@@ -256,6 +258,7 @@ export default function ProductStudio() {
         setProducts(data.docs)
         setTotalPages(data.totalPages || 1)
         setTotalDocs(data.totalDocs || 0)
+        setTotalProducts(data.totalProducts ?? data.totalDocs ?? 0)
         if (data.templates) setTemplates(data.templates)
       })
       .catch((cause: Error) => { if (active) notifyStudioError(setError, cause.message) })
@@ -314,6 +317,7 @@ export default function ProductStudio() {
         setProducts(result.docs)
         setTotalPages(result.totalPages || 1)
         setTotalDocs(result.totalDocs || 0)
+        setTotalProducts(result.totalProducts ?? result.totalDocs ?? 0)
       } catch { setNotice((current) => `${current} List refresh failed; your changes were saved.`) }
     } catch (cause) {
       notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not save the draft.')
@@ -447,7 +451,7 @@ export default function ProductStudio() {
     if (search.trim()) params.set('search', search.trim())
     const refresh = await fetch(`/api/studio/products?${params}`, { cache: 'no-store' })
     const result = await responseData(refresh)
-    setProducts(result.docs); setTotalDocs(result.totalDocs || 0); setTotalPages(result.totalPages || 1)
+    setProducts(result.docs); setTotalDocs(result.totalDocs || 0); setTotalProducts(result.totalProducts ?? result.totalDocs ?? 0); setTotalPages(result.totalPages || 1)
   }
 
   async function deleteProductByID(id: string | number, title: string) {
@@ -481,7 +485,7 @@ export default function ProductStudio() {
               <p className="mt-2 text-sm text-[#766966]">Manage your product drafts and catalog.</p>
             </div>
             <div className="flex items-center gap-3">
-              <span className="rounded-full border border-[#e7ddd8] bg-white px-3 py-2 text-sm text-[#806e68]">{totalDocs} products</span>
+              <span className="rounded-full border border-[#e7ddd8] bg-white px-3 py-2 text-sm text-[#806e68]">{totalProducts} products total{totalDocs !== totalProducts ? ` · ${totalDocs} matching` : ''}</span>
             </div>
           </header>
 

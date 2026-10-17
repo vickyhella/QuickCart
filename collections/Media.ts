@@ -78,7 +78,7 @@ export const Media: CollectionConfig = {
   admin: {
     group: 'Media',
     useAsTitle: 'title',
-    defaultColumns: ['filename', 'title', 'altText', 'createdAt'],
+    defaultColumns: ['filename', 'filesize', 'title', 'altText', 'createdAt'],
     description: 'Reusable product images with editable search and accessibility metadata.',
     components: {
       beforeList: ['/components/MediaWorkspaceTabs#MediaWorkspaceTabs', '/components/MediaBulkUpload#MediaBulkUpload'],
@@ -102,6 +102,7 @@ export const Media: CollectionConfig = {
     mimeTypes: ['image/*'],
   },
   fields: [
+    { name: 'filesize', type: 'number', label: 'File size', admin: { hidden: false, readOnly: true, components: { Cell: '/components/MediaFileSizeCell#MediaFileSizeCell' } } },
     { name: 'title', type: 'text', admin: { description: 'Human-readable image title. Also useful for search and internal organization.' } },
     { name: 'altText', type: 'text', admin: { description: 'Describe the visible image for accessibility and Pinterest catalog metadata.' } },
     { name: 'caption', type: 'textarea', admin: { rows: 3 } },

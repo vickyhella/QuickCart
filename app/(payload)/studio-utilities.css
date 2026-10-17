@@ -1,5 +1,10 @@
 @tailwind utilities;
 
+.collection-list--products .table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
 :where(.product-studio, .marketing-studio) button {
   appearance: none;
   background-color: transparent;

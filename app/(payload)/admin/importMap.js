@@ -23,6 +23,7 @@ import { SupplierProductsView as SupplierProductsView_d01f76bcdb8803f26467477552
 import { MediaFileSizeCell as MediaFileSizeCell_4e419066640efe583f5e328cbc72a46a } from '../components/MediaFileSizeCell'
 import { MediaWorkspaceTabs as MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62 } from '../components/MediaWorkspaceTabs'
 import { MediaBulkUpload as MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f } from '../components/MediaBulkUpload'
+import { MediaCleanup as MediaCleanup_564cd883776258a2cdc8dcd75f49fc9c } from '../components/MediaCleanup'
 import { MediaReprocessButton as MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7 } from '../components/MediaReprocessButton'
 import { MediaCompressionView as MediaCompressionView_525be5d54a45056cab8bc779174c2e8c } from '../components/MediaToolsView'
 import { MediaMetadataView as MediaMetadataView_525be5d54a45056cab8bc779174c2e8c } from '../components/MediaToolsView'
@@ -62,6 +63,7 @@ export const importMap = {
   "/components/MediaFileSizeCell#MediaFileSizeCell": MediaFileSizeCell_4e419066640efe583f5e328cbc72a46a,
   "/components/MediaWorkspaceTabs#MediaWorkspaceTabs": MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62,
   "/components/MediaBulkUpload#MediaBulkUpload": MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f,
+  "/components/MediaCleanup#MediaCleanup": MediaCleanup_564cd883776258a2cdc8dcd75f49fc9c,
   "/components/MediaReprocessButton#MediaReprocessButton": MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7,
   "/components/MediaToolsView#MediaCompressionView": MediaCompressionView_525be5d54a45056cab8bc779174c2e8c,
   "/components/MediaToolsView#MediaMetadataView": MediaMetadataView_525be5d54a45056cab8bc779174c2e8c,

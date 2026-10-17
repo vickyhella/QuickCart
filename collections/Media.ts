@@ -81,7 +81,7 @@ export const Media: CollectionConfig = {
     defaultColumns: ['filename', 'filesize', 'title', 'altText', 'createdAt'],
     description: 'Reusable product images with editable search and accessibility metadata.',
     components: {
-      beforeList: ['/components/MediaWorkspaceTabs#MediaWorkspaceTabs', '/components/MediaBulkUpload#MediaBulkUpload'],
+      beforeList: ['/components/MediaWorkspaceTabs#MediaWorkspaceTabs', '/components/MediaBulkUpload#MediaBulkUpload', '/components/MediaCleanup#MediaCleanup'],
       views: {
         compression: {
           Component: '/components/MediaToolsView#MediaCompressionView',

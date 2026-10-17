@@ -1,11 +1,11 @@
 type Relation = string | number | { id?: string | number } | null | undefined
-type MediaRecord = { id: string | number; sourceOriginal?: Relation; product?: Relation; url?: string | null }
+type MediaRecord = { id: string | number; filename?: string | null; sourceOriginal?: Relation; product?: Relation; url?: string | null }
 type ProductRecord = { id: string | number; title?: string | null; featuredImage?: Relation; gallery?: Relation[]; variants?: { image?: Relation }[] }
 type PinRecord = { id: string | number; title?: string | null; imageMedia?: Relation; imageURL?: string | null }
 
 const relationID = (value: Relation) => String(value && typeof value === 'object' ? value.id ?? '' : value ?? '')
 
-export function getOriginalUsage(originals: { id: string | number; filename?: string | null }[], media: MediaRecord[], products: ProductRecord[], pins: PinRecord[]) {
+function getReferences(media: MediaRecord[], products: ProductRecord[], pins: PinRecord[]) {
   const productsByMedia = new Map<string, Set<string>>()
   const pinsByMedia = new Map<string, Set<string>>()
   const productNames = new Map(products.map((product) => [String(product.id), product.title || String(product.id)]))
@@ -26,9 +26,30 @@ export function getOriginalUsage(originals: { id: string | number; filename?: st
   }
 
   for (const pin of pins) {
-    const mediaID = relationID(pin.imageMedia) || mediaByURL.get(String(pin.imageURL || '')) || ''
-    add(pinsByMedia, mediaID, String(pin.id))
+    add(pinsByMedia, relationID(pin.imageMedia), String(pin.id))
+    add(pinsByMedia, mediaByURL.get(String(pin.imageURL || '')) || '', String(pin.id))
   }
+
+  return { productsByMedia, pinsByMedia, productNames, pinNames }
+}
+
+export function getMediaUsage(media: MediaRecord[], products: ProductRecord[], pins: PinRecord[]) {
+  const { productsByMedia, pinsByMedia, productNames, pinNames } = getReferences(media, products, pins)
+  return media.map((item) => {
+    const productIDs = [...(productsByMedia.get(String(item.id)) || [])]
+    const pinIDs = [...(pinsByMedia.get(String(item.id)) || [])]
+    return {
+      id: item.id,
+      filename: item.filename || String(item.id),
+      referenced: Boolean(productIDs.length || pinIDs.length),
+      products: productIDs.map((id) => productNames.get(id) || id),
+      pins: pinIDs.map((id) => pinNames.get(id) || id),
+    }
+  })
+}
+
+export function getOriginalUsage(originals: { id: string | number; filename?: string | null }[], media: MediaRecord[], products: ProductRecord[], pins: PinRecord[]) {
+  const { productsByMedia, pinsByMedia, productNames, pinNames } = getReferences(media, products, pins)
 
   const linkedMedia = new Map<string, MediaRecord[]>()
   for (const item of media) {

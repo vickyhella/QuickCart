@@ -417,6 +417,8 @@ Auto 描述模板在 Admin → Studio → Marketing Studio → SEO 标签的 Pro
 
 ### 6.4 原图批量清理
 
+- Media 标签提供与 Originals 类似的引用分析及批量删除按钮：仅删除未被商品主图、Gallery、Variant 或 Pinterest（含旧版图片 URL）引用的图片，并清理对应 Original。仍被其他 Media 使用的共享 Original 保留；删除前再次核验引用，显示实际删除、保留及失败数量，并要求不可撤销确认。
+
 - Payload Admin 的 Media Originals 列表支持批量清理原图，并显示 WebP 引用检查结果。
 - 系统通过 `sourceOriginal` 找到对应 WebP；若 WebP 被商品主图、Gallery、Variant 或 Pinterest Pin 使用，则将该原图标记为已引用，并显示具体商品或 Pin 名称。Media 记录自身的 `product` 辅助关系不能单独作为引用依据。
 - 商品删除清理图片时，同时检查 Pinterest 的 `imageMedia` 和 `imageURL` 引用；仅保存图片 URL 的旧 Pin 仍须保护对应 WebP 及原图，商品名称和图片文件名无需一致。

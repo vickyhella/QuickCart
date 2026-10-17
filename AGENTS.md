@@ -3,11 +3,11 @@
 ## Project Context
 
 - Project: Ginny Nana ecommerce website
-- Stack: Next.js 15, React 19, Payload CMS 3, PostgreSQL (Neon), Cloudflare R2.
+- Stack: Next.js 16, React 19, Payload CMS 3, PostgreSQL (Neon), Cloudflare R2.
 - Existing storefront, Payload Admin, checkout, and PayPal integration must be preserved.
 - Product Studio: `/admin/collections/products/studio`
 - Marketing Studio: `/admin/collections/marketing/studio`
-- Product Studio PRD: `docs/product-studio-prd.md`
+- Product Studio PRD: `docs/prd.md`
 
 ## Development Principles
 
@@ -55,6 +55,7 @@
 3. For nontrivial architectural decisions, present alternatives before proceeding.
 4. Do not modify checkout, payments, orders, or marketing logic while implementing Product Studio unless explicitly requested.
 5. Do not perform destructive database migrations without approval.
+6. When a feature or code change is complete, update the root `README.md` in concise Chinese with the affected feature, entry points or key files, and any required environment, command, migration, or deployment steps. Keep detailed procedures in `docs/` and verify the README matches the implementation.
 
 ## Testing
 

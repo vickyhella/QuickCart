@@ -1,111 +1,91 @@
-# QuickCart - A simple eCommerce website
+# Ginny Nana 电商项目
 
-QuickCart is an open-source **Next.js eCommerce frontend** project.  
-It provides a modern, fast and customizable shopping UI.  
-This repo is **frontend only** – contributors can improve the design, add new pages, animations and more.
+这是 Ginny Nana 的电商网站和运营后台。网站使用 Next.js，Payload CMS 管理商品、媒体、订单和运营内容；生产数据存储在 Neon PostgreSQL，媒体存储在 Cloudflare R2。
 
----
+## 本地启动
 
-## Features
+需要 Node.js 和 npm。首次在本地运行：
 
--   Built with **Next.js + Tailwind CSS**
--   Responsive design
--   Reusable components
--   Customizable layouts and colors
--   Open for contributions (UI/UX, animations, themes, layouts etc.)
+1. 安装依赖：`npm install`
+2. 复制环境变量模板：`cp .env.example .env.development.local`
+3. 设置本地 `PAYLOAD_SECRET_DEVELOPMENT`。如需连接独立开发数据库，设置 `DATABASE_URL_DEVELOPMENT`；未设置时使用本地 SQLite。开发环境的 R2 配置可选。
+4. 启动：`npm run dev`
+5. 打开网站 `http://localhost:3000`，后台为 `http://localhost:3000/admin`。Product Studio 在 `/admin/collections/products/studio`。
 
----
+不要把密钥提交到 Git。开发环境变量放在被忽略的 `.env.development.local`；Preview 使用 `*_PREVIEW` 变量，Production 使用无后缀变量。详见 [.env.example](./.env.example) 和 [环境配置实现](./lib/environment-config.ts)。
 
-## Getting Started
+## 常用命令
 
-1. Clone the repo
+| 命令 | 用途 |
+| --- | --- |
+| `npm run dev` | 启动本地开发服务 |
+| `npm run build` | 构建生产版本 |
+| `npm run start` | 启动已构建的网站 |
+| `npm run typecheck` | TypeScript 类型检查 |
+| `npm run lint` | ESLint 检查 |
+| `npm run test` | 运行 `tests/` 下的测试 |
+| `npm run migrate` | 对当前环境配置的数据库应用 Payload migrations；运行前先确认目标环境 |
 
-    ```bash
-    git clone https://github.com/GreatStackDev/QuickCart.git
-    cd QuickCart
-    ```
+## 目录与关键文件
 
-2. Install dependencies
+| 路径 | 作用；通常什么时候修改 |
+| --- | --- |
+| `app/(storefront)/` | 顾客访问的页面：主页、商品详情、分类筛选、购物车、结账、订单状态。调整页面或路由时从这里开始。 |
+| `components/` | Storefront 共用组件，如导航栏、商品卡、购物车和支付按钮。 |
+| `app/studio/product-studio.tsx` | Product Studio 的商品列表和编辑界面。 |
+| `app/marketing-studio/` | Marketing Studio 的路由入口。 |
+| `app/(payload)/components/` | Payload 后台的自定义界面，如 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
+| `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |
+| `app/api/` | Next.js 服务端 API：商品后台、媒体、Checkout / PayPal、Merchant / Pinterest Feed 和定时任务。改 API 时同时检查调用它的页面与测试。 |
+| `collections/` | Payload 集合的数据结构、字段、权限和 Hook。商品、Variant、Supplier、Media、Order 等 schema 在这里。 |
+| `globals/` | Payload 单例配置数据，如配送设置、营销设置和商品规格维度。 |
+| `payload.config.ts` | 注册 Payload collections / globals、数据库、R2 文件存储、Admin 组件和类型输出位置。 |
+| `payload-types.ts` | Payload 根据 schema 生成的 TypeScript 类型；修改 schema 后重新生成，不要手工维护。 |
+| `migrations/` | Payload 数据库迁移文件及注册表。只有数据库结构或需要迁移的数据变化时才新增。 |
+| `lib/` | 可复用业务逻辑：价格、Variant 校验、库存、配送、PayPal、媒体命名和清理等。复杂逻辑优先放在这里，并由 API / 页面调用。 |
+| `context/AppContext.jsx` | Storefront 购物车状态和商品加入购物车逻辑。 |
+| `scripts/` | 手动运行的数据导入或迁移脚本；运行前确认当前环境和目标数据库。 |
+| `tests/` | 业务逻辑和 API 行为测试；功能变更时补充对应的聚焦测试。 |
+| `assets/`、`public/` | 项目图标、品牌素材和公开静态文件。 |
+| `docs/` | 产品要求、配置说明、上线验收和已知风险；从 [文档索引](./docs/README.md) 开始。 |
+| `AGENTS.md` | 项目开发约定，包括架构边界、测试和文档更新规则。 |
 
-    ```bash
-    npm install
-    ```
+### Payload schema 变更
 
-3. Run locally
+新增或修改 collection / global 字段时：
 
-    ```bash
-    npm run dev
-    ```
+1. 修改对应的 `collections/*.ts` 或 `globals/*.ts`。
+2. 创建并检查数据库 migration；更新 `migrations/index.ts`。
+3. 运行 `npx payload generate:types && npx payload generate:importmap` 更新生成文件。
+4. 在独立的开发或测试数据库应用 migration，并验证旧数据和后台功能。
+5. 按下面的兼容规则决定部署顺序，再部署代码。
 
-## Production database migrations
+只新增或编辑商品内容不需要数据库 migration。Payload Admin 的自定义组件若新增或改名，也要更新生成的 `importMap.js`。
 
-商品、页面、库存等内容的增删改不需要运行迁移。只有代码修改了 Payload 数据结构（例如新增集合或字段），并生成了新的 `migrations/` 文件，才需要把迁移应用到数据库。
+## 生产数据库迁移与部署顺序
 
-发布顺序取决于新旧代码与数据库结构是否兼容，不是每次都一样：
+部署顺序取决于代码和数据库是否兼容；**每次有 schema migration 时，先在目标环境检查 migration 状态**。
 
-- 新增字段或表，旧代码能在迁移后继续运行，但新代码需要新结构：先迁移数据库，再部署代码。
-- 新代码能同时兼容迁移前后的结构：先部署兼容代码，再迁移数据库。
-- 删除、重命名或改变字段含义：分阶段发布。先部署兼容新旧结构的代码，再迁移数据，最后部署依赖新结构的代码；不要一步完成。
+- 新增字段或表，旧代码可以在迁移后继续运行，而新代码依赖新结构：先运行 migration，再部署代码。
+- 新代码能同时兼容迁移前后的结构：先部署兼容代码，再运行 migration。
+- 删除、重命名或改变字段含义：分阶段发布，先部署兼容新旧结构的代码，再迁移数据，最后部署依赖新结构的代码。
 
-判断时问两句：迁移前新代码能否运行？迁移后旧代码能否运行？如果不能同时兼容，就分阶段发布。
+判断两个问题：迁移前新代码能否运行？迁移后旧代码能否运行？不确定时先查对应 PRD 和 migration，不能兼容就分阶段发布。
 
-有新迁移时，在包含该迁移文件的代码版本中先查看 Production 状态。对于新增字段等向后兼容的迁移，先应用迁移，再部署依赖新结构的代码：
-
-商品价格界面使用 GMC 的 Price / Sale price 叫法，通过统一映射读写原有 `price`（实际成交价）和 `compareAtPrice`（可选原价）。这项调整不需要价格字段迁移，也不改写存量价格；此前未执行的 `20261016_120000_standardize_product_prices` 已移除。其他已有迁移仍按下面的状态检查处理。
+查看 Production migration 状态：
 
 ```bash
 npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npx payload migrate:status
 ```
 
-如果新迁移显示 `Ran: No`，运行下面的命令应用到 Production，然后再部署代码：
+确认新增 migration 尚未运行，且部署方案要求先迁移后，应用到 Production：
 
 ```bash
 npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npm run migrate
 ```
 
-如果新迁移都显示 `Ran: Yes`，就不需要运行迁移。`npm run migrate` 单独运行时使用本地环境配置；不要把它当作 Production 迁移命令。开发时出现的 schema push 提示也只用于当前开发数据库，不代表 Production 已迁移。
+若状态显示所有 migration 都已运行，就不需要重跑。单独运行 `npm run migrate` 使用当前本地环境变量，**不要用它代替 Production 迁移命令**。不要仅凭开发环境 schema push 提示判断生产库状态。
 
-如果 `npx vercel@latest` 因 npm 镜像报 `ETARGET`（如找不到 Vercel CLI 的依赖版本），在命令前临时加上 `npm_config_registry=https://registry.npmjs.org`，例如：
+## 修改代码时
 
-```bash
-npm_config_registry=https://registry.npmjs.org npx --yes vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npx payload migrate:status
-```
-
-该前缀只影响这一条命令，不会修改本机的 npm 配置。迁移命令也可在前面加相同前缀重试。
-
-遇到 `ETARGET` 时，Production 迁移命令完整写法：
-
-```bash
-npm_config_registry=https://registry.npmjs.org npx --yes vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npm run migrate
-```
-
----
-
-## Contributing
-
-We welcome all kinds of contributions! You can:
-
-- Create new pages
-- Improve layouts
-- Add animations and transitions
-- Enhance responsiveness
-- Refactor components
-- Suggest new UI/UX ideas
-- Add themes or color variations
-- Introduce accessibility improvements
-- Add filtering/search features
-- Improve documentation
-
-Check out [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines.
-
----
-
-## License
-
-This project is licensed under the **MIT License**.
-
----
-
-## 🌟 Contributors
-
-Thanks to everyone who contributes to **QuickCart**!
+先读 [AGENTS.md](./AGENTS.md) 和相关 PRD，再沿用现有 API、组件与业务逻辑。功能行为、重要目录、命令、环境变量或部署方式有变化时，同时用简短中文更新本 README；详细操作步骤和待办放在相应的 `docs/` 文件里，避免重复粘贴。

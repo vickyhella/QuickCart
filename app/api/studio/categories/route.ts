@@ -1,6 +1,6 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { defaultProductDimensionOptions } from '@/lib/product-dimensions'
+import { defaultProductDimensionOptions, variantEditorOptions } from '@/lib/product-dimensions'
 
 type DimensionValue = string | number
 type Option = { value: DimensionValue; label: string; products?: { id: string | number; title: string; status: string }[] }
@@ -55,6 +55,7 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user
     ...normalizeCustomDimensions(stored?.dimensions),
   ]
   for (const dimension of dimensions) {
+    if (dimension.valueType === 'integer') dimension.options = []
     const known = new Set(dimension.options.map(({ value }) => value))
     for (const product of products) {
       const variants = Array.isArray(product.variants) ? product.variants : []
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
     if (new URL(request.url).searchParams.get('optionsOnly') === 'true') {
       return Response.json({
         options: Object.fromEntries(snapshot.dimensions.filter(({ key }) => key === 'lengths' || key === 'shapes').map(({ key, options }) => [key, options.map(({ value, label }) => ({ value, label }))])),
-        dimensions: snapshot.dimensions.map(({ key, label, valueType, options }) => ({ key, label, valueType, options: options.map(({ value, label }) => ({ value, label })) })),
+        dimensions: snapshot.dimensions.map(({ key, label, valueType, options }) => ({ key, label, valueType, options: variantEditorOptions(valueType, options.map(({ value, label }) => ({ value, label }))) })),
       })
     }
     return Response.json(snapshot)
@@ -124,9 +125,10 @@ export async function POST(request: Request) {
     const dimensionKey = typeof body.dimension === 'string' ? body.dimension : ''
     const dimensions = [...builtIn, ...customDimensions]
     const dimension = dimensions.find((item) => item.key === dimensionKey)
-    const value: DimensionValue = dimension?.valueType === 'integer' ? Number(body.value) : typeof body.value === 'string' ? body.value.trim() : ''
-    const validValue = dimension?.valueType === 'integer' ? Number.isSafeInteger(Number(value)) && Number(value) > 0 : Boolean(value)
-    if (!dimension || !validValue || !['add', 'rename', 'delete'].includes(action)) return responseError(dimension?.valueType === 'integer' ? 'Enter a positive whole number.' : 'Choose a dimension and a valid category action.', 400)
+    if (!dimension || !['add', 'rename', 'delete'].includes(action)) return responseError('Choose a dimension and a valid category action.', 400)
+    if (dimension?.valueType === 'integer') return responseError('Enter integer values on each product variant instead of adding shared categories.', 400)
+    const value: DimensionValue = typeof body.value === 'string' ? body.value.trim() : ''
+    if (!value) return responseError('Enter a category value.', 400)
     const currentOptions = dimension.options.map(({ value, label }) => ({ value, label }))
     const selected = currentOptions.find((option) => String(option.value) === String(value))
     const products = (await getSnapshot(payload, user)).dimensions.find((item) => item.key === dimensionKey)?.options.find((item) => String(item.value) === String(value))?.products || []

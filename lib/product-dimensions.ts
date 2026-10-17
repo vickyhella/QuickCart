@@ -16,6 +16,10 @@ export const defaultProductDimensionOptions = {
   ],
 } as const
 
+export function variantEditorOptions<T>(valueType: 'text' | 'integer', options: T[]) {
+  return valueType === 'integer' ? [] : options
+}
+
 export function productUsesDimensionValue(product: DimensionProduct, dimension: 'length' | 'shape', value: string) {
   const variants = product.variants || []
   if (variants.some((variant) => String(variant[dimension] || '').trim() === value)) return true

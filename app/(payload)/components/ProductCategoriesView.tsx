@@ -231,19 +231,20 @@ export function ProductCategoriesView() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#f0e9e5] px-5 py-5 sm:px-7">
           <div>
             <h2 className="font-serif text-xl">
-              {currentDimension?.label} options
+              {currentDimension?.label} {currentDimension?.valueType === 'integer' ? 'values in use' : 'options'}
             </h2>
             <p className="mt-1 text-sm text-[#968680]">
-              Display names can change without changing values stored in product
-              variants.
+              {currentDimension?.valueType === 'integer'
+                ? 'Enter integer values directly on each product variant. The values below are collected from products.'
+                : 'Display names can change without changing values stored in product variants.'}
             </p>
           </div>
           <span className="rounded-full border border-[#e7ddd8] bg-white px-3 py-2 text-sm text-[#806e68]">
-            {currentOptions.length} categories
+            {currentOptions.length} {currentDimension?.valueType === 'integer' ? 'values' : 'categories'}
           </span>
         </div>
 
-        <form
+        {currentDimension?.valueType !== 'integer' && <form
           className="flex flex-wrap items-end gap-3 border-b border-[#f0e9e5] bg-[#fcfaf9] px-5 py-4 sm:px-7"
           onSubmit={(event) => {
             event.preventDefault()
@@ -256,10 +257,8 @@ export function ProductCategoriesView() {
               className="mt-1 block w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522]"
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder={currentDimension?.valueType === 'integer' ? 'e.g. 4' : dimension === 'lengths' ? 'e.g. XX-Long' : dimension === 'shapes' ? 'e.g. Coffin' : 'e.g. Glossy'}
-              type={currentDimension?.valueType === 'integer' ? 'number' : 'text'}
-              min={currentDimension?.valueType === 'integer' ? 1 : undefined}
-              step={currentDimension?.valueType === 'integer' ? 1 : undefined}
+              placeholder={dimension === 'lengths' ? 'e.g. XX-Long' : dimension === 'shapes' ? 'e.g. Coffin' : 'e.g. Glossy'}
+              type="text"
               disabled={busy}
             />
           </label>
@@ -270,7 +269,7 @@ export function ProductCategoriesView() {
           >
             Add category
           </button>
-        </form>
+        </form>}
 
         {loading ? (
           <p className="p-6 text-sm text-[#766966]">Loading categories…</p>
@@ -287,7 +286,7 @@ export function ProductCategoriesView() {
                         value={label}
                         onChange={(event) => setLabel(event.target.value)}
                       />
-                      <button
+                      {currentDimension?.valueType !== 'integer' && <button
                         type="button"
                         disabled={busy || !label.trim()}
                         onClick={() =>
@@ -296,8 +295,8 @@ export function ProductCategoriesView() {
                         className="rounded-lg bg-[#8b5d53] px-3 py-2 text-sm text-white disabled:opacity-50"
                       >
                         Save name
-                      </button>
-                      <button
+                      </button>}
+                      {currentDimension?.valueType !== 'integer' && <button
                         type="button"
                         disabled={busy}
                         onClick={() => {
@@ -307,7 +306,7 @@ export function ProductCategoriesView() {
                         className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm"
                       >
                         Cancel
-                      </button>
+                      </button>}
                     </>
                   ) : (
                     <>
@@ -405,7 +404,7 @@ export function ProductCategoriesView() {
           </div>
         ) : (
           <p className="p-6 text-sm text-[#766966]">
-            No options. Add a category to make it available in Product Studio.
+            {currentDimension?.valueType === 'integer' ? 'No product variants use this dimension yet.' : 'No options. Add a category to make it available in Product Studio.'}
           </p>
         )}
       </section>

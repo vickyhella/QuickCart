@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { defaultProductDimensionOptions, productCardDimensions, productDimensionValues, productMatchesDimension, productUsesDimensionValue, uniqueLengthShapePairs } from '../lib/product-dimensions'
+import { defaultProductDimensionOptions, productCardDimensions, productDimensionValues, productMatchesDimension, productUsesDimensionValue, uniqueLengthShapePairs, variantEditorOptions } from '../lib/product-dimensions'
+
+test('integer variant dimensions accept product-level values instead of shared options', () => {
+  assert.deepEqual(variantEditorOptions('integer', [{ value: 1, label: '1' }]), [])
+  assert.deepEqual(variantEditorOptions('text', [{ value: 'glossy', label: 'Glossy' }]), [{ value: 'glossy', label: 'Glossy' }])
+})
 import { renderStudioDescription } from '../lib/studio-description-template'
 
 test('keeps explicitly selected length and shape pairs without creating cross-pairs', () => {

@@ -317,6 +317,7 @@ export interface Product {
 export interface Supplier {
   id: number;
   name: string;
+  linkedProductsCount?: number | null;
   /**
    * Supplier storefront or supplier homepage URL. This is separate from product purchasing links.
    */
@@ -734,6 +735,7 @@ export interface ProductsSelect<T extends boolean = true> {
  */
 export interface SuppliersSelect<T extends boolean = true> {
   name?: T;
+  linkedProductsCount?: T;
   purchaseURL?: T;
   updatedAt?: T;
   createdAt?: T;

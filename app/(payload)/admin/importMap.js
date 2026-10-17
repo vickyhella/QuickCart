@@ -20,6 +20,7 @@ import { PurchaseURLCell as PurchaseURLCell_5e3fae05eb330364d875696b37b0b1dc } f
 import { PurchaseURLField as PurchaseURLField_5e3fae05eb330364d875696b37b0b1dc } from '../components/PurchaseURLField'
 import { SupplierActionCell as SupplierActionCell_757ad325164c570cbff546e5e4fcdf57 } from '../components/SupplierActionCell'
 import { SupplierProductsView as SupplierProductsView_d01f76bcdb8803f26467477552e855c5 } from '../components/SupplierProductsView'
+import { MediaFileSizeCell as MediaFileSizeCell_4e419066640efe583f5e328cbc72a46a } from '../components/MediaFileSizeCell'
 import { MediaWorkspaceTabs as MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62 } from '../components/MediaWorkspaceTabs'
 import { MediaBulkUpload as MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f } from '../components/MediaBulkUpload'
 import { MediaReprocessButton as MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7 } from '../components/MediaReprocessButton'
@@ -54,10 +55,11 @@ export const importMap = {
   "/components/ProductSpreadsheetView#ProductSpreadsheetView": ProductSpreadsheetView_b326187171f517a2b22b0af78924b398,
   "/components/ProductCategoriesView#ProductCategoriesView": ProductCategoriesView_4d74db79c1c650fb8f1844efc9af8c99,
   "/components/SupplierActionCell#SupplierNameCell": SupplierNameCell_757ad325164c570cbff546e5e4fcdf57,
-  "/components/PurchaseURLField#PurchaseURLField": PurchaseURLField_5e3fae05eb330364d875696b37b0b1dc,
   "/components/PurchaseURLField#PurchaseURLCell": PurchaseURLCell_5e3fae05eb330364d875696b37b0b1dc,
+  "/components/PurchaseURLField#PurchaseURLField": PurchaseURLField_5e3fae05eb330364d875696b37b0b1dc,
   "/components/SupplierActionCell#SupplierActionCell": SupplierActionCell_757ad325164c570cbff546e5e4fcdf57,
   "/components/SupplierProductsView#SupplierProductsView": SupplierProductsView_d01f76bcdb8803f26467477552e855c5,
+  "/components/MediaFileSizeCell#MediaFileSizeCell": MediaFileSizeCell_4e419066640efe583f5e328cbc72a46a,
   "/components/MediaWorkspaceTabs#MediaWorkspaceTabs": MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62,
   "/components/MediaBulkUpload#MediaBulkUpload": MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f,
   "/components/MediaReprocessButton#MediaReprocessButton": MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7,

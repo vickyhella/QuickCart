@@ -505,8 +505,8 @@ export default function ProductStudio() {
           {error && <p role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{error}</p>}
           {notice && <p role="status" className="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{notice}</p>}
 
-          <div className="grid items-start gap-7">
-            <section id="products" className="overflow-hidden rounded-2xl border border-[#eee5e0] bg-white shadow-[0_8px_30px_rgba(74,50,42,0.035)]">
+          <div className="grid min-w-0 items-start gap-7">
+            <section id="products" className="min-w-0 overflow-hidden rounded-2xl border border-[#eee5e0] bg-white shadow-[0_8px_30px_rgba(74,50,42,0.035)]">
               <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#f0e9e5] px-5 py-5 sm:px-7">
                 <div>
                   <h2 className="font-serif text-xl">Products</h2>

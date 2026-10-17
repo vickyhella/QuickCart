@@ -8,6 +8,7 @@ import * as migration_20261015_180000_add_gmc_shipping_configuration from './202
 import * as migration_20261016_110000_add_r2_object_keys from './20261016_110000_add_r2_object_keys';
 import * as migration_20261017_170000_add_suppliers from './20261017_170000_add_suppliers';
 import * as migration_20261017_190000_add_supplier_linked_products_count from './20261017_190000_add_supplier_linked_products_count';
+import * as migration_20261017_210000_add_product_dimensions from './20261017_210000_add_product_dimensions';
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20261017_190000_add_supplier_linked_products_count.up,
     down: migration_20261017_190000_add_supplier_linked_products_count.down,
     name: '20261017_190000_add_supplier_linked_products_count'
+  },
+  {
+    up: migration_20261017_210000_add_product_dimensions.up,
+    down: migration_20261017_210000_add_product_dimensions.down,
+    name: '20261017_210000_add_product_dimensions'
   },
 ];

@@ -15,8 +15,9 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const mapped = variants.map((variant: any) => ({ key: `${variant.length}|${variant.shape}|${variant.size}`, ...toEditorPriceFields(variant, product) }))
     const priceOverrides = Object.fromEntries(mapped.filter((variant: any) => variant.price != null).map((variant: any) => [variant.key, variant.price]))
     const salePriceOverrides = Object.fromEntries(mapped.filter((variant: any) => variant.salePrice != null).map((variant: any) => [variant.key, variant.salePrice]))
+    const attributeOverrides = Object.fromEntries(variants.filter((variant: any) => variant.attributes && Object.keys(variant.attributes).length).map((variant: any) => [`${variant.length}|${variant.shape}|${variant.size}`, variant.attributes]))
     const pricing = toEditorPriceFields(product)
-    return Response.json({ category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', combinations, sizes, priceOverrides, salePriceOverrides })
+    return Response.json({ category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', combinations, sizes, priceOverrides, salePriceOverrides, attributeOverrides })
   } catch {
     return Response.json({ error: 'Could not load product for duplication.' }, { status: 404 })
   }

@@ -5,6 +5,7 @@ import { productPublishError } from '@/lib/product-validation'
 import { resolveStudioProductMedia } from '@/lib/studio-product-media'
 import { getEnvironmentVariable } from '@/lib/environment-config'
 import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
+import { validateProductVariantAttributes } from '@/lib/product-variant-attributes'
 
 const error = (message: string, status = 400) => Response.json({ error: message }, { status })
 const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
@@ -42,7 +43,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
       media: resolvedMedia.media.map((item) => ({ ...item, existing: true })), unavailableMediaCount: resolvedMedia.unavailableCount,
       combinations, sizes, variants: variants.map((variant: any) => {
         const pricing = toEditorPriceFields(variant, product)
-        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', suppliers: (variant.suppliers || []).map(relationID), purchaseURL: variant.purchaseURL || '' }
+        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, attributes: variant.attributes || {}, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', suppliers: (variant.suppliers || []).map(relationID), purchaseURL: variant.purchaseURL || '' }
       }),
     })
   } catch {
@@ -60,6 +61,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
 
   try {
     const original: any = await payload.findByID({ collection: 'products', id, depth: 0, overrideAccess: false, user })
+    const productDimensions: any = await payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null)
     if (body.updatedAt !== original.updatedAt) return error('This product changed since you opened it. Reload it before saving to avoid overwriting newer inventory or edits.', 409)
     const title = typeof body.title === 'string' ? body.title.trim() : ''
     if (!title) return error('Product name is required.')
@@ -87,7 +89,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     }
     const combinations = Array.isArray(body.combinations) ? body.combinations : []
     const sizes = Array.isArray(body.sizes) ? [...new Set(body.sizes.map(String))] : []
-    if (combinations.some((item: any) => !lengths.includes(String(item.length)) || !shapes.includes(String(item.shape))) || sizes.some((size: string) => !sizesAllowed.includes(size))) return error('Choose valid length, shape, and size combinations.')
+    const sizeOnly = body.category === 'mystery-box'
+    if (combinations.some((item: any) => sizeOnly ? Boolean(item.length || item.shape) : !lengths.includes(String(item.length)) || !shapes.includes(String(item.shape))) || sizes.some((size: string) => !sizesAllowed.includes(size))) return error('Choose valid length, shape, and size combinations.')
 
     const oldVariants = Array.isArray(original.variants) ? original.variants : []
     const rows = Array.isArray(body.variants) ? body.variants : []
@@ -95,7 +98,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const used = new Set<string>()
     for (const row of rows) {
       const key = `${row.length}|${row.shape}|${row.size}`
-      if (!lengths.includes(String(row.length)) || !shapes.includes(String(row.shape)) || !sizesAllowed.includes(String(row.size)) || used.has(key)) return error('Invalid or duplicate variant combination.')
+      if ((sizeOnly ? Boolean(row.length || row.shape) : !lengths.includes(String(row.length)) || !shapes.includes(String(row.shape))) || !sizesAllowed.includes(String(row.size)) || used.has(key)) return error('Invalid or duplicate variant combination.')
       used.add(key)
       if (!combinations.some((item: any) => `${item.length}|${item.shape}` === `${row.length}|${row.shape}`) || !sizes.includes(String(row.size))) return error('Variant rows must match selected combinations and sizes.')
       const stock = Number(row.stock)
@@ -111,12 +114,14 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         try { if (!['http:', 'https:'].includes(new URL(variantPurchaseURL).protocol)) throw new Error() }
         catch { return error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
       }
-      selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, salePrice: variantSalePrice, image: imageID ? Number(imageID) : null, suppliers: Array.isArray(row.suppliers) ? row.suppliers.map(Number) : [], supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
+      const previous = oldVariants.find((old: any) => old.length === row.length && old.shape === row.shape && old.size === row.size)
+      const attributes = validateProductVariantAttributes(row.attributes ?? previous?.attributes, productDimensions?.dimensions)
+      selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, attributes, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, salePrice: variantSalePrice, image: imageID ? Number(imageID) : null, suppliers: Array.isArray(row.suppliers) ? row.suppliers.map(Number) : [], supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
     }
     if (rows.length !== combinations.length * sizes.length) return error('Variant rows must match selected combinations and sizes.')
     const action = body.action === 'publish' ? 'publish' : 'save'
     if (action === 'publish') {
-      const message = productPublishError({ title, price, salePrice, hasImage: mediaIDs.length > 0, variants: selectedVariants })
+      const message = productPublishError({ title, category: body.category, price, salePrice, hasImage: mediaIDs.length > 0, variants: selectedVariants })
       if (message) return error(message)
     }
     const storedVariants = selectedVariants.map(({ price: variantPrice, salePrice: variantSalePrice, ...variant }) => {

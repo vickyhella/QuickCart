@@ -1,6 +1,6 @@
 import { getPriceDetails, type PriceFields } from './product-pricing'
 
-type PublishProduct = { title?: unknown; price?: unknown; salePrice?: unknown; hasImage: boolean; variants?: { enabled?: boolean; stock?: unknown; length?: unknown; shape?: unknown; size?: unknown; price?: unknown; salePrice?: unknown }[] }
+type PublishProduct = { title?: unknown; category?: unknown; price?: unknown; salePrice?: unknown; hasImage: boolean; variants?: { enabled?: boolean; stock?: unknown; length?: unknown; shape?: unknown; size?: unknown; price?: unknown; salePrice?: unknown }[] }
 
 export function productPublishError(product: PublishProduct) {
   const price = Number(product.price)
@@ -17,7 +17,7 @@ export function productPublishError(product: PublishProduct) {
     variant.enabled === false || validSalePrice(variant.price ?? product.price, variant.price == null ? variant.salePrice ?? salePrice : variant.salePrice),
   )
   const hasAvailableVariant = Array.isArray(product.variants) && product.variants.some((variant) =>
-    variant.enabled !== false && Number(variant.stock) > 0 && Boolean(variant.length && variant.shape && variant.size),
+    variant.enabled !== false && Number(variant.stock) > 0 && Boolean(variant.size) && (product.category === 'mystery-box' || Boolean(variant.length && variant.shape)),
   )
   if (!String(product.title || '').trim()) return 'To publish, add a product name.'
   if (!validPrice) return 'To publish, enter a valid Price.'

@@ -6,30 +6,28 @@ import { readJSONResponse } from '@/lib/read-json-response'
 import { defaultProductDimensionOptions } from '@/lib/product-dimensions'
 import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 
-type Dimension = 'lengths' | 'shapes'
 type CategoryOption = {
-  value: string
+  value: string | number
   label: string
   products: { id: string | number; title: string; status: string }[]
 }
-type CategoryResponse = { options: Record<Dimension, CategoryOption[]> }
+type Dimension = { key: string; label: string; valueType: 'text' | 'integer'; options: CategoryOption[] }
+type CategoryResponse = { dimensions: Dimension[] }
 
-const initialOptions = {
-  lengths: defaultProductDimensionOptions.lengths.map((option) => ({
-    ...option,
-    products: [],
-  })),
-  shapes: defaultProductDimensionOptions.shapes.map((option) => ({
-    ...option,
-    products: [],
-  })),
-}
+const initialDimensions: Dimension[] = [
+  ...([
+    ['lengths', 'Length', defaultProductDimensionOptions.lengths],
+    ['shapes', 'Shape', defaultProductDimensionOptions.shapes],
+  ] as const).map(([key, label, options]) => ({ key, label, valueType: 'text' as const, options: options.map((option) => ({ ...option, products: [] })) })),
+  { key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] },
+]
 
 export function ProductCategoriesView() {
-  const [dimension, setDimension] = useState<Dimension>('lengths')
-  const [options, setOptions] =
-    useState<CategoryResponse['options']>(initialOptions)
+  const [dimension, setDimension] = useState('lengths')
+  const [dimensions, setDimensions] = useState<CategoryResponse['dimensions']>(initialDimensions)
   const [label, setLabel] = useState('')
+  const [newDimension, setNewDimension] = useState('')
+  const [newDimensionType, setNewDimensionType] = useState<'text' | 'integer'>('text')
   const [editingValue, setEditingValue] = useState('')
   const [expandedValue, setExpandedValue] = useState('')
   const [loading, setLoading] = useState(true)
@@ -44,7 +42,7 @@ export function ProductCategoriesView() {
         (response) => readJSONResponse(response) as Promise<CategoryResponse>,
       )
       .then((data) => {
-        if (active) setOptions(data.options)
+        if (active) setDimensions(data.dimensions)
       })
       .catch((cause) => {
         if (active)
@@ -77,7 +75,7 @@ export function ProductCategoriesView() {
         body: JSON.stringify({ action, dimension, value, label: nextLabel }),
       })
       const data = (await readJSONResponse(response)) as CategoryResponse
-      setOptions(data.options)
+      setDimensions(data.dimensions)
       setLabel('')
       setEditingValue('')
       setNotice(
@@ -98,6 +96,10 @@ export function ProductCategoriesView() {
 
   const add = () => {
     const nextLabel = label.trim()
+    if (currentDimension?.valueType === 'integer' && (!/^\d+$/.test(nextLabel) || Number(nextLabel) < 1)) {
+      setError('Enter a positive whole number.')
+      return
+    }
     const value = nextLabel
       .toLocaleLowerCase()
       .replace(/\s+/g, '-')
@@ -108,10 +110,35 @@ export function ProductCategoriesView() {
       setError('Enter a category name using letters or numbers.')
       return
     }
-    void save('add', value, nextLabel)
+    void save('add', currentDimension?.valueType === 'integer' ? String(Number(nextLabel)) : value, nextLabel)
   }
 
-  const currentOptions = options[dimension]
+  const addDimension = async () => {
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const response = await fetch('/api/studio/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'create-dimension', label: newDimension.trim(), valueType: newDimensionType }),
+      })
+      const data = await readJSONResponse(response) as CategoryResponse
+      setDimensions(data.dimensions)
+      const added = data.dimensions.find((item) => item.label.toLowerCase() === newDimension.trim().toLowerCase())
+      if (added) setDimension(added.key)
+      setNewDimension('')
+      setNewDimensionType('text')
+      setNotice('Dimension added.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not add dimension.')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const currentDimension = dimensions.find((item) => item.key === dimension) || dimensions[0]
+  const currentOptions = currentDimension?.options || []
 
   return (
     <main className="product-studio mx-auto min-h-screen max-w-[1600px] bg-[#f7f3f0] px-5 py-10 font-sans text-base antialiased text-[#302522] sm:px-8 lg:px-10">
@@ -119,31 +146,50 @@ export function ProductCategoriesView() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Categories</h1>
           <p className="mt-2 text-sm text-[#766966]">
-            Manage Length and Shape options used by product variants.
+            Manage the dimensions and options used by product variants.
           </p>
         </div>
       </header>
 
       <ProductWorkspaceTabs />
 
+      <form
+        className="mb-5 flex flex-wrap items-end gap-3"
+        onSubmit={(event) => { event.preventDefault(); void addDimension() }}
+      >
+        <label className="min-w-56 flex-1 text-sm text-[#766762]">
+          Add a dimension
+          <input
+            className="mt-1 block w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522]"
+            value={newDimension}
+            onChange={(event) => setNewDimension(event.target.value)}
+            placeholder="e.g. Quantity"
+            disabled={busy}
+          />
+        </label>
+        <label className="text-sm text-[#766762]">Value type
+          <select className="mt-1 block rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522]" value={newDimensionType} onChange={(event) => setNewDimensionType(event.target.value as 'text' | 'integer')} disabled={busy}>
+            <option value="text">Text</option><option value="integer">Integer</option>
+          </select>
+        </label>
+        <button type="submit" disabled={busy || !newDimension.trim()} className="rounded-xl bg-[#8b5d53] px-4 py-3 text-sm font-medium text-white disabled:opacity-50">
+          Add dimension
+        </button>
+      </form>
+
       <div
         role="tablist"
         aria-label="Product dimensions"
         className="mb-6 flex gap-2 border-b border-[#e7ddd8]"
       >
-        {(
-          [
-            ['lengths', 'Length'],
-            ['shapes', 'Shape'],
-          ] as const
-        ).map(([value, title]) => (
+        {dimensions.map(({ key, label: title }) => (
           <button
-            key={value}
+            key={key}
             type="button"
             role="tab"
-            aria-selected={dimension === value}
+            aria-selected={dimension === key}
             onClick={() => {
-              setDimension(value)
+              setDimension(key)
               setEditingValue('')
               setLabel('')
               setExpandedValue('')
@@ -151,12 +197,12 @@ export function ProductCategoriesView() {
             className="border-0 border-b-2 bg-transparent px-4 py-3 text-sm"
             style={{
               borderBottomColor:
-                dimension === value ? 'var(--accent)' : 'transparent',
+                dimension === key ? 'var(--accent)' : 'transparent',
               color:
-                dimension === value
+                dimension === key
                   ? 'var(--brand-text-primary)'
                   : 'var(--brand-text-secondary)',
-              fontWeight: dimension === value ? 600 : 400,
+              fontWeight: dimension === key ? 600 : 400,
             }}
           >
             {title}
@@ -185,7 +231,7 @@ export function ProductCategoriesView() {
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#f0e9e5] px-5 py-5 sm:px-7">
           <div>
             <h2 className="font-serif text-xl">
-              {dimension === 'lengths' ? 'Length options' : 'Shape options'}
+              {currentDimension?.label} options
             </h2>
             <p className="mt-1 text-sm text-[#968680]">
               Display names can change without changing values stored in product
@@ -210,9 +256,10 @@ export function ProductCategoriesView() {
               className="mt-1 block w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522]"
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder={
-                dimension === 'lengths' ? 'e.g. XX-Long' : 'e.g. Coffin'
-              }
+              placeholder={currentDimension?.valueType === 'integer' ? 'e.g. 4' : dimension === 'lengths' ? 'e.g. XX-Long' : dimension === 'shapes' ? 'e.g. Coffin' : 'e.g. Glossy'}
+              type={currentDimension?.valueType === 'integer' ? 'number' : 'text'}
+              min={currentDimension?.valueType === 'integer' ? 1 : undefined}
+              step={currentDimension?.valueType === 'integer' ? 1 : undefined}
               disabled={busy}
             />
           </label>
@@ -244,7 +291,7 @@ export function ProductCategoriesView() {
                         type="button"
                         disabled={busy || !label.trim()}
                         onClick={() =>
-                          void save('rename', option.value, label.trim())
+                          void save('rename', String(option.value), label.trim())
                         }
                         className="rounded-lg bg-[#8b5d53] px-3 py-2 text-sm text-white disabled:opacity-50"
                       >
@@ -277,7 +324,7 @@ export function ProductCategoriesView() {
                       <button
                         type="button"
                         onClick={() => {
-                          setEditingValue(option.value)
+                          setEditingValue(String(option.value))
                           setLabel(option.label)
                         }}
                         className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm"
@@ -298,7 +345,7 @@ export function ProductCategoriesView() {
                               `Delete the unused category “${option.label}”?`,
                             )
                           )
-                            void save('delete', option.value)
+                            void save('delete', String(option.value))
                         }}
                         className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm text-[#8b5d53] disabled:cursor-not-allowed disabled:opacity-40"
                       >
@@ -308,12 +355,12 @@ export function ProductCategoriesView() {
                         type="button"
                         onClick={() =>
                           setExpandedValue(
-                            expandedValue === option.value ? '' : option.value,
+                            expandedValue === String(option.value) ? '' : String(option.value),
                           )
                         }
                         className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm"
                       >
-                        {expandedValue === option.value
+                        {expandedValue === String(option.value)
                           ? 'Hide products'
                           : 'View products'}
                       </button>

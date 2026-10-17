@@ -232,8 +232,17 @@ export interface Product {
   variants?:
     | {
         sku?: string | null;
-        length: string;
-        shape: string;
+        length?: string | null;
+        shape?: string | null;
+        attributes?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
         size?: ('xs' | 's' | 'm' | 'l') | null;
         price?: number | null;
         compareAtPrice?: number | null;
@@ -678,6 +687,7 @@ export interface ProductsSelect<T extends boolean = true> {
         sku?: T;
         length?: T;
         shape?: T;
+        attributes?: T;
         size?: T;
         price?: T;
         compareAtPrice?: T;
@@ -1106,6 +1116,15 @@ export interface ProductDimension {
         id?: string | null;
       }[]
     | null;
+  dimensions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1180,6 +1199,7 @@ export interface ProductDimensionsSelect<T extends boolean = true> {
         label?: T;
         id?: T;
       };
+  dimensions?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

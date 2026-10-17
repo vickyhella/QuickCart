@@ -4,6 +4,7 @@ import { productPublishError } from '@/lib/product-validation'
 import { resolveProductSeoTemplates } from '@/lib/product-seo-templates'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE } from '@/lib/studio-description-template'
 import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
+import { validateProductVariantAttributes } from '@/lib/product-variant-attributes'
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status })
@@ -114,6 +115,7 @@ export async function POST(request: Request) {
   const allowedShapes = ['square', 'oval', 'almond', 'round']
   const allowedSizes = ['xs', 's', 'm', 'l']
   const variants = Array.isArray(body.variants) ? body.variants as Record<string, unknown>[] : []
+  const productDimensions: any = await payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null)
   const supplierIDs: number[] = Array.isArray(body.suppliers) ? [...new Set(body.suppliers.map(Number))] : []
   const allSupplierIDs: number[] = [...new Set([...supplierIDs, ...variants.flatMap((item) => Array.isArray(item.suppliers) ? item.suppliers.map(Number) : [])])]
   const supplierDocs = allSupplierIDs.length ? await payload.find({ collection: 'suppliers', where: { id: { in: allSupplierIDs } }, limit: allSupplierIDs.length, depth: 0, overrideAccess: true }) : { docs: [] }
@@ -122,16 +124,16 @@ export async function POST(request: Request) {
     const found = await payload.find({ collection: 'media', where: { id: { in: mediaIDs } }, limit: 100, depth: 0, overrideAccess: true })
     if (found.docs.length !== mediaIDs.length || found.docs.some((media) => media.mimeType !== 'image/webp')) return jsonError('All product images must be uploaded WebP files.', 400)
   }
-  if (combinations.some((item) => !allowedLengths.includes(String(item.length)) || !allowedShapes.includes(String(item.shape)))) return jsonError('Choose valid length and shape combinations.', 400)
+  if (combinations.some((item) => validCategory === 'mystery-box' ? Boolean(item.length || item.shape) : !allowedLengths.includes(String(item.length)) || !allowedShapes.includes(String(item.shape)))) return jsonError('Choose valid length and shape combinations.', 400)
   if (sizes.some((size) => !allowedSizes.includes(size))) return jsonError('Choose valid sizes.', 400)
   const keys = new Set<string>()
-  let safeVariants: { length: string; shape: string; size: 'xs' | 's' | 'm' | 'l'; stock: number; trackStock: true; enabled: boolean; price?: number; salePrice?: number; image?: number; supplierSKU?: string; suppliers?: number[]; purchaseURL?: string }[]
+  let safeVariants: { length: string; shape: string; size: 'xs' | 's' | 'm' | 'l'; attributes: Record<string, string | number>; stock: number; trackStock: true; enabled: boolean; price?: number; salePrice?: number; image?: number; supplierSKU?: string; suppliers?: number[]; purchaseURL?: string }[]
   try { safeVariants = variants.map((item) => {
     const length = String(item.length || '')
     const shape = String(item.shape || '')
     const size = String(item.size || '')
     const key = `${length}|${shape}|${size}`
-    if (!allowedLengths.includes(length) || !allowedShapes.includes(shape) || !allowedSizes.includes(size) || keys.has(key)) throw new Error('Invalid or duplicate variant combination.')
+    if ((validCategory === 'mystery-box' ? Boolean(length || shape) : !allowedLengths.includes(length) || !allowedShapes.includes(shape)) || !allowedSizes.includes(size) || keys.has(key)) throw new Error('Invalid or duplicate variant combination.')
     keys.add(key)
     const stock = item.stock === undefined || item.stock === '' ? 10 : Number(item.stock)
     const variantPrice = item.price == null || item.price === '' ? undefined : Number(item.price)
@@ -145,14 +147,15 @@ export async function POST(request: Request) {
       catch { throw new Error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
     }
     const rowSuppliers = Array.isArray(item.suppliers) ? [...new Set(item.suppliers.map(Number))] : []
-    return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(variantSalePrice === undefined ? {} : { salePrice: variantSalePrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), suppliers: rowSuppliers, purchaseURL: variantPurchaseURL }
+    const attributes = validateProductVariantAttributes(item.attributes, productDimensions?.dimensions)
+    return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', attributes, stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(variantSalePrice === undefined ? {} : { salePrice: variantSalePrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), suppliers: rowSuppliers, purchaseURL: variantPurchaseURL }
   }) } catch (error) { return jsonError(error instanceof Error ? error.message : 'Invalid variants.', 400) }
   if (safeVariants.length !== combinations.length * sizes.length || safeVariants.some((item) => !combinations.some((combo) => combo.length === item.length && combo.shape === item.shape) || !sizes.includes(item.size))) return jsonError('Variant rows must match the selected combinations and sizes.', 400)
   const action = body.action === 'publish' ? 'publish' : 'draft'
   const requestID = typeof body.requestID === 'string' ? body.requestID.trim() : ''
   if (requestID && !/^[0-9a-f-]{36}$/i.test(requestID)) return jsonError('Invalid save request identifier.', 400)
   if (action === 'publish') {
-    const message = productPublishError({ title, price, salePrice, hasImage: mediaIDs.length > 0, variants: safeVariants })
+    const message = productPublishError({ title, category: validCategory, price, salePrice, hasImage: mediaIDs.length > 0, variants: safeVariants })
     if (message) return jsonError(message, 400)
   }
 

@@ -204,6 +204,7 @@ export const Products: CollectionConfig = {
           const hasImage = Boolean(relationID(product.featuredImage) || (Array.isArray(product.gallery) && product.gallery.some((image) => relationID(image))))
           const message = storedProductPublishError({
             title: product.title,
+            category: product.category,
             price: product.price,
             compareAtPrice: product.compareAtPrice,
             hasImage,
@@ -376,8 +377,9 @@ export const Products: CollectionConfig = {
               },
               fields: [
                 { name: 'sku', type: 'text', index: true },
-                { name: 'length', type: 'text', required: true },
-                { name: 'shape', type: 'text', required: true },
+                { name: 'length', type: 'text' },
+                { name: 'shape', type: 'text' },
+                { name: 'attributes', type: 'json', defaultValue: {} },
                 {
                   name: 'size',
                   type: 'select',

@@ -1,22 +1,40 @@
 import config from '@payload-config'
 import { getPayload } from 'payload'
-import { defaultProductDimensionOptions, productUsesDimensionValue } from '@/lib/product-dimensions'
+import { defaultProductDimensionOptions } from '@/lib/product-dimensions'
 
-type Dimension = 'lengths' | 'shapes'
-type Option = { value: string; label: string }
+type DimensionValue = string | number
+type Option = { value: DimensionValue; label: string; products?: { id: string | number; title: string; status: string }[] }
+type Dimension = { key: string; label: string; valueType: 'text' | 'integer'; options: Option[] }
+const builtIn: Dimension[] = [
+  { key: 'lengths', label: 'Length', valueType: 'text', options: [...defaultProductDimensionOptions.lengths] },
+  { key: 'shapes', label: 'Shape', valueType: 'text', options: [...defaultProductDimensionOptions.shapes] },
+]
 
 function responseError(message: string, status: number) {
   return Response.json({ error: message }, { status })
 }
 
-function normalizeOptions(value: unknown, fallback: readonly Option[]): Option[] {
-  if (!Array.isArray(value)) return [...fallback]
+function normalizeOptions(value: unknown, fallback: Option[] = [], valueType: Dimension['valueType'] = 'text'): Option[] {
+  if (!Array.isArray(value)) return fallback.map(({ value: optionValue, label }) => ({ value: optionValue, label }))
   return value.flatMap((item) => {
     if (!item || typeof item !== 'object') return []
     const option = item as Record<string, unknown>
-    const optionValue = String(option.value || '').trim()
-    if (!optionValue) return []
-    return [{ value: optionValue, label: String(option.label || optionValue).trim() || optionValue }]
+    const optionValue = valueType === 'integer' ? Number(option.value) : String(option.value || '').trim()
+    if (valueType === 'integer' ? !Number.isSafeInteger(Number(optionValue)) || Number(optionValue) < 1 : !optionValue) return []
+    return [{ value: optionValue, label: String(option.label || optionValue).trim() || String(optionValue) }]
+  })
+}
+
+function normalizeCustomDimensions(value: unknown): Dimension[] {
+  if (!Array.isArray(value)) return [{ key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] }]
+  return value.flatMap((item) => {
+    if (!item || typeof item !== 'object') return []
+    const dimension = item as Record<string, unknown>
+    const key = String(dimension.key || '').trim()
+    const label = String(dimension.label || '').trim()
+    if (!/^[a-z][a-z0-9-]*$/.test(key) || !label || builtIn.some((entry) => entry.key === key)) return []
+    const valueType = dimension.valueType === 'integer' ? 'integer' : 'text'
+    return [{ key, label, valueType, options: normalizeOptions(dimension.options, [], valueType) }]
   })
 }
 
@@ -26,57 +44,59 @@ function humanize(value: string) {
 
 async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user: any) {
   const [stored, result] = await Promise.all([
-    payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null),
+    payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null) as Promise<Record<string, any> | null>,
     // shortcut: scans up to 10,000 products, raise this if the catalog grows beyond that.
     payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: false, user }),
   ])
   const products = result.docs as Record<string, any>[]
-  const options = {
-    lengths: normalizeOptions((stored as any)?.lengths, defaultProductDimensionOptions.lengths),
-    shapes: normalizeOptions((stored as any)?.shapes, defaultProductDimensionOptions.shapes),
-  }
-
-  for (const dimension of ['lengths', 'shapes'] as const) {
-    const field = dimension === 'lengths' ? 'length' : 'shape'
-    const known = new Set(options[dimension].map(({ value }) => value))
+  const dimensions = [
+    { ...builtIn[0], options: normalizeOptions(stored?.lengths, builtIn[0].options) },
+    { ...builtIn[1], options: normalizeOptions(stored?.shapes, builtIn[1].options) },
+    ...normalizeCustomDimensions(stored?.dimensions),
+  ]
+  for (const dimension of dimensions) {
+    const known = new Set(dimension.options.map(({ value }) => value))
     for (const product of products) {
       const variants = Array.isArray(product.variants) ? product.variants : []
-      const values = [...variants.map((variant) => String(variant[field] || '').trim()), ...String(product[field] || '').split(',').map((item: string) => item.trim())]
-      for (const value of values.filter(Boolean)) {
-        if (known.has(value)) continue
-        options[dimension].push({ value, label: humanize(value) })
-        known.add(value)
+      const values = dimension.key === 'lengths'
+        ? [...variants.map((variant) => variant.length), ...String(product.length || '').split(',')]
+        : dimension.key === 'shapes'
+          ? [...variants.map((variant) => variant.shape), ...String(product.shape || '').split(',')]
+          : variants.map((variant) => variant.attributes?.[dimension.key])
+      for (const rawValue of values) {
+        const value = dimension.valueType === 'integer' ? Number(rawValue) : String(rawValue || '').trim()
+        if (dimension.valueType === 'integer' ? !Number.isSafeInteger(Number(value)) || Number(value) < 1 : !value) continue
+        if (!known.has(value)) {
+          dimension.options.push({ value, label: humanize(String(value)) })
+          known.add(value)
+        }
       }
     }
+    dimension.options = dimension.options.map((option) => ({
+      ...option,
+      products: products.filter((product) => (product.variants || []).some((variant: any) => {
+        const value = dimension.key === 'lengths' ? variant.length : dimension.key === 'shapes' ? variant.shape : variant.attributes?.[dimension.key]
+        return String(value ?? '').trim() === String(option.value)
+      }) || (dimension.key === 'lengths' || dimension.key === 'shapes') && String(product[dimension.key === 'lengths' ? 'length' : 'shape'] || '').split(',').map((value: string) => value.trim()).includes(String(option.value)))
+        .map(({ id, title, status }) => ({ id, title, status })),
+    }))
   }
-
-  return {
-    options: Object.fromEntries((['lengths', 'shapes'] as const).map((dimension) => {
-      const field = dimension === 'lengths' ? 'length' : 'shape'
-      return [dimension, options[dimension].map((option) => ({
-        ...option,
-        products: products.filter((product) => productUsesDimensionValue(product, field, option.value)).map((product) => ({ id: product.id, title: product.title, status: product.status })),
-      }))]
-    })),
-  }
+  return { dimensions }
 }
 
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
   if (!user) return responseError('Authentication required.', 401)
-
   try {
+    const snapshot = await getSnapshot(payload, user)
     if (new URL(request.url).searchParams.get('optionsOnly') === 'true') {
-      const stored = await payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null) as Record<string, unknown> | null
       return Response.json({
-        options: {
-          lengths: normalizeOptions(stored?.lengths, defaultProductDimensionOptions.lengths),
-          shapes: normalizeOptions(stored?.shapes, defaultProductDimensionOptions.shapes),
-        },
+        options: Object.fromEntries(snapshot.dimensions.filter(({ key }) => key === 'lengths' || key === 'shapes').map(({ key, options }) => [key, options.map(({ value, label }) => ({ value, label }))])),
+        dimensions: snapshot.dimensions.map(({ key, label, valueType, options }) => ({ key, label, valueType, options: options.map(({ value, label }) => ({ value, label })) })),
       })
     }
-    return Response.json(await getSnapshot(payload, user))
+    return Response.json(snapshot)
   } catch (error) {
     return responseError(error instanceof Error ? error.message : 'Could not load product categories.', 500)
   }
@@ -86,44 +106,49 @@ export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
   if (!user) return responseError('Authentication required.', 401)
-
   try {
     const body = await request.json() as Record<string, unknown>
-    const dimension = body.dimension === 'lengths' || body.dimension === 'shapes' ? body.dimension : null
-    const action = body.action
-    const value = typeof body.value === 'string' ? body.value.trim() : ''
-    if (!dimension || !value || !['add', 'rename', 'delete'].includes(String(action))) return responseError('Choose a category and a valid action.', 400)
-
-    const snapshot = await getSnapshot(payload, user)
-    const options = snapshot.options[dimension].map(({ value, label }) => ({ value, label }))
-    const selected = options.find((option) => option.value === value)
-    const productCount = selected ? snapshot.options[dimension].find((option) => option.value === value)?.products.length || 0 : 0
-    const globalData = await payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null) as Record<string, unknown> | null
-    const fallback = defaultProductDimensionOptions[dimension]
-    const storedOptions = normalizeOptions(globalData?.[dimension], fallback)
-
-    if (action === 'add') {
-      const label = typeof body.label === 'string' ? body.label.trim() : ''
-      const duplicate = options.some((option) => option.value.toLocaleLowerCase() === value.toLocaleLowerCase())
-      if (duplicate) return responseError('That category already exists.', 409)
-      if (!label) return responseError('Enter a display name.', 400)
-      storedOptions.push({ value, label })
-    } else if (action === 'rename') {
-      const label = typeof body.label === 'string' ? body.label.trim() : ''
-      if (!label) return responseError('Enter a display name.', 400)
-      const index = storedOptions.findIndex((option) => option.value === value)
-      if (index >= 0) storedOptions[index] = { value, label }
-      else if (selected) storedOptions.push({ value, label })
-      else return responseError('That category no longer exists.', 404)
-    } else {
-      if (productCount) return responseError(`This category is still used by ${productCount} product(s). Remove it from those product variants first.`, 409)
-      const remaining = storedOptions.filter((option) => option.value !== value)
-      if (remaining.length === storedOptions.length && !selected) return responseError('That category no longer exists.', 404)
-      await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimension]: remaining } as never, overrideAccess: false, user })
+    const action = String(body.action || '')
+    const label = typeof body.label === 'string' ? body.label.trim() : ''
+    const globalData = await payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null) as Record<string, any> | null
+    const customDimensions = normalizeCustomDimensions(globalData?.dimensions)
+    if (action === 'create-dimension') {
+      const key = label.toLocaleLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '')
+      if (!key || !label) return responseError('Enter a dimension name using letters or numbers.', 400)
+      if ([...builtIn, ...customDimensions].some((dimension) => dimension.key === key || dimension.label.toLowerCase() === label.toLowerCase())) return responseError('That dimension already exists.', 409)
+      customDimensions.push({ key, label, valueType: body.valueType === 'integer' || key === 'quantity' ? 'integer' : 'text', options: [] })
+      await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: customDimensions } as never, overrideAccess: false, user })
       return Response.json(await getSnapshot(payload, user))
     }
 
-    await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimension]: storedOptions } as never, overrideAccess: false, user })
+    const dimensionKey = typeof body.dimension === 'string' ? body.dimension : ''
+    const dimensions = [...builtIn, ...customDimensions]
+    const dimension = dimensions.find((item) => item.key === dimensionKey)
+    const value: DimensionValue = dimension?.valueType === 'integer' ? Number(body.value) : typeof body.value === 'string' ? body.value.trim() : ''
+    const validValue = dimension?.valueType === 'integer' ? Number.isSafeInteger(Number(value)) && Number(value) > 0 : Boolean(value)
+    if (!dimension || !validValue || !['add', 'rename', 'delete'].includes(action)) return responseError(dimension?.valueType === 'integer' ? 'Enter a positive whole number.' : 'Choose a dimension and a valid category action.', 400)
+    const currentOptions = dimension.options.map(({ value, label }) => ({ value, label }))
+    const selected = currentOptions.find((option) => String(option.value) === String(value))
+    const products = (await getSnapshot(payload, user)).dimensions.find((item) => item.key === dimensionKey)?.options.find((item) => String(item.value) === String(value))?.products || []
+    if (action === 'add') {
+      if (!label) return responseError('Enter a display name.', 400)
+      if (currentOptions.some((option) => String(option.value).toLocaleLowerCase() === String(value).toLocaleLowerCase())) return responseError('That category already exists.', 409)
+      currentOptions.push({ value, label })
+    } else if (action === 'rename') {
+      if (!label) return responseError('Enter a display name.', 400)
+      const index = currentOptions.findIndex((option) => String(option.value) === String(value))
+      if (index < 0) return responseError('That category no longer exists.', 404)
+      currentOptions[index] = { value, label }
+    } else {
+      if (products.length) return responseError(`This category is still used by ${products.length} product(s). Remove it from those variants first.`, 409)
+      if (!selected) return responseError('That category no longer exists.', 404)
+      const remaining = currentOptions.filter((option) => String(option.value) !== String(value))
+      if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: remaining } as never, overrideAccess: false, user })
+      else await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: customDimensions.map((item) => item.key === dimensionKey ? { ...item, options: remaining } : item) } as never, overrideAccess: false, user })
+      return Response.json(await getSnapshot(payload, user))
+    }
+    if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: currentOptions } as never, overrideAccess: false, user })
+    else await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: customDimensions.map((item) => item.key === dimensionKey ? { ...item, options: currentOptions } : item) } as never, overrideAccess: false, user })
     return Response.json(await getSnapshot(payload, user))
   } catch (error) {
     return responseError(error instanceof Error ? error.message : 'Could not update product categories.', 500)

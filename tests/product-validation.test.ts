@@ -11,6 +11,11 @@ test('allows publishing a complete product', () => {
   assert.equal(productPublishError(validProduct), null)
 })
 
+test('allows size-only variants for Mystery Box products', () => {
+  assert.equal(productPublishError({ ...validProduct, category: 'mystery-box', variants: [{ size: 's', enabled: true, stock: 10 }] }), null)
+  assert.equal(productPublishError({ ...validProduct, variants: [{ size: 's', enabled: true, stock: 10 }] }), 'To publish, enable at least one variant with available stock.')
+})
+
 test('rejects publishing when every enabled variant is out of stock', () => {
   assert.equal(productPublishError({ ...validProduct, variants: [{ ...validProduct.variants[0], stock: 0 }] }), 'To publish, enable at least one variant with available stock.')
 })

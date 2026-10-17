@@ -8,6 +8,7 @@ import * as pricing from '../lib/product-pricing.js'
 import * as validation from '../lib/product-validation.js'
 import * as shipping from '../lib/shipping-tiers.js'
 import * as mergeVariants from '../lib/merge-product-variants.js'
+import * as variantAttributes from '../lib/product-variant-attributes.js'
 
 // Exercise the real route handlers with isolated CMS and payment boundaries.
 function loadRoute(path: string, payload: any, extra: Record<string, unknown> = {}) {
@@ -23,6 +24,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/product-validation': validation,
     '@/lib/shipping-tiers': shipping,
     '@/lib/merge-product-variants': mergeVariants,
+    '@/lib/product-variant-attributes': variantAttributes,
     '@/lib/checkout-error': { getCheckoutFailure: (error: Error) => ({ message: error.message, status: 400 }) },
     '@/lib/countries': { shippingCountries: [['US', 'United States']] },
     '@/lib/product-seo-templates': { resolveProductSeoTemplates: () => ({ title: '', description: '' }) },
@@ -90,6 +92,7 @@ test('Studio creates legacy fields for a sale or regular price and rejects rever
   let created: any
   const payload = {
     auth: async () => ({ user: { id: 1 } }),
+    findGlobal: async () => ({ dimensions: [] }),
     create: async ({ data }: any) => { created = data; return { id: 10 } },
   }
   const route = loadRoute('app/api/studio/products/route.ts', payload)
@@ -111,6 +114,15 @@ test('Studio creates legacy fields for a sale or regular price and rejects rever
   assert.equal(variantResponse.status, 201)
   assert.equal(created.variants[0].price, 20)
   assert.equal(pricing.getPriceDetails(created, created.variants[0]).salePrice, null)
+
+  const mysteryBox = await route.POST(request({ title: 'Mystery Box', category: 'mystery-box', price: 13.9,
+    combinations: [{ length: '', shape: '' }], sizes: ['xs'],
+    variants: [{ length: '', shape: '', size: 'xs', price: 13.9, stock: 10, enabled: true }],
+  }))
+  assert.equal(mysteryBox.status, 201)
+  assert.equal(created.category, 'mystery-box')
+  assert.equal(created.variants[0].length, '')
+  assert.equal(created.variants[0].shape, '')
 })
 
 test('Studio read-save preserves variant IDs, SKUs, charges and inherited fields', async () => {
@@ -121,6 +133,7 @@ test('Studio read-save preserves variant IDs, SKUs, charges and inherited fields
   let saved: any
   const payload = {
     auth: async () => ({ user: { id: 1 } }),
+    findGlobal: async () => ({ dimensions: [] }),
     findByID: async () => structuredClone(original),
     find: async () => ({ docs: [] }),
     update: async ({ data }: any) => { saved = data; return { id: 1, updatedAt: 'new' } },
@@ -168,6 +181,7 @@ test('Studio edit resolves media relations whether Payload returns IDs or popula
   ]
   const payload = {
     auth: async () => ({ user: { id: 1 } }),
+    findGlobal: async () => ({ dimensions: [] }),
     findByID: async () => ({ id: 1, updatedAt: '2026-10-16', title: 'test1', status: 'draft', price: 20, featuredImage: 11, gallery: [12], variants: [{ length: 'short', shape: 'almond', size: 's', image: { id: 13 }, stock: 1, enabled: true }] }),
     find: async ({ collection }: any) => collection === 'media' ? { docs: media } : { docs: [] },
   }
@@ -178,6 +192,31 @@ test('Studio edit resolves media relations whether Payload returns IDs or popula
   const editor = await response.json()
   assert.equal(response.status, 200)
   assert.deepEqual(editor.media.map((item: any) => item.id), [11, 12, 13])
+})
+
+test('Studio can read and save a size-only Mystery Box', async () => {
+  const original = { id: 162, updatedAt: '2026-10-17', title: 'Mystery Box', category: 'mystery-box', status: 'draft', price: 13.9, compareAtPrice: 17.9, variants: [
+    { id: 'xs', sku: '5439-5464', length: '', shape: '', size: 'xs', price: 13.9, compareAtPrice: 17.9, stock: 10, enabled: true },
+  ] }
+  let saved: any
+  const payload = {
+    auth: async () => ({ user: { id: 1 } }),
+    findGlobal: async () => ({ dimensions: [] }),
+    findByID: async () => structuredClone(original),
+    find: async () => ({ docs: [] }),
+    update: async ({ data }: any) => { saved = data; return { id: 162, updatedAt: 'new' } },
+  }
+  const route = loadRoute('app/api/studio/products/[id]/route.ts', payload)
+  const context = { params: Promise.resolve({ id: '162' }) }
+  const read = await route.GET(new Request('https://shop.example/api/studio/products/162'), context)
+  const editor = await read.json()
+  assert.equal(editor.combinations.length, 1)
+  assert.equal(editor.combinations[0].length, '')
+  assert.equal(editor.combinations[0].shape, '')
+  const response = await route.PUT(request({ ...editor, mediaIDs: [], action: 'save' }, 'PUT'), context)
+  assert.equal(response.status, 200)
+  assert.equal(saved.variants[0].length, '')
+  assert.equal(saved.variants[0].shape, '')
 })
 
 test('both feeds map the same legacy prices and never emit a sale for a regular-priced variant', async () => {

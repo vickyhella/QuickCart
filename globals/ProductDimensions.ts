@@ -17,5 +17,6 @@ export const ProductDimensions: GlobalConfig = {
   fields: [
     { name: 'lengths', type: 'array', defaultValue: [...defaultProductDimensionOptions.lengths], fields: optionFields },
     { name: 'shapes', type: 'array', defaultValue: [...defaultProductDimensionOptions.shapes], fields: optionFields },
+    { name: 'dimensions', type: 'json', defaultValue: [{ key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] }] },
   ],
 }

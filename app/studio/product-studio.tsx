@@ -35,7 +35,8 @@ type ProductResponse = {
   templates?: { description: string; seoTitle: string; seoDescription: string }
 }
 type StudioImage = { id: string | number; url: string; name: string; existing?: boolean }
-type DimensionOption = { value: string; label: string }
+type DimensionOption = { value: string | number; label: string }
+type CustomDimension = { key: string; label: string; valueType: 'text' | 'integer'; options: DimensionOption[] }
 
 const responseData = readJSONResponse
 
@@ -172,6 +173,7 @@ export default function ProductStudio() {
     lengths: [...defaultProductDimensionOptions.lengths],
     shapes: [...defaultProductDimensionOptions.shapes],
   })
+  const [customDimensions, setCustomDimensions] = useState<CustomDimension[]>([])
   const [combinations, setCombinations] = useState<{ length: string; shape: string }[]>([])
   const [sizes, setSizes] = useState<string[]>(['xs', 's', 'm', 'l'])
   const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({})
@@ -182,6 +184,7 @@ export default function ProductStudio() {
   const [variantSupplierIDs, setVariantSupplierIDs] = useState<Record<string, string[]>>({})
   const [variantPurchaseURLs, setVariantPurchaseURLs] = useState<Record<string, string>>({})
   const [variantEnabled, setVariantEnabled] = useState<Record<string, boolean>>({})
+  const [variantAttributes, setVariantAttributes] = useState<Record<string, Record<string, string | number>>>({})
   const [editingId, setEditingId] = useState<string | number | null>(null)
   const [editingUpdatedAt, setEditingUpdatedAt] = useState('')
   const [editingStatus, setEditingStatus] = useState('draft')
@@ -213,6 +216,12 @@ export default function ProductStudio() {
       })
   }, [])
   const variantRows = orderedVariantRows(combinations, orderedSizes)
+  const updateVariantAttribute = (variantKey: string, dimension: CustomDimension, value: string) => setVariantAttributes((current) => {
+    const attributes = { ...(current[variantKey] || {}) }
+    if (!value) delete attributes[dimension.key]
+    else attributes[dimension.key] = dimension.valueType === 'integer' ? Number(value) : value
+    return { ...current, [variantKey]: attributes }
+  })
   const enabledCombinations = combinations.filter((combo) => orderedSizes.some((size) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
   const enabledSizes = orderedSizes.filter((size) => enabledCombinations.some((combo) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
   const combinationLengths = [...new Set(enabledCombinations.map((item) => item.length))].join(', ')
@@ -276,12 +285,13 @@ export default function ProductStudio() {
         const shapes = data.options?.shapes as DimensionOption[] | undefined
         if (lengths) {
           setDimensionOptions((current) => ({ ...current, lengths }))
-          setLength((current) => lengths.some(({ value }) => value === current) ? current : lengths[0]?.value || '')
+          setLength((current) => lengths.some(({ value }) => String(value) === current) ? current : String(lengths[0]?.value || ''))
         }
         if (shapes) {
           setDimensionOptions((current) => ({ ...current, shapes }))
-          setShape((current) => shapes.some(({ value }) => value === current) ? current : shapes[0]?.value || '')
+          setShape((current) => shapes.some(({ value }) => String(value) === current) ? current : String(shapes[0]?.value || ''))
         }
+        setCustomDimensions((data.dimensions || []).filter((item: CustomDimension) => !['lengths', 'shapes'].includes(item.key)))
       })
       .catch(() => undefined)
     return () => { active = false }
@@ -296,14 +306,14 @@ export default function ProductStudio() {
       const response = await fetch(editingId ? `/api/studio/products/${editingId}` : '/api/studio/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, chineseName, category, price, salePrice, supplierSKU, suppliers: supplierIDs, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], suppliers: variantSupplierIDs[key] || [], purchaseURL: variantPurchaseURLs[key] } }), action }),
+        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, chineseName, category, price, salePrice, supplierSKU, suppliers: supplierIDs, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, attributes: variantAttributes[key] || {}, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], suppliers: variantSupplierIDs[key] || [], purchaseURL: variantPurchaseURLs[key] } }), action }),
       })
       const data = await responseData(response)
       const wasEditing = Boolean(editingId)
       if (!wasEditing) requestID.current = ''
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
       setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setSalePrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
-      setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({})
       if (wasEditing) { setCombinations([]); setSizes(['xs', 's', 'm', 'l']) }
       const successMessage = action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.'
       setNotice(successMessage)
@@ -373,7 +383,7 @@ export default function ProductStudio() {
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product to duplicate.'); return }
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setChineseName(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setTitle(''); setChineseName(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes(data.attributeOverrides || {})
       setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
@@ -393,7 +403,7 @@ export default function ProductStudio() {
       const response = await fetch(`/api/studio/products/${id}`)
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product.'); return }
-      const prices: Record<string, number> = {}; const salePrices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const suppliersByVariant: Record<string, string[]> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
+      const prices: Record<string, number> = {}; const salePrices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const suppliersByVariant: Record<string, string[]> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}; const attributes: Record<string, Record<string, string | number>> = {}
       for (const variant of data.variants) {
         if (variant.price !== '') prices[variant.key] = Number(variant.price)
         if (variant.salePrice !== '') salePrices[variant.key] = Number(variant.salePrice)
@@ -403,12 +413,13 @@ export default function ProductStudio() {
         if (variant.suppliers?.length) suppliersByVariant[variant.key] = variant.suppliers.map(String)
         if (variant.purchaseURL) purchaseURLs[variant.key] = variant.purchaseURL
         enabled[variant.key] = variant.enabled !== false
+        if (variant.attributes && Object.keys(variant.attributes).length) attributes[variant.key] = variant.attributes
       }
       setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
       setEditingPurchaseURL(false)
       setTitle(data.title || ''); setChineseName(data.chineseName || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
       setSupplierSKU(data.supplierSKU); setSupplierIDs(data.suppliers || []); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
-      setImages(data.media); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantSupplierIDs(suppliersByVariant); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
+      setImages(data.media); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantSupplierIDs(suppliersByVariant); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled); setVariantAttributes(attributes)
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
     } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load product.') }
@@ -472,7 +483,7 @@ export default function ProductStudio() {
 
   function cancelEditing() {
     requestID.current = ''
-    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
+    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
   }
 
   return (
@@ -547,7 +558,7 @@ export default function ProductStudio() {
               <form onSubmit={(event) => { event.preventDefault(); void saveDraft(false) }} className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2"><div><FieldLabel>Product name <span className="text-[#b45749]">*</span></FieldLabel><input className={inputClass} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Rosewater" /></div><div><FieldLabel>Chinese Name</FieldLabel><input className={inputClass} value={chineseName} onChange={(event) => setChineseName(event.target.value)} placeholder="Internal reference only" /></div></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
-                  <div><FieldLabel>Category</FieldLabel><select className={inputClass} value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+                  <div><FieldLabel>Category</FieldLabel><select className={inputClass} value={category} onChange={(event) => { const next = event.target.value; setCategory(next); if (next === 'mystery-box' && !combinations.length) setCombinations([{ length: '', shape: '' }]); else if (next !== 'mystery-box' && combinations.every((item) => !item.length && !item.shape)) setCombinations([]) }}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
                   <div><FieldLabel>Price <span className="text-[#b45749]">*</span> <span className="text-sm font-normal text-[#968680]">(required to publish)</span></FieldLabel><PriceInput label="Price" value={price} onChange={setPrice} placeholder="Optional for drafts" prefix /></div>
                   <div><FieldLabel>Sale price <span className="text-sm font-normal text-[#968680]">(optional)</span></FieldLabel><PriceInput label="Sale price" value={salePrice} onChange={setSalePrice} placeholder="Leave blank when not on sale" prefix /></div>
                 </div>
@@ -570,13 +581,14 @@ export default function ProductStudio() {
                 </div>
 
                 <div className="border-t border-[#f0e9e5] pt-5">
-                  <FieldLabel>Length & Shape combinations</FieldLabel>
-                  <div className="grid grid-cols-[1fr_1fr_auto] gap-2">
+                  <FieldLabel>{category === 'mystery-box' ? 'Size-only variants' : 'Length & Shape combinations'}</FieldLabel>
+                  {category !== 'mystery-box' && <><div className="grid grid-cols-[1fr_1fr_auto] gap-2">
                     <select aria-label="Length" className={inputClass} value={length} onChange={(event) => setLength(event.target.value)}>{dimensionOptions.lengths.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select>
                     <select aria-label="Shape" className={inputClass} value={shape} onChange={(event) => setShape(event.target.value)}>{dimensionOptions.shapes.map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select>
                     <button type="button" onClick={() => setCombinations((current) => current.some((item) => item.length === length && item.shape === shape) ? current : [...current, { length, shape }])} className="rounded-xl border border-[#e7ddd8] px-3 text-sm">Add</button>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-2">{combinations.map((item) => <button type="button" key={`${item.length}-${item.shape}`} onClick={() => setCombinations((current) => current.filter((entry) => entry !== item))} className="rounded-full bg-[#f5efec] px-3 py-1.5 text-sm">{item.length} / {item.shape} ×</button>)}</div>
+                  </>}
+                  <div className="mt-3 flex flex-wrap gap-2">{combinations.map((item) => <button type="button" key={`${item.length}-${item.shape}`} onClick={() => setCombinations((current) => current.filter((entry) => entry !== item))} className="rounded-full bg-[#f5efec] px-3 py-1.5 text-sm">{item.length || item.shape ? `${item.length} / ${item.shape}` : 'Size only'} ×</button>)}</div>
                   <div className="mt-3 flex gap-4 text-sm">{[['xs','XS'],['s','S'],['m','M'],['l','L']].map(([value,label]) => <label key={value} className="flex items-center gap-1.5"><input type="checkbox" checked={sizes.includes(value)} onChange={(event) => {
                     if (event.target.checked) {
                       setSizes((current) => sortProductSizes([...current, value]))
@@ -586,7 +598,7 @@ export default function ProductStudio() {
                   {variantRows.length > 0 && <div className="mt-3 space-y-2">{variantRows.map(({ combo, size }) => {
                     const key = `${combo.length}|${combo.shape}|${size}`
                     return <div key={key} className="rounded-lg border border-[#e7ddd8] p-3">
-                      <p className="mb-2 text-sm text-[#766762]">{combo.length}/{combo.shape} · {size.toUpperCase()}</p>
+                      <p className="mb-2 text-sm text-[#766762]">{combo.length || combo.shape ? `${combo.length}/${combo.shape} · ` : ''}{size.toUpperCase()}</p>
                       <div className="grid grid-cols-2 gap-2">
                         <div className="text-sm text-[#766762]">Price
                           <PriceInput label={`${combo.length} ${combo.shape} ${size} variant Price`} prefix inputClassName="w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm outline-none focus:border-[#b57d72] focus:ring-2 focus:ring-[#b57d72]/15" placeholder="Inherit" value={priceOverrides[key] == null ? '' : String(priceOverrides[key])} onChange={(value) => setPriceOverrides((current) => { const next = { ...current }; if (value === '') delete next[key]; else next[key] = Number(value); return next })} />
@@ -601,6 +613,10 @@ export default function ProductStudio() {
                           <select aria-label={`${combo.length} ${combo.shape} ${size} variant image`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-1.5 py-1.5" value={imageOverrides[key] || ''} onChange={(event) => setImageOverrides((current) => ({ ...current, [key]: event.target.value }))}><option value="">Product image</option>{images.map((image, index) => <option key={image.id} value={String(image.id)}>Image {index + 1}</option>)}</select>
                         </label>
                       </div>
+                      {customDimensions.length > 0 && <div className="mt-2 grid grid-cols-2 gap-2">{customDimensions.map((dimension) => <label key={dimension.key} className="text-sm text-[#766762]">{dimension.label}
+                        {dimension.options.length > 0 ? <select aria-label={`${dimension.label} ${size} variant`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5" value={String(variantAttributes[key]?.[dimension.key] ?? '')} onChange={(event) => updateVariantAttribute(key, dimension, event.target.value)}><option value="">—</option>{dimension.options.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}</select>
+                          : <input aria-label={`${dimension.label} ${size} variant`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5" type={dimension.valueType === 'integer' ? 'number' : 'text'} min={dimension.valueType === 'integer' ? 1 : undefined} step={dimension.valueType === 'integer' ? 1 : undefined} value={String(variantAttributes[key]?.[dimension.key] ?? '')} onChange={(event) => updateVariantAttribute(key, dimension, event.target.value)} />}
+                      </label>)}</div>}
                       <label className="mt-2 flex items-center gap-1.5 text-sm text-[#968680]"><input type="checkbox" checked={variantEnabled[key] !== false} onChange={(event) => setVariantEnabled((current) => ({ ...current, [key]: event.target.checked }))} />Enabled</label>
                       <details className="mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier</summary><div className="mt-2"><SupplierPicker key={`${editingId || 'new'}-${key}`} label={`${combo.length} ${combo.shape} ${size} suppliers`} options={supplierOptions} value={variantSupplierIDs[key] || []} onChange={(value) => setVariantSupplierIDs((current) => ({ ...current, [key]: value }))} /></div></details>
                     </div>

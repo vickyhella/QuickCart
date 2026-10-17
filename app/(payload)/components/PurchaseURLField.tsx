@@ -49,3 +49,12 @@ export function PurchaseURLCell({ cellData, rowData }: { cellData?: unknown; row
     ? <a href={href} target="_blank" rel="noopener noreferrer" title={value} style={{ display: 'block', maxWidth: 360, overflowWrap: 'anywhere' }}>{value}</a>
     : <span title={value}>{value}</span>
 }
+
+export function ProductPurchaseURLCell({ cellData, rowData }: { cellData?: unknown; rowData?: { purchaseURL?: unknown } }) {
+  const value = typeof cellData === 'string' && cellData ? cellData : rowData?.purchaseURL
+  if (typeof value !== 'string' || !value.trim()) return <>—</>
+  const href = safeURL(value)
+  return href
+    ? <a href={href} target="_blank" rel="noopener noreferrer" title={value} aria-label="Open product purchase URL in a new tab">Link ↗</a>
+    : <span title={value}>{value}</span>
+}

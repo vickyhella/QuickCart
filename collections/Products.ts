@@ -351,7 +351,7 @@ export const Products: CollectionConfig = {
               admin: {
                 position: 'sidebar',
                 description: 'URL for purchasing this specific product. Separate from the supplier storefront URL.',
-                components: { Field: '/components/PurchaseURLField#ProductPurchaseURLField', Cell: '/components/PurchaseURLField#PurchaseURLCell' },
+                components: { Field: '/components/PurchaseURLField#ProductPurchaseURLField', Cell: '/components/PurchaseURLField#ProductPurchaseURLCell' },
               },
             },
             {

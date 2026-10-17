@@ -6,6 +6,7 @@ import * as migration_20261015_160600_add_product_shipping_weight from './202610
 import * as migration_20261015_170000_add_shipping_tier_weight_ranges from './20261015_170000_add_shipping_tier_weight_ranges';
 import * as migration_20261015_180000_add_gmc_shipping_configuration from './20261015_180000_add_gmc_shipping_configuration';
 import * as migration_20261016_110000_add_r2_object_keys from './20261016_110000_add_r2_object_keys';
+import * as migration_20261017_170000_add_suppliers from './20261017_170000_add_suppliers';
 
 export const migrations = [
   {
@@ -47,5 +48,10 @@ export const migrations = [
     up: migration_20261016_110000_add_r2_object_keys.up,
     down: migration_20261016_110000_add_r2_object_keys.down,
     name: '20261016_110000_add_r2_object_keys'
+  },
+  {
+    up: migration_20261017_170000_add_suppliers.up,
+    down: migration_20261017_170000_add_suppliers.down,
+    name: '20261017_170000_add_suppliers'
   },
 ];

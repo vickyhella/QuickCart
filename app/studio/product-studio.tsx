@@ -54,8 +54,58 @@ function fillTemplate(template: string, values: Record<string, string>) {
   return template.replace(/\{([^}]+)\}/g, (_, key: string) => values[key] || '').replace(/\s+/g, ' ').trim()
 }
 
+function externalURL(value: string) {
+  try {
+    const url = new URL(/^https?:\/\//i.test(value) ? value : `https://${value}`)
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : null
+  } catch {
+    return null
+  }
+}
+
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return <label className="mb-2 block text-sm font-medium text-[#423735]">{children}</label>
+}
+
+function SupplierPicker({
+  options,
+  value,
+  onChange,
+  label,
+}: {
+  options: Array<{ id: string | number; name: string }>
+  value: string[]
+  onChange: (value: string[]) => void
+  label: string
+}) {
+  const [query, setQuery] = useState('')
+  const [editing, setEditing] = useState(value.length === 0)
+  const visibleOptions = options.filter((supplier) => supplier.name.toLowerCase().includes(query.trim().toLowerCase()))
+  const selectedNames = value.map((id) => options.find((supplier) => String(supplier.id) === id)?.name || id)
+
+  if (!editing) return <div aria-label={label} className="flex flex-wrap items-center gap-2 rounded-xl border border-[#e7ddd8] bg-white p-2.5">
+    {selectedNames.length ? <div className="flex flex-wrap gap-1.5">{selectedNames.map((name, index) => <span key={`${value[index]}-${index}`} className="rounded-full border border-[#c79a90] bg-[#f5efec] px-2.5 py-1 text-xs font-medium text-[#684b44]">{name}</span>)}</div> : <span className="text-xs text-[#968680]">No suppliers selected.</span>}
+    <button type="button" className="ml-auto text-xs font-medium text-[#8b5d53] underline" onClick={() => setEditing(true)}>Edit</button>
+  </div>
+
+  return <div aria-label={label} className="rounded-xl border border-[#e7ddd8] bg-white p-2.5">
+    <div className="mb-2 flex items-center justify-between gap-2">
+      <input type="search" aria-label={`Search ${label}`} value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search suppliers" className="min-w-0 flex-1 rounded-lg border border-[#e7ddd8] px-2.5 py-1.5 text-xs outline-none focus:border-[#b57d72]" />
+      <span className="shrink-0 text-xs text-[#968680]" aria-live="polite">{value.length} selected</span>
+    </div>
+    <div className="flex flex-wrap gap-1.5">
+      {visibleOptions.map((supplier) => {
+        const id = String(supplier.id)
+        const checked = value.includes(id)
+        return <label key={id} className={`inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs ${checked ? 'border-[#c79a90] bg-[#f5efec] font-medium text-[#684b44]' : 'border-[#eee5e0] text-[#766762] hover:bg-[#fcfaf9]'}`}>
+          <input className="m-0 h-3 w-3" type="checkbox" checked={checked} onChange={(event) => onChange(event.target.checked ? [...value, id] : value.filter((selected) => selected !== id))} />
+          <span>{supplier.name}</span>
+        </label>
+      })}
+      {!visibleOptions.length && <p className="px-1 py-1 text-xs text-[#968680]">{options.length ? 'No matching suppliers.' : 'No suppliers available.'}</p>}
+    </div>
+    <div className="mt-2 flex justify-end"><button type="button" className="text-xs font-medium text-[#8b5d53] underline" onClick={() => setEditing(false)}>Done</button></div>
+  </div>
 }
 
 const inputClass = 'w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522] outline-none transition focus:border-[#b57d72] focus:ring-2 focus:ring-[#b57d72]/15'
@@ -95,11 +145,16 @@ export default function ProductStudio() {
     seoDescription: '{productName} press-on nails by {brand}.',
   })
   const [title, setTitle] = useState('')
+  const [chineseName, setChineseName] = useState('')
   const [category, setCategory] = useState('press-on-nails')
   const [price, setPrice] = useState('')
   const [salePrice, setSalePrice] = useState('')
   const [supplierSKU, setSupplierSKU] = useState('')
+  const [supplierIDs, setSupplierIDs] = useState<string[]>([])
+  const [supplierOptions, setSupplierOptions] = useState<Array<{ id: string | number; name: string }>>([])
+  const [supplierLoadError, setSupplierLoadError] = useState('')
   const [purchaseURL, setPurchaseURL] = useState('')
+  const [editingPurchaseURL, setEditingPurchaseURL] = useState(false)
   const [descriptionMode, setDescriptionMode] = useState<'auto' | 'custom'>('auto')
   const [description, setDescription] = useState('')
   const [seoTitleMode, setSeoTitleMode] = useState<'auto' | 'custom'>('auto')
@@ -122,6 +177,7 @@ export default function ProductStudio() {
   const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({})
   const [stockOverrides, setStockOverrides] = useState<Record<string, number>>({})
   const [variantSupplierSKUs, setVariantSupplierSKUs] = useState<Record<string, string>>({})
+  const [variantSupplierIDs, setVariantSupplierIDs] = useState<Record<string, string[]>>({})
   const [variantPurchaseURLs, setVariantPurchaseURLs] = useState<Record<string, string>>({})
   const [variantEnabled, setVariantEnabled] = useState<Record<string, boolean>>({})
   const [editingId, setEditingId] = useState<string | number | null>(null)
@@ -141,6 +197,19 @@ export default function ProductStudio() {
   const [librarySelected, setLibrarySelected] = useState<string[]>([])
 
   const orderedSizes = sortProductSizes(sizes)
+  useEffect(() => {
+    fetch('/api/studio/suppliers', { credentials: 'same-origin', cache: 'no-store' })
+      .then(async (response) => {
+        const result = await response.json()
+        if (!response.ok) throw new Error(result.error || 'Could not load suppliers.')
+        setSupplierOptions(result.docs || [])
+        setSupplierLoadError('')
+      })
+      .catch((cause) => {
+        setSupplierOptions([])
+        setSupplierLoadError(cause instanceof Error ? cause.message : 'Could not load suppliers.')
+      })
+  }, [])
   const variantRows = orderedVariantRows(combinations, orderedSizes)
   const enabledCombinations = combinations.filter((combo) => orderedSizes.some((size) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
   const enabledSizes = orderedSizes.filter((size) => enabledCombinations.some((combo) => variantEnabled[`${combo.length}|${combo.shape}|${size}`] !== false))
@@ -224,14 +293,14 @@ export default function ProductStudio() {
       const response = await fetch(editingId ? `/api/studio/products/${editingId}` : '/api/studio/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, category, price, salePrice, supplierSKU, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], purchaseURL: variantPurchaseURLs[key] } }), action }),
+        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, chineseName, category, price, salePrice, supplierSKU, suppliers: supplierIDs, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], suppliers: variantSupplierIDs[key] || [], purchaseURL: variantPurchaseURLs[key] } }), action }),
       })
       const data = await responseData(response)
       const wasEditing = Boolean(editingId)
       if (!wasEditing) requestID.current = ''
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
       setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setSalePrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
-      setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
       if (wasEditing) { setCombinations([]); setSizes(['xs', 's', 'm', 'l']) }
       const successMessage = action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.'
       setNotice(successMessage)
@@ -300,7 +369,7 @@ export default function ProductStudio() {
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product to duplicate.'); return }
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
+      setTitle(''); setChineseName(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({})
       setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
@@ -320,20 +389,22 @@ export default function ProductStudio() {
       const response = await fetch(`/api/studio/products/${id}`)
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product.'); return }
-      const prices: Record<string, number> = {}; const salePrices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
+      const prices: Record<string, number> = {}; const salePrices: Record<string, number> = {}; const imagesByVariant: Record<string, string> = {}; const stocks: Record<string, number> = {}; const supplierSKUs: Record<string, string> = {}; const suppliersByVariant: Record<string, string[]> = {}; const purchaseURLs: Record<string, string> = {}; const enabled: Record<string, boolean> = {}
       for (const variant of data.variants) {
         if (variant.price !== '') prices[variant.key] = Number(variant.price)
         if (variant.salePrice !== '') salePrices[variant.key] = Number(variant.salePrice)
         if (variant.image) imagesByVariant[variant.key] = String(variant.image)
         stocks[variant.key] = Number(variant.stock)
         if (variant.supplierSKU) supplierSKUs[variant.key] = variant.supplierSKU
+        if (variant.suppliers?.length) suppliersByVariant[variant.key] = variant.suppliers.map(String)
         if (variant.purchaseURL) purchaseURLs[variant.key] = variant.purchaseURL
         enabled[variant.key] = variant.enabled !== false
       }
       setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
-      setTitle(data.title || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
-      setSupplierSKU(data.supplierSKU); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
-      setImages(data.media); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
+      setEditingPurchaseURL(false)
+      setTitle(data.title || ''); setChineseName(data.chineseName || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
+      setSupplierSKU(data.supplierSKU); setSupplierIDs(data.suppliers || []); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
+      setImages(data.media); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantSupplierIDs(suppliersByVariant); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled)
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice(`Editing ${data.title}. Existing variants and inventory will be preserved unless changed.${data.unavailableMediaCount ? ` ${data.unavailableMediaCount} missing or legacy image reference(s) were excluded; saving will unlink them from this product.` : ''}`)
     } catch (cause) { notifyStudioError(setError, cause instanceof Error ? cause.message : 'Could not load product.') }
@@ -397,7 +468,7 @@ export default function ProductStudio() {
 
   function cancelEditing() {
     requestID.current = ''
-    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
+    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
   }
 
   return (
@@ -470,7 +541,7 @@ export default function ProductStudio() {
                 <span className="rounded-full bg-[#f5efec] px-3 py-1.5 text-sm font-semibold uppercase tracking-wider text-[#8b5d53]">{editingId ? editingStatus : 'Draft'}</span>
               </div>
               <form onSubmit={(event) => { event.preventDefault(); void saveDraft(false) }} className="space-y-5">
-                <div><FieldLabel>Product name <span className="text-[#b45749]">*</span></FieldLabel><input className={inputClass} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Rosewater" /></div>
+                <div className="grid gap-4 sm:grid-cols-2"><div><FieldLabel>Product name <span className="text-[#b45749]">*</span></FieldLabel><input className={inputClass} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Rosewater" /></div><div><FieldLabel>Chinese Name</FieldLabel><input className={inputClass} value={chineseName} onChange={(event) => setChineseName(event.target.value)} placeholder="Internal reference only" /></div></div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
                   <div><FieldLabel>Category</FieldLabel><select className={inputClass} value={category} onChange={(event) => setCategory(event.target.value)}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
                   <div><FieldLabel>Price <span className="text-[#b45749]">*</span> <span className="text-sm font-normal text-[#968680]">(required to publish)</span></FieldLabel><PriceInput label="Price" value={price} onChange={setPrice} placeholder="Optional for drafts" prefix /></div>
@@ -480,7 +551,7 @@ export default function ProductStudio() {
 
                 <details open className="rounded-xl border border-[#eee5e0] px-4 py-3">
                   <summary className="cursor-pointer text-sm font-medium">Supplier information <span className="text-sm font-normal text-[#968680]">(admin only)</span></summary>
-                  <div className="mt-3 space-y-3"><div><FieldLabel>Supplier SKU</FieldLabel><input className={inputClass} value={supplierSKU} onChange={(event) => setSupplierSKU(event.target.value)} placeholder="Internal supplier reference" /></div><div><FieldLabel>Purchase URL</FieldLabel><input className={inputClass} type="url" value={purchaseURL} onChange={(event) => setPurchaseURL(event.target.value)} placeholder="https://supplier.example/item" /></div><p className="text-sm text-[#968680]">Not shown on the storefront, feeds, or customer order data.</p></div>
+                  <div className="mt-3 space-y-3"><div><FieldLabel>Supplier</FieldLabel><SupplierPicker key={`${editingId || 'new'}-product-suppliers`} label="Product suppliers" options={supplierOptions} value={supplierIDs} onChange={setSupplierIDs} />{supplierLoadError ? <p role="alert" className="mt-1 text-xs text-red-700">Could not load suppliers: {supplierLoadError}</p> : <p className="text-xs text-[#968680]">Manage suppliers in Admin → Suppliers.</p>}</div><div><FieldLabel>Product Purchase URL</FieldLabel>{purchaseURL.trim() && !editingPurchaseURL ? <div className="flex flex-wrap items-center gap-3">{externalURL(purchaseURL.trim()) ? <a className="break-all text-sm text-[#8b5d53] underline" href={externalURL(purchaseURL.trim())!} target="_blank" rel="noopener noreferrer">{purchaseURL.trim()} ↗</a> : <span className="text-sm">{purchaseURL}</span>}<button type="button" className="text-sm text-[#766762] underline" onClick={() => setEditingPurchaseURL(true)}>Edit</button></div> : <input className={inputClass} type="url" value={purchaseURL} onChange={(event) => setPurchaseURL(event.target.value)} onBlur={() => { if (purchaseURL.trim()) setEditingPurchaseURL(false) }} placeholder="https://supplier.example/product" />}</div><p className="text-sm text-[#968680]">Not shown on the storefront, feeds, or customer order data.</p></div>
                 </details>
 
                 <div className="border-t border-[#f0e9e5] pt-5">
@@ -527,7 +598,7 @@ export default function ProductStudio() {
                         </label>
                       </div>
                       <label className="mt-2 flex items-center gap-1.5 text-sm text-[#968680]"><input type="checkbox" checked={variantEnabled[key] !== false} onChange={(event) => setVariantEnabled((current) => ({ ...current, [key]: event.target.checked }))} />Enabled</label>
-                      <details className="mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier info</summary><div className="mt-2 grid grid-cols-2 gap-2"><input aria-label="Variant supplier SKU" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" placeholder="Supplier SKU" value={variantSupplierSKUs[key] || ''} onChange={(event) => setVariantSupplierSKUs((current) => ({ ...current, [key]: event.target.value }))} /><input aria-label="Variant purchase URL" className="rounded-lg border border-[#e7ddd8] px-2 py-1.5 text-sm" type="url" placeholder="Purchase URL" value={variantPurchaseURLs[key] || ''} onChange={(event) => setVariantPurchaseURLs((current) => ({ ...current, [key]: event.target.value }))} /></div></details>
+                      <details className="mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier</summary><div className="mt-2"><SupplierPicker key={`${editingId || 'new'}-${key}`} label={`${combo.length} ${combo.shape} ${size} suppliers`} options={supplierOptions} value={variantSupplierIDs[key] || []} onChange={(value) => setVariantSupplierIDs((current) => ({ ...current, [key]: value }))} /></div></details>
                     </div>
                   })}</div>}
                   <p className="mt-2 text-sm text-[#968680]">{combinations.length * sizes.length} variants · stock defaults to 10 · price and image inherit from the product</p>

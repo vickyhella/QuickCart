@@ -36,13 +36,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: getEnvironmentVariable('R2_PUBLIC_URL'), requestURL: request.url })
     const pricing = toEditorPriceFields(product)
     return Response.json({
-      id: product.id, updatedAt: product.updatedAt, title: product.title, category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', status: product.status,
-      supplierSKU: product.supplierSKU || '', purchaseURL: product.purchaseURL || '',
+      id: product.id, updatedAt: product.updatedAt, title: product.title, chineseName: product.chineseName || '', category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', status: product.status,
+      supplierSKU: product.supplierSKU || '', suppliers: (product.suppliers || []).map(relationID), purchaseURL: product.purchaseURL || '',
       descriptionMode: product.descriptionMode || 'auto', description: product.description || '', seoTitleMode: product.seoTitleMode || 'auto', seoTitle: product.seoTitle || '', seoDescriptionMode: product.seoDescriptionMode || 'auto', seoDescription: product.seoDescription || '',
       media: resolvedMedia.media.map((item) => ({ ...item, existing: true })), unavailableMediaCount: resolvedMedia.unavailableCount,
       combinations, sizes, variants: variants.map((variant: any) => {
         const pricing = toEditorPriceFields(variant, product)
-        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', purchaseURL: variant.purchaseURL || '' }
+        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', suppliers: (variant.suppliers || []).map(relationID), purchaseURL: variant.purchaseURL || '' }
       }),
     })
   } catch {
@@ -74,6 +74,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       try { if (!['http:', 'https:'].includes(new URL(purchaseURL).protocol)) throw new Error() }
       catch { return error('Purchase URL must be a valid HTTP or HTTPS URL.') }
     }
+    const supplierIDs: number[] = Array.isArray(body.suppliers) ? Array.from(new Set<number>((body.suppliers as unknown[]).map(Number))) : []
+    const rowSupplierIDs: number[] = Array.isArray(body.variants) ? (body.variants as any[]).flatMap((row) => Array.isArray(row.suppliers) ? (row.suppliers as unknown[]).map(Number) : []) : []
+    const allSupplierIDs: number[] = [...new Set([...supplierIDs, ...rowSupplierIDs])]
+    const supplierDocs = allSupplierIDs.length ? await payload.find({ collection: 'suppliers', where: { id: { in: allSupplierIDs } }, limit: allSupplierIDs.length, depth: 0, overrideAccess: true }) : { docs: [] }
+    if (supplierDocs.docs.length !== allSupplierIDs.length) return error('Choose valid suppliers.')
 
     const mediaIDs: string[] = Array.isArray(body.mediaIDs) ? [...new Set<string>(body.mediaIDs.map((value: unknown) => String(value)))] : []
     if (mediaIDs.length) {
@@ -106,7 +111,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         try { if (!['http:', 'https:'].includes(new URL(variantPurchaseURL).protocol)) throw new Error() }
         catch { return error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
       }
-      selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, salePrice: variantSalePrice, image: imageID ? Number(imageID) : null, supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
+      selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, salePrice: variantSalePrice, image: imageID ? Number(imageID) : null, suppliers: Array.isArray(row.suppliers) ? row.suppliers.map(Number) : [], supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
     }
     if (rows.length !== combinations.length * sizes.length) return error('Variant rows must match selected combinations and sizes.')
     const action = body.action === 'publish' ? 'publish' : 'save'
@@ -120,11 +125,11 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
       return { ...variant, ...prices }
     })
 
-    const updated = await payload.update({
+    const updated: any = await payload.update({
       collection: 'products', id,
       data: {
-        title, category: body.category, ...toStoredPriceFields({ price, salePrice }, original),
-        supplierSKU: String(body.supplierSKU || '').trim(), purchaseURL,
+        title, chineseName: String(body.chineseName || '').trim(), category: body.category, ...toStoredPriceFields({ price, salePrice }, original),
+        supplierSKU: String(body.supplierSKU || '').trim(), suppliers: supplierIDs, purchaseURL,
         descriptionMode: body.descriptionMode === 'custom' ? 'custom' : 'auto', ...(body.descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),
         seoTitleMode: body.seoTitleMode === 'custom' ? 'custom' : 'auto', seoDescriptionMode: body.seoDescriptionMode === 'custom' ? 'custom' : 'auto',
         ...(body.seoTitleMode === 'custom' ? { seoTitle: String(body.seoTitle || '') } : {}), ...(body.seoDescriptionMode === 'custom' ? { seoDescription: String(body.seoDescription || '') } : {}),

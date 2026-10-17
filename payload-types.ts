@@ -70,6 +70,7 @@ export interface Config {
     users: User;
     'contact-messages': ContactMessage;
     products: Product;
+    suppliers: Supplier;
     media: Media;
     'media-originals': MediaOriginal;
     marketing: Marketing;
@@ -87,6 +88,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
+    suppliers: SuppliersSelect<false> | SuppliersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     'media-originals': MediaOriginalsSelect<false> | MediaOriginalsSelect<true>;
     marketing: MarketingSelect<false> | MarketingSelect<true>;
@@ -192,6 +194,10 @@ export interface ContactMessage {
 export interface Product {
   id: number;
   title: string;
+  /**
+   * Internal reference only; not shown to customers.
+   */
+  chineseName?: string | null;
   slug: string;
   /**
    * Markdown supported, including images via ![alt](https://...). Raw HTML is not enabled.
@@ -211,11 +217,12 @@ export interface Product {
   shape?: string | null;
   sku?: string | null;
   /**
-   * Internal supplier reference. Hidden from customers and feeds.
+   * Legacy WooCommerce supplier SKU retained for reference.
    */
   supplierSKU?: string | null;
+  suppliers?: (number | Supplier)[] | null;
   /**
-   * Internal supplier purchasing URL. Hidden from customers and feeds.
+   * URL for purchasing this specific product. Separate from the supplier storefront URL.
    */
   purchaseURL?: string | null;
   studioRequestID?: string | null;
@@ -233,9 +240,10 @@ export interface Product {
         gtin?: string | null;
         mpn?: string | null;
         /**
-         * Internal supplier reference; never exposed publicly.
+         * Legacy WooCommerce supplier SKU retained for reference.
          */
         supplierSKU?: string | null;
+        suppliers?: (number | Supplier)[] | null;
         /**
          * Internal purchasing URL; never exposed publicly.
          */
@@ -288,6 +296,22 @@ export interface Product {
   status: 'draft' | 'published';
   isNew?: boolean | null;
   isBestSeller?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Supplier records used by products and variants.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "suppliers".
+ */
+export interface Supplier {
+  id: number;
+  name: string;
+  /**
+   * Supplier storefront or supplier homepage URL. This is separate from product purchasing links.
+   */
+  purchaseURL?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -519,6 +543,10 @@ export interface PayloadLockedDocument {
         value: number | Product;
       } | null)
     | ({
+        relationTo: 'suppliers';
+        value: number | Supplier;
+      } | null)
+    | ({
         relationTo: 'media';
         value: number | Media;
       } | null)
@@ -630,6 +658,7 @@ export interface ContactMessagesSelect<T extends boolean = true> {
  */
 export interface ProductsSelect<T extends boolean = true> {
   title?: T;
+  chineseName?: T;
   slug?: T;
   description?: T;
   descriptionMode?: T;
@@ -640,6 +669,7 @@ export interface ProductsSelect<T extends boolean = true> {
   shape?: T;
   sku?: T;
   supplierSKU?: T;
+  suppliers?: T;
   purchaseURL?: T;
   studioRequestID?: T;
   variants?:
@@ -654,6 +684,7 @@ export interface ProductsSelect<T extends boolean = true> {
         gtin?: T;
         mpn?: T;
         supplierSKU?: T;
+        suppliers?: T;
         purchaseURL?: T;
         image?: T;
         stock?: T;
@@ -684,6 +715,16 @@ export interface ProductsSelect<T extends boolean = true> {
   status?: T;
   isNew?: T;
   isBestSeller?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "suppliers_select".
+ */
+export interface SuppliersSelect<T extends boolean = true> {
+  name?: T;
+  purchaseURL?: T;
   updatedAt?: T;
   createdAt?: T;
 }

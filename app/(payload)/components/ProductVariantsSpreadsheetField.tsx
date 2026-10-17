@@ -18,6 +18,7 @@ type Variant = {
   stock?: number
   trackStock?: boolean
   enabled?: boolean
+  suppliers?: string[]
 }
 type CellRange = { startRow: number; endRow: number; startColumn: number; endColumn: number }
 type StoredVariant = Omit<Variant, 'salePrice'> & PriceFields
@@ -30,6 +31,7 @@ const columns: Array<{ key: keyof Variant; label: string }> = [
   { key: 'price', label: 'Price' },
   { key: 'salePrice', label: 'Sale price' },
   { key: 'stock', label: 'Stock' },
+  { key: 'suppliers', label: 'Supplier' },
   { key: 'image', label: 'Variant image' },
   { key: 'trackStock', label: 'Track stock' },
   { key: 'enabled', label: 'Enabled' },
@@ -82,6 +84,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   const parentPricing: PriceFields = useMemo(() => ({ price: fields.price?.value as number | null, compareAtPrice: fields.compareAtPrice?.value as number | null }), [fields.price?.value, fields.compareAtPrice?.value])
   const rows = storedRows.map(({ compareAtPrice, ...variant }) => ({ ...variant, ...toEditorPriceFields({ ...variant, compareAtPrice }, parentPricing) }))
   const [media, setMedia] = useState<Media[]>([])
+  const [suppliers, setSuppliers] = useState<Array<{ id: string | number; name: string }>>([])
   const [dimensions, setDimensions] = useState<{ combinations: Array<{ shape: string; length: string }>; size: string[]; newPair: { shape: string; length: string } }>({ combinations: [{ shape: 'almond', length: 'short' }], size: ['xs', 's', 'm'], newPair: { shape: 'almond', length: 'short' } })
   const [dimensionsInitialized, setDimensionsInitialized] = useState(false)
   const [range, setRange] = useState<CellRange | null>(null)
@@ -116,6 +119,13 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
       .then((result) => { if (alive) setMedia(result.docs || []) })
       .catch(() => { if (alive) setMedia([]) })
     return () => { alive = false }
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/suppliers?limit=1000&depth=0', { credentials: 'same-origin' })
+      .then((response) => response.ok ? response.json() : { docs: [] })
+      .then((result) => setSuppliers(result.docs || []))
+      .catch(() => setSuppliers([]))
   }, [])
 
   useEffect(() => {
@@ -307,6 +317,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
         <tbody>{rows.map((variant, rowIndex) => <tr key={variant.id || `${variant.sku}-${rowIndex}`}>
           {columns.map((column, columnIndex) => <td key={column.key} style={styles.td} onMouseDown={() => setRange({ startRow: rowIndex, endRow: rowIndex, startColumn: columnIndex, endColumn: columnIndex })} onMouseEnter={() => setRange((current) => current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : current)}>
             {column.key === 'size' ? <select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={variant.size || 's'} onChange={(event) => updateCell(rowIndex, 'size', event.target.value)} style={styles.input}>{presets.size.map((size) => <option key={size} value={size}>{size.toUpperCase()}</option>)}</select>
+              : column.key === 'suppliers' ? <select aria-label={`Suppliers for variant ${rowIndex + 1}`} multiple disabled={readOnly} value={variant.suppliers || []} onChange={(event) => { const next = [...rows]; next[rowIndex] = { ...next[rowIndex], suppliers: Array.from(event.target.selectedOptions, (option) => option.value) }; updateRows(next) }} style={{ ...styles.input, minWidth: 150, minHeight: 64 }}>{suppliers.map((supplier) => <option key={supplier.id} value={String(supplier.id)}>{supplier.name}</option>)}</select>
               : column.key === 'image' ? <><select data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} value={imageID(variant.image)} onChange={(event) => updateCell(rowIndex, 'image', event.target.value)} style={{ ...styles.input, minWidth: 190 }}><option value="">Use product image</option>{mediaOptions.map((item) => <option key={item.id} value={String(item.id)}>{item.filename}</option>)}</select><img src={media.find((item) => String(item.id) === imageID(variant.image))?.url || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt="Variant preview" style={{ display: 'block', marginTop: 5, width: 52, height: 52, objectFit: 'cover' }} /><label style={{ display: 'block', fontSize: 'var(--brand-font-size-caption)', marginTop: 5 }}>Upload<input type="file" accept="image/*" disabled={readOnly} onChange={(event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) void uploadImage(file, rowIndex).catch((error) => setMessage(error.message)); input.value = '' }} /></label></>
               : column.key === 'trackStock' || column.key === 'enabled' ? <input data-variant-row={rowIndex} data-variant-column={columnIndex} type="checkbox" disabled={readOnly} checked={Boolean(variant[column.key] ?? (column.key === 'enabled'))} onChange={(event) => updateCell(rowIndex, column.key, event.target.checked)} />
                 : <input data-variant-row={rowIndex} data-variant-column={columnIndex} disabled={readOnly} aria-label={`${column.label} variant ${rowIndex + 1}`} type={['price', 'salePrice', 'stock'].includes(String(column.key)) ? 'number' : 'text'} min="0" value={variant[column.key] === null || variant[column.key] === undefined ? '' : String(variant[column.key])} placeholder={column.key === 'price' ? 'Product price' : ''} onWheel={(event) => { if (column.key === 'price' || column.key === 'salePrice') event.currentTarget.blur() }} onChange={(event) => updateCell(rowIndex, column.key, event.target.value)} style={styles.input} />}

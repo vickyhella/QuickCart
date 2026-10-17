@@ -18,6 +18,9 @@ type ProductVariant = {
   salePrice?: number | null
   gtin?: string
   mpn?: string
+  supplierSKU?: string
+  purchaseURL?: string
+  suppliers?: Array<string | number | { id: string | number }>
   image?: string | number | Media | null
   stock: number
   trackStock: boolean
@@ -27,7 +30,6 @@ type ColumnKey =
   | 'title'
   | 'slug'
   | 'sku'
-  | 'supplierSKU'
   | 'purchaseURL'
   | 'description'
   | 'price'
@@ -61,8 +63,7 @@ const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?:
   { key: 'title', label: 'Title', width: 190 },
   { key: 'slug', label: 'Slug', width: 180 },
   { key: 'sku', label: 'SKU', width: 140 },
-  { key: 'supplierSKU', label: 'Supplier SKU (admin only)', width: 180 },
-  { key: 'purchaseURL', label: 'Purchase URL (admin only)', width: 260 },
+  { key: 'purchaseURL', label: 'Product Purchase URL (admin only)', width: 260 },
   { key: 'description', label: 'Description', width: 280, multiline: true },
   { key: 'price', label: 'Price', width: 100 },
   { key: 'salePrice', label: 'Sale price', width: 120 },
@@ -111,7 +112,7 @@ function toGridRow(product: Product): GridRow {
     else if (column.key === 'gallery') {
       row[column.key] = Array.isArray(value) ? value.map(mediaID).join('; ') : ''
     } else if (column.key === 'variants') {
-      row[column.key] = JSON.stringify((product.variants || []).map(({ compareAtPrice, ...variant }) => ({ ...variant, ...toEditorPriceFields({ ...variant, compareAtPrice }, product) })), null, 2)
+      row[column.key] = JSON.stringify((product.variants || []).map(({ compareAtPrice, supplierSKU, purchaseURL, ...variant }) => ({ ...variant, suppliers: (variant.suppliers || []).map((supplier: any) => mediaID(supplier)), ...toEditorPriceFields({ ...variant, compareAtPrice }, product) })), null, 2)
     } else if (column.key === 'isNew' || column.key === 'isBestSeller' || column.key === 'adult') {
       row[column.key] = value ? 'true' : 'false'
     } else if (column.key === 'material') {
@@ -202,7 +203,7 @@ function toPayloadData(row: GridRow, media: Media[]) {
   if (!Array.isArray(parsedVariants)) throw new Error('Variants must be a JSON array.')
   const variants = parsedVariants.map(({ salePrice, price, ...variant }) => {
     const old = row.originalPricing?.variants?.find((old) => (variant.id && old.id === variant.id) || (old.length === variant.length && old.shape === variant.shape && old.size === variant.size))
-    return { ...variant, ...toStoredPriceFields({ price: price ?? (salePrice != null ? row.price : null), salePrice }, old, row.originalPricing), size: variant.size || 's', image: resolveMedia(mediaID(variant.image), media) }
+    return { ...variant, supplierSKU: old?.supplierSKU, purchaseURL: old?.purchaseURL, ...toStoredPriceFields({ price: price ?? (salePrice != null ? row.price : null), salePrice }, old, row.originalPricing), size: variant.size || 's', image: resolveMedia(mediaID(variant.image), media) }
   })
 
   const gallery = row.gallery.trim()
@@ -213,7 +214,6 @@ function toPayloadData(row: GridRow, media: Media[]) {
     title: row.title,
     slug: row.slug,
     sku: row.sku || null,
-    supplierSKU: row.supplierSKU || null,
     purchaseURL: row.purchaseURL || null,
     description: row.description,
     ...toStoredPriceFields({ price: row.price, salePrice: row.salePrice }, row.originalPricing),
@@ -692,6 +692,7 @@ export function ProductBulkEditor() {
                               onChange={(event) => updateCell(rowIndex, columnIndex, event.target.value)}
                               style={inputStyle}
                             />
+                            {column.key === 'purchaseURL' && /^https?:\/\//i.test(row.purchaseURL.trim()) && <a href={row.purchaseURL.trim()} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 4, fontSize: 'var(--brand-font-size-caption)' }}>Open product URL ↗</a>}
                             {column.key === 'featuredImage' && (() => {
                               const imageURL = getFeaturedImageURL(row, media)
                               return <>

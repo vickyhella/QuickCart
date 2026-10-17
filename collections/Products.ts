@@ -205,7 +205,7 @@ export const Products: CollectionConfig = {
   admin: {
     group: false,
     useAsTitle: 'title',
-    defaultColumns: ['featuredImage', 'title', 'sku', 'price', 'status', 'updatedAt', 'actions'],
+    defaultColumns: ['featuredImage', 'title', 'sku', 'price', 'purchaseURL', 'status', 'updatedAt', 'actions'],
     description: 'Manage press-on nail designs, images, prices, and publishing status.',
     components: {
       beforeList: ['/components/ProductWorkspaceTabs#ProductWorkspaceTabs', '/components/ProductListActions#ProductListActions', '/components/ProductBulkEditor#ProductMediaAudit'],
@@ -238,7 +238,8 @@ export const Products: CollectionConfig = {
         {
           label: 'Product',
           fields: [
-            { name: 'title', type: 'text', required: true },
+            { name: 'title', type: 'text', required: true, admin: { width: '50%' } },
+            { name: 'chineseName', type: 'text', label: 'Chinese Name', admin: { width: '50%', description: 'Internal reference only; not shown to customers.' } },
             {
               name: 'slug',
               type: 'text',
@@ -311,16 +312,25 @@ export const Products: CollectionConfig = {
               name: 'supplierSKU',
               type: 'text',
               admin: {
-                position: 'sidebar',
-                description: 'Internal supplier reference. Hidden from customers and feeds.',
+                hidden: true,
+                description: 'Legacy WooCommerce supplier SKU retained for reference.',
               },
+            },
+            {
+              name: 'suppliers',
+              type: 'relationship',
+              relationTo: 'suppliers',
+              hasMany: true,
+              admin: { position: 'sidebar', allowCreate: true, allowEdit: true },
             },
             {
               name: 'purchaseURL',
               type: 'text',
+              label: 'Product Purchase URL',
               admin: {
                 position: 'sidebar',
-                description: 'Internal supplier purchasing URL. Hidden from customers and feeds.',
+                description: 'URL for purchasing this specific product. Separate from the supplier storefront URL.',
+                components: { Field: '/components/PurchaseURLField#ProductPurchaseURLField', Cell: '/components/PurchaseURLField#PurchaseURLCell' },
               },
             },
             {
@@ -367,13 +377,22 @@ export const Products: CollectionConfig = {
                   name: 'supplierSKU',
                   type: 'text',
                   admin: {
-                    description: 'Internal supplier reference; never exposed publicly.',
+                    hidden: true,
+                    description: 'Legacy WooCommerce supplier SKU retained for reference.',
                   },
+                },
+                {
+                  name: 'suppliers',
+                  type: 'relationship',
+                  relationTo: 'suppliers',
+                  hasMany: true,
+                  admin: { allowCreate: true, allowEdit: true },
                 },
                 {
                   name: 'purchaseURL',
                   type: 'text',
                   admin: {
+                    hidden: true,
                     description: 'Internal purchasing URL; never exposed publicly.',
                   },
                 },

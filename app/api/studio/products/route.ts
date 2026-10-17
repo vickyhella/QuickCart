@@ -112,6 +112,10 @@ export async function POST(request: Request) {
   const allowedShapes = ['square', 'oval', 'almond', 'round']
   const allowedSizes = ['xs', 's', 'm', 'l']
   const variants = Array.isArray(body.variants) ? body.variants as Record<string, unknown>[] : []
+  const supplierIDs: number[] = Array.isArray(body.suppliers) ? [...new Set(body.suppliers.map(Number))] : []
+  const allSupplierIDs: number[] = [...new Set([...supplierIDs, ...variants.flatMap((item) => Array.isArray(item.suppliers) ? item.suppliers.map(Number) : [])])]
+  const supplierDocs = allSupplierIDs.length ? await payload.find({ collection: 'suppliers', where: { id: { in: allSupplierIDs } }, limit: allSupplierIDs.length, depth: 0, overrideAccess: true }) : { docs: [] }
+  if (supplierDocs.docs.length !== allSupplierIDs.length) return jsonError('Choose valid suppliers.', 400)
   if (mediaIDs.length) {
     const found = await payload.find({ collection: 'media', where: { id: { in: mediaIDs } }, limit: 100, depth: 0, overrideAccess: true })
     if (found.docs.length !== mediaIDs.length || found.docs.some((media) => media.mimeType !== 'image/webp')) return jsonError('All product images must be uploaded WebP files.', 400)
@@ -119,7 +123,7 @@ export async function POST(request: Request) {
   if (combinations.some((item) => !allowedLengths.includes(String(item.length)) || !allowedShapes.includes(String(item.shape)))) return jsonError('Choose valid length and shape combinations.', 400)
   if (sizes.some((size) => !allowedSizes.includes(size))) return jsonError('Choose valid sizes.', 400)
   const keys = new Set<string>()
-  let safeVariants: { length: string; shape: string; size: 'xs' | 's' | 'm' | 'l'; stock: number; trackStock: true; enabled: boolean; price?: number; salePrice?: number; image?: number; supplierSKU?: string; purchaseURL?: string }[]
+  let safeVariants: { length: string; shape: string; size: 'xs' | 's' | 'm' | 'l'; stock: number; trackStock: true; enabled: boolean; price?: number; salePrice?: number; image?: number; supplierSKU?: string; suppliers?: number[]; purchaseURL?: string }[]
   try { safeVariants = variants.map((item) => {
     const length = String(item.length || '')
     const shape = String(item.shape || '')
@@ -138,7 +142,8 @@ export async function POST(request: Request) {
       try { if (!['http:', 'https:'].includes(new URL(variantPurchaseURL).protocol)) throw new Error() }
       catch { throw new Error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
     }
-    return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(variantSalePrice === undefined ? {} : { salePrice: variantSalePrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), purchaseURL: variantPurchaseURL }
+    const rowSuppliers = Array.isArray(item.suppliers) ? [...new Set(item.suppliers.map(Number))] : []
+    return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(variantSalePrice === undefined ? {} : { salePrice: variantSalePrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), suppliers: rowSuppliers, purchaseURL: variantPurchaseURL }
   }) } catch (error) { return jsonError(error instanceof Error ? error.message : 'Invalid variants.', 400) }
   if (safeVariants.length !== combinations.length * sizes.length || safeVariants.some((item) => !combinations.some((combo) => combo.length === item.length && combo.shape === item.shape) || !sizes.includes(item.size))) return jsonError('Variant rows must match the selected combinations and sizes.', 400)
   const action = body.action === 'publish' ? 'publish' : 'draft'
@@ -164,6 +169,7 @@ export async function POST(request: Request) {
     collection: 'products',
     data: {
       title,
+      chineseName: String(body.chineseName || '').trim(),
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product',
       category: validCategory,
       ...storedPricing,
@@ -176,6 +182,7 @@ export async function POST(request: Request) {
       ...(mediaIDs.length ? { featuredImage: Number(mediaIDs[0]), gallery: mediaIDs.map(Number) } : {}),
       ...(storedVariants.length ? { variants: storedVariants } : {}),
       supplierSKU: typeof body.supplierSKU === 'string' ? body.supplierSKU.trim() : '',
+      suppliers: supplierIDs,
       purchaseURL,
       ...(requestID ? { studioRequestID: requestID } : {}),
       status: action === 'publish' ? 'published' : 'draft',

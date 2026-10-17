@@ -77,6 +77,7 @@
 - Product Studio 商品标题链接到 Storefront 商品详情页；列表 Action 内提供 Edit / Duplicate / Delete 和多选批量删除。Products Payload 列表使用独立 Action 列提供相同操作，标题不承载隐藏的后台编辑入口；单商品编辑页也提供删除操作。
 - 删除商品时，只有确认的关联记录后才执行删除；订单、Pinterest post 等历史记录保留。仅当图片不再被其他商品、Variant、Pinterest post 或媒体商品归属引用时，才同步删除 WebP；其原图仅在没有其他 WebP 引用时一并删除。
 - Product Studio 工作区包含 `Product Studio`、`Products`、`Categories`、`Spreadsheet` 四个标签；Spreadsheet 支持分页、筛选、TSV 粘贴与批量字段编辑，并包含后台供应商信息，入口为 `/admin/collections/products/spreadsheet`
+- Supplier 列表的 Action 提供 Manage Products，可搜索商品并批量绑定或解除商品级 Supplier 关联；Variant 级关联仍在 Product Studio 中单独管理。
 - Categories 标签统一维护 Length 和 Shape 选项，显示每个选项关联的商品；支持新增选项和修改显示名称，删除仍被任意商品 Variant（含停用 Variant）使用的选项时必须阻止并说明关联商品。
 - Length + Shape 规格按明确选择的配对生成，避免自动产生未选择的组合
 
@@ -691,6 +692,7 @@ SKU 由服务端统一生成，确保唯一性，避免不同编辑器生成不�
 
 ### 上线前待办
 
+- [ ] 讨论并确定 Supplier 删除规则：当前数据库外键使用 `ON DELETE SET NULL`，删除 Supplier 会从关联商品上清除该 Supplier。建议优先支持归档以保留商品关联；仍被商品引用时禁止硬删除并提示关联商品，未被引用时才允许永久删除。
 - [ ] 完成 Cloudflare R2 配置：创建存储桶和仅限该 bucket 的 Object Read & Write API Token，将 bucket、endpoint、Access Key ID、Secret Access Key 和公开访问 URL 配入部署环境变量；测试上传、图片访问、替换和删除。开发阶段可先用 `r2.dev`，正式上线前绑定自定义媒体域名并更新 `R2_PUBLIC_URL`。
 - [ ] 环境隔离验收：本地 `DATABASE_URL_DEVELOPMENT` / SQLite 与 `R2_*_DEVELOPMENT`、Vercel Preview 的 `*_PREVIEW` 均不读取 Production 数据库或 R2；验证本地上传、替换、删除和重新压缩不会改动 Production 文件及引用。
 - [ ] 盘点并迁移 WooCommerce 旧商品：整理商品字段、图片、分类、Length + Shape / Size Variants、价格和库存映射；导入后抽样核对商品详情及购物流程。

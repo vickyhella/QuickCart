@@ -1,6 +1,8 @@
 import { ProductSlugField as ProductSlugField_36c2d55279d64603ec421ede181e93e5 } from '../components/ProductSlugField'
 import { ProductPriceCell as ProductPriceCell_b7e504afc4a2f5d8991eaa5f4303c0bf } from '../components/ProductPricingField'
 import { ProductPricingField as ProductPricingField_b7e504afc4a2f5d8991eaa5f4303c0bf } from '../components/ProductPricingField'
+import { PurchaseURLCell as PurchaseURLCell_5e3fae05eb330364d875696b37b0b1dc } from '../components/PurchaseURLField'
+import { ProductPurchaseURLField as ProductPurchaseURLField_5e3fae05eb330364d875696b37b0b1dc } from '../components/PurchaseURLField'
 import { ProductVariantsSpreadsheetField as ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d } from '../components/ProductVariantsSpreadsheetField'
 import { ProductThumbnailCell as ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a } from '../components/ProductThumbnailCell'
 import { ProductMediaField as ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e } from '../components/ProductMediaField'
@@ -13,6 +15,10 @@ import { ProductDeleteControl as ProductDeleteControl_b55a099709b09a611cd7f9c847
 import { ProductStudioView as ProductStudioView_10c85732f2eea616635ce8b94f8ee3fc } from '../components/ProductStudioView'
 import { ProductSpreadsheetView as ProductSpreadsheetView_b326187171f517a2b22b0af78924b398 } from '../components/ProductSpreadsheetView'
 import { ProductCategoriesView as ProductCategoriesView_4d74db79c1c650fb8f1844efc9af8c99 } from '../components/ProductCategoriesView'
+import { SupplierNameCell as SupplierNameCell_757ad325164c570cbff546e5e4fcdf57 } from '../components/SupplierActionCell'
+import { PurchaseURLField as PurchaseURLField_5e3fae05eb330364d875696b37b0b1dc } from '../components/PurchaseURLField'
+import { SupplierActionCell as SupplierActionCell_757ad325164c570cbff546e5e4fcdf57 } from '../components/SupplierActionCell'
+import { SupplierProductsView as SupplierProductsView_d01f76bcdb8803f26467477552e855c5 } from '../components/SupplierProductsView'
 import { MediaWorkspaceTabs as MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62 } from '../components/MediaWorkspaceTabs'
 import { MediaBulkUpload as MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f } from '../components/MediaBulkUpload'
 import { MediaReprocessButton as MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7 } from '../components/MediaReprocessButton'
@@ -32,6 +38,8 @@ export const importMap = {
   "/components/ProductSlugField#ProductSlugField": ProductSlugField_36c2d55279d64603ec421ede181e93e5,
   "/components/ProductPricingField#ProductPriceCell": ProductPriceCell_b7e504afc4a2f5d8991eaa5f4303c0bf,
   "/components/ProductPricingField#ProductPricingField": ProductPricingField_b7e504afc4a2f5d8991eaa5f4303c0bf,
+  "/components/PurchaseURLField#PurchaseURLCell": PurchaseURLCell_5e3fae05eb330364d875696b37b0b1dc,
+  "/components/PurchaseURLField#ProductPurchaseURLField": ProductPurchaseURLField_5e3fae05eb330364d875696b37b0b1dc,
   "/components/ProductVariantsSpreadsheetField#ProductVariantsSpreadsheetField": ProductVariantsSpreadsheetField_015914b26101ff96ca7d79a4e662231d,
   "/components/ProductThumbnailCell#ProductThumbnailCell": ProductThumbnailCell_015e3ee3fe2420321a28a2b2804f215a,
   "/components/ProductMediaField#ProductMediaField": ProductMediaField_cdaea869f08f65dad3f2f4ac3ec67b7e,
@@ -44,6 +52,10 @@ export const importMap = {
   "/components/ProductStudioView#ProductStudioView": ProductStudioView_10c85732f2eea616635ce8b94f8ee3fc,
   "/components/ProductSpreadsheetView#ProductSpreadsheetView": ProductSpreadsheetView_b326187171f517a2b22b0af78924b398,
   "/components/ProductCategoriesView#ProductCategoriesView": ProductCategoriesView_4d74db79c1c650fb8f1844efc9af8c99,
+  "/components/SupplierActionCell#SupplierNameCell": SupplierNameCell_757ad325164c570cbff546e5e4fcdf57,
+  "/components/PurchaseURLField#PurchaseURLField": PurchaseURLField_5e3fae05eb330364d875696b37b0b1dc,
+  "/components/SupplierActionCell#SupplierActionCell": SupplierActionCell_757ad325164c570cbff546e5e4fcdf57,
+  "/components/SupplierProductsView#SupplierProductsView": SupplierProductsView_d01f76bcdb8803f26467477552e855c5,
   "/components/MediaWorkspaceTabs#MediaWorkspaceTabs": MediaWorkspaceTabs_717e75be1c7a9aaed3eecabad6cedf62,
   "/components/MediaBulkUpload#MediaBulkUpload": MediaBulkUpload_5ec60b1d534fd4534df5b0b063d9786f,
   "/components/MediaReprocessButton#MediaReprocessButton": MediaReprocessButton_521a9006c5bc2641f160b5e0e25aabc7,

@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { getPriceDetails } from '@/lib/product-pricing'
+import { toStorefrontProduct } from '@/lib/storefront-product'
 
 export const AppContext = createContext();
 
@@ -51,26 +52,7 @@ export const AppContextProvider = (props) => {
             const response = await fetch('/api/products?limit=100&depth=1&sort=-createdAt&where[status][equals]=published', { cache: 'no-store' })
             if (!response.ok) throw new Error('Could not load products')
             const { docs = [] } = await response.json()
-            setProducts(docs.map((product) => {
-                const featured = product.featuredImage && typeof product.featuredImage === 'object'
-                    ? product.featuredImage.url
-                    : null
-                const gallery = Array.isArray(product.gallery)
-                    ? product.gallery.map((image) => typeof image === 'object' ? image?.url : null)
-                    : []
-                const imageAlt = [
-                    product.featuredImage && typeof product.featuredImage === 'object' ? product.featuredImage.altText : null,
-                    ...(Array.isArray(product.gallery) ? product.gallery.map((image) => typeof image === 'object' ? image?.altText : null) : []),
-                ]
-                const images = [featured, ...gallery].filter(Boolean)
-                return {
-                    ...product,
-                    _id: String(product.id),
-                    name: product.title,
-                    image: images.length ? images : ['/nail-placeholder.svg'],
-                    imageAlt,
-                }
-            }))
+            setProducts(docs.map(toStorefrontProduct))
             setProductsStatus('loaded')
         } catch (error) {
             console.error('Product loading failed:', error)

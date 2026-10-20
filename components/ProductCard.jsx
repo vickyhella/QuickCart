@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import SafeImage from '@/components/SafeImage'
 import { useAppContext } from '@/context/AppContext';
 import { formatDimension } from '@/lib/format-dimension'
@@ -7,12 +8,12 @@ import { getPriceDetails } from '@/lib/product-pricing'
 
 const ProductCard = ({ product }) => {
 
-    const { currency, router } = useAppContext()
+    const { currency } = useAppContext()
     const pricing = getPriceDetails(product)
 
     return (
-        <div
-            onClick={() => { router.push('/product/' + (product.slug || product._id)); scrollTo(0, 0) }}
+        <Link
+            href={'/product/' + (product.slug || product._id)}
             className="group flex w-full cursor-pointer flex-col items-start gap-2.5"
         >
             <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#f0e8e5]">
@@ -36,7 +37,7 @@ const ProductCard = ({ product }) => {
                     {pricing.onSale && <p className="text-[#998f89] line-through">{currency || '$'}{Number(pricing.price).toFixed(2)}</p>}
                 </div>
             </div>
-        </div>
+        </Link>
     )
 }
 

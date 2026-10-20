@@ -1,12 +1,16 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAppContext } from "@/context/AppContext";
 import CartDrawer from "@/components/CartDrawer";
 
 const Navbar = () => {
     const { products, getCartCount } = useAppContext();
     const [cartOpen, setCartOpen] = useState(false);
+    const [searchOpen, setSearchOpen] = useState(false);
+    useEffect(() => {
+        if (searchOpen) document.getElementById('site-search-input')?.focus();
+    }, [searchOpen]);
     const lengthOrder = ["x-short", "short", "medium", "long", "x-long"];
     const shapeOrder = ["square", "oval", "almond", "round"];
     const lengths = [
@@ -121,10 +125,13 @@ const Navbar = () => {
                     </Link>
                 </div>
                 <div className="ml-auto flex items-center gap-3 text-sm">
+                    <button type="button" aria-expanded={searchOpen} aria-controls="site-search" aria-label="Search products" onClick={() => setSearchOpen(!searchOpen)} className="rounded-full p-2 hover:text-[#985c70]">
+                        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>
+                    </button>
                     {process.env.NODE_ENV === "development" && (
                         <Link
                             href="/admin"
-                            className="border border-[#d8c9c1] rounded-full px-4 py-2 hover:bg-[#f8f3ef]"
+                            className="hidden xl:inline border border-[#d8c9c1] rounded-full px-4 py-2 hover:bg-[#f8f3ef]"
                         >
                             Manage products
                         </Link>
@@ -139,6 +146,11 @@ const Navbar = () => {
                         Cart{getCartCount() > 0 ? ` (${getCartCount()})` : ""}
                     </button>
                 </div>
+                {searchOpen && <form id="site-search" action="/search" role="search" className="absolute left-0 right-0 top-full flex gap-2 border-b border-[#eadfdb] bg-[#fffdfa] px-4 py-4 sm:px-5 md:px-12 lg:px-16">
+                    <label htmlFor="site-search-input" className="sr-only">Product name</label>
+                    <input id="site-search-input" type="search" name="q" maxLength={160} required placeholder="Search by product name" className="min-w-0 flex-1 rounded-lg border border-[#d8c9c1] px-4 py-2" />
+                    <button className="rounded-lg bg-[#754b43] px-5 py-2 text-white">Search</button>
+                </form>}
             </nav>
             {cartOpen && <CartDrawer open onClose={() => setCartOpen(false)} />}
             <nav

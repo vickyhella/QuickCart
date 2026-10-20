@@ -88,4 +88,6 @@ npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=pr
 
 ## 修改代码时
 
+商品名称搜索入口位于全站导航，结果页为 `/search?q=商品名`；`components/ProductSearch.jsx` 通过 Payload 商品 API 分页查询已发布商品，`lib/product-search.js` 统一查询参数。搜索忽略大小写、支持名称片段，每页 24 件；无需数据库 migration。
+
 先读 [AGENTS.md](./AGENTS.md) 和相关 PRD，再沿用现有 API、组件与业务逻辑。功能行为、重要目录、命令、环境变量或部署方式有变化时，同时用简短中文更新本 README；详细操作步骤和待办放在相应的 `docs/` 文件里，避免重复粘贴。

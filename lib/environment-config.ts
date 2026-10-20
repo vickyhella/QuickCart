@@ -7,6 +7,8 @@ export function getRuntimeEnvironment(env: EnvironmentVariables = process.env): 
   if (configured === 'development' || configured === 'preview' || configured === 'production') return configured
   if (env.CONTEXT === 'production') return 'production'
   if (env.CONTEXT && env.CONTEXT !== 'dev') return 'preview'
+  // Netlify exposes CONTEXT during builds, but only URL and SITE_ID in Functions.
+  if (env.NODE_ENV === 'production' && env.URL && env.SITE_ID) return 'production'
   return 'development'
 }
 

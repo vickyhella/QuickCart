@@ -17,7 +17,7 @@ import { sortProductSizes } from '@/lib/product-size-order'
 
 export default function ProductPage() {
   const { id } = useParams()
-  const { products, addToCart, router, currency } = useAppContext()
+  const { products, productsStatus, fetchProductData, addToCart, router, currency } = useAppContext()
   const product = products.find((item) => item._id === String(id) || item.slug === String(id))
   const [mainImage, setMainImage] = useState('')
   const [selectedLength, setSelectedLength] = useState('')
@@ -51,7 +51,8 @@ export default function ProductPage() {
     else setMainImage('')
   }, [selectedVariant?.id, selectedVariant?.image?.url])
 
-  if (!products.length) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><p className="py-32 text-center text-[#786963]">Loading designs…</p><Footer /></main>
+  if (productsStatus === 'loading') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><p className="py-32 text-center text-[#786963]" role="status">Loading designs…</p><Footer /></main>
+  if (productsStatus === 'error') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center text-[#786963]" role="alert"><p>We couldn’t load this design.</p><button type="button" onClick={fetchProductData} className="mt-3 underline">Try again</button></div><Footer /></main>
   if (!product) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center"><h1 className="font-serif text-3xl">This design is unavailable</h1><Link href="/all-products" className="inline-block mt-5 underline">Browse all designs</Link></div><Footer /></main>
 
   const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`

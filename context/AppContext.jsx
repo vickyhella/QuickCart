@@ -16,6 +16,7 @@ export const AppContextProvider = (props) => {
     const router = useRouter()
 
     const [products, setProducts] = useState([])
+    const [productsStatus, setProductsStatus] = useState('loading')
     const [cartItems, setCartItems] = useState({})
     const [cartLoaded, setCartLoaded] = useState(false)
 
@@ -45,6 +46,7 @@ export const AppContextProvider = (props) => {
     }, [cartItems, cartLoaded])
 
     const fetchProductData = async () => {
+        setProductsStatus('loading')
         try {
             const response = await fetch('/api/products?limit=100&depth=1&sort=-createdAt&where[status][equals]=published', { cache: 'no-store' })
             if (!response.ok) throw new Error('Could not load products')
@@ -69,9 +71,11 @@ export const AppContextProvider = (props) => {
                     imageAlt,
                 }
             }))
+            setProductsStatus('loaded')
         } catch (error) {
             console.error('Product loading failed:', error)
             setProducts([])
+            setProductsStatus('error')
         }
     }
 
@@ -137,7 +141,7 @@ export const AppContextProvider = (props) => {
 
     const value = {
         currency, router,
-        products, fetchProductData,
+        products, productsStatus, fetchProductData,
         cartItems, setCartItems,
         addToCart, updateCartQuantity,
         getCartCount, getCartAmount

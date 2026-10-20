@@ -43,7 +43,7 @@
 | `payload-types.ts` | Payload 根据 schema 生成的 TypeScript 类型；修改 schema 后重新生成，不要手工维护。 |
 | `migrations/` | Payload 数据库迁移文件及注册表。只有数据库结构或需要迁移的数据变化时才新增。 |
 | `lib/` | 可复用业务逻辑：价格、Variant 校验、库存、配送、PayPal、媒体命名和清理等。复杂逻辑优先放在这里，并由 API / 页面调用。 |
-| `context/AppContext.jsx` | Storefront 购物车状态和商品加入购物车逻辑。 |
+| `context/AppContext.jsx` | Storefront 购物车状态、商品加载状态及失败重试逻辑。 |
 | `scripts/` | 手动运行的数据导入或迁移脚本；运行前确认当前环境和目标数据库。 |
 | `tests/` | 业务逻辑和 API 行为测试；功能变更时补充对应的聚焦测试。 |
 | `assets/`、`public/` | 项目图标、品牌素材和公开静态文件。 |

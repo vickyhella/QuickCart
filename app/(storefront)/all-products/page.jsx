@@ -8,7 +8,7 @@ import { useAppContext } from '@/context/AppContext'
 import { getPriceDetails } from '@/lib/product-pricing'
 
 export default function AllProducts() {
-  const { products } = useAppContext()
+  const { products, productsStatus, fetchProductData } = useAppContext()
   const [filters, setFilters] = useState({ length: '', shape: '', sale: false, isNew: false })
 
   useEffect(() => {
@@ -52,6 +52,10 @@ export default function AllProducts() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-7 mt-9">
             {visibleProducts.map((product) => <ProductCard key={product._id} product={product} />)}
           </div>
+        ) : productsStatus === 'loading' ? (
+          <p className="mt-12 py-16 text-center bg-[#f8f3ef] rounded-xl text-[#786963]" role="status">Loading designs…</p>
+        ) : productsStatus === 'error' ? (
+          <div className="mt-12 py-16 text-center bg-[#f8f3ef] rounded-xl text-[#786963]" role="alert"><p>We couldn’t load the collection.</p><button type="button" onClick={fetchProductData} className="mt-3 underline">Try again</button></div>
         ) : (
           <p className="mt-12 py-16 text-center bg-[#f8f3ef] rounded-xl text-[#786963]">No designs match these filters yet.</p>
         )}

@@ -15,7 +15,7 @@ const values = [
 ]
 
 export default function Home() {
-  const { products } = useAppContext()
+  const { products, productsStatus, fetchProductData } = useAppContext()
   const newProducts = products.filter((product) => product.isNew)
   const visibleProducts = newProducts.length ? newProducts : products
   const heroProduct = products[0]
@@ -60,6 +60,13 @@ export default function Home() {
         {visibleProducts.length ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-7 mt-8">
             {visibleProducts.slice(0, 4).map((product) => <ProductCard key={product._id} product={product} />)}
+          </div>
+        ) : productsStatus === 'loading' ? (
+          <div className="mt-8 rounded-xl bg-[#f8f3ef] py-12 text-center text-sm text-[#786963]" role="status">Loading designs…</div>
+        ) : productsStatus === 'error' ? (
+          <div className="mt-8 rounded-xl bg-[#f8f3ef] py-12 text-center text-sm text-[#786963]" role="alert">
+            <p>We couldn’t load the collection.</p>
+            <button type="button" onClick={fetchProductData} className="mt-3 underline underline-offset-4">Try again</button>
           </div>
         ) : (
           <div className="mt-8 rounded-xl bg-[#f8f3ef] py-12 text-center text-sm text-[#786963]">New designs are on the way. Check back soon.</div>

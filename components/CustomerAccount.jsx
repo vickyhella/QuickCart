@@ -35,7 +35,7 @@ function CustomerOrders({ page, onPageChange }) {
           <div><dt className="inline">Fulfillment: </dt><dd className="inline capitalize">{order.fulfillmentStatus}</dd></div>
         </dl>
         <ul className="mt-4 space-y-2 text-sm">{order.items.map((item, index) => <li key={index}>{item.title}{item.variant ? ` — ${item.variant}` : ''} × {item.quantity}</li>)}</ul>
-        {order.trackingNumber && <p className="mt-4 text-sm break-all">Tracking number: {order.trackingNumber}</p>}
+        {(order.trackingNumber || order.trackingUrl) && <p className="mt-4 text-sm break-all">{order.trackingNumber && <>Tracking number: {order.trackingNumber}</>}{order.trackingNumber && order.trackingUrl && ' · '}{order.trackingUrl && <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="underline">Track shipment</a>}</p>}
       </article>)}</div>
       {result.totalPages > 1 && <nav aria-label="Your orders pages" className="mt-6 flex items-center gap-5 text-sm">
         <button disabled={page <= 1} onClick={() => onPageChange(page - 1)} className="underline disabled:opacity-40">Previous</button>

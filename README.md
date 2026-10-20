@@ -59,7 +59,7 @@
 
 迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。当前不开放自助注册，也尚未配置密码重设邮件；登录问题可通过联系页面处理。当前 `.env.local` 数据库已导入备份内 1 个顾客和 10 笔订单，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
 
-订单复用原有字段，不保留旧站 ID、重复日期、付款方式原文、账单地址、客户保存地址或明细总额字段。订单号使用新站 `GN-…` 格式，日期使用 `createdAt`，商品和变体仅在准确匹配时关联；缺失商品保留名称 / 规格快照，`items.product` 允许为空。Customers 只保留登录资料及首次登录后清除的旧密码哈希。
+订单复用原有字段，不保留旧站 ID、重复日期、付款方式原文、账单地址、客户保存地址或明细总额字段。订单号使用新站 `GN-…` 格式，日期使用 `createdAt`，商品和变体仅在准确匹配时关联；缺失商品保留名称 / 规格快照，`items.product` 允许为空。Customers 只保留登录资料及首次登录后清除的旧密码哈希。订单付款确认和发货通知由 `collections/Orders.ts` 调用 `lib/order-email.js` 经 Resend 发送；在订单中填写物流单号和可选 Tracking URL 后，顾客可以在账户或订单查询页查看并点击追踪。需要配置 `RESEND_API_KEY` 和已验证发件地址 `ORDER_EMAIL_FROM`；具体步骤见[电商配置指南](./docs/commerce-setup.md)。
 
 导入命令默认只预览；只有 `--apply` 才写入当前 `.env.local`，不会触发付款、库存扣减或邮件。已执行 `20261020_132125_simplify_order_fields` 清理 migration；连接同一数据库时无需重跑。其他环境有旧版导入数据时，先按专项文档转换、部署精简后的兼容代码，再清理数据库字段。
 

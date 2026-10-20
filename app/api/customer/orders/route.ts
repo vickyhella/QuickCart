@@ -18,6 +18,7 @@ export async function GET(request: Request) {
     docs: result.docs.map((order) => ({
       orderNumber: order.orderNumber, createdAt: order.createdAt, currency: order.currency, total: order.total,
       paymentStatus: order.paymentStatus, fulfillmentStatus: order.fulfillmentStatus, trackingNumber: order.trackingNumber || '',
+      trackingUrl: /^https?:\/\//i.test(String(order.trackingUrl || '')) ? order.trackingUrl : '',
       items: (order.items || []).map(({ title, variant, quantity }) => ({ title, variant, quantity })),
     })),
     page: result.page, totalPages: result.totalPages, totalDocs: result.totalDocs,

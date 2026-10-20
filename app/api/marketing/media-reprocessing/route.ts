@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -9,7 +10,7 @@ export const runtime = 'nodejs'
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   const [media, settings] = await Promise.all([
     payload.find({ collection: 'media', limit: 10000, pagination: false, depth: 1, sort: 'createdAt', overrideAccess: true }),
     payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }),
@@ -21,7 +22,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   let body: { ids?: unknown; quality?: unknown }
   try { body = await request.json() } catch { return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 }) }
   const ids = Array.isArray(body.ids) ? [...new Set(body.ids.map(String))] : []

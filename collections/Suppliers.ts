@@ -1,3 +1,4 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 
 export const Suppliers: CollectionConfig = {
@@ -19,10 +20,10 @@ export const Suppliers: CollectionConfig = {
     },
   },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    read: ({ req }) => isAdminUser(req.user),
+    create: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
+    delete: ({ req }) => isAdminUser(req.user),
   },
   fields: [
     { name: 'name', type: 'text', label: 'Supplier', required: true, unique: true, admin: { components: { Cell: '/components/SupplierActionCell#SupplierNameCell' } } },

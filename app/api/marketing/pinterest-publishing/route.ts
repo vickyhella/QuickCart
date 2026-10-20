@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   const [products, settings] = await Promise.all([
     payload.find({ collection: 'products', where: { status: { equals: 'published' } }, limit: 500, pagination: false, sort: 'title', depth: 1, overrideAccess: true }),
     payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }),
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
   try {
     const body = await request.json()

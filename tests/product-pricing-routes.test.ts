@@ -9,6 +9,7 @@ import * as validation from '../lib/product-validation.js'
 import * as shipping from '../lib/shipping-tiers.js'
 import * as mergeVariants from '../lib/merge-product-variants.js'
 import * as variantAttributes from '../lib/product-variant-attributes.js'
+import * as adminAccess from '../lib/admin-access'
 
 // Exercise the real route handlers with isolated CMS and payment boundaries.
 function loadRoute(path: string, payload: any, extra: Record<string, unknown> = {}) {
@@ -31,6 +32,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/studio-description-template': { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE: '' },
     '@/lib/studio-product-media': { resolveStudioProductMedia: async () => ({ media: [], unavailableCount: 0 }) },
     '@/lib/environment-config': { getEnvironmentVariable: () => '' },
+    '@/lib/admin-access': adminAccess,
     '@/lib/resolve-product-media': { resolveProductMedia: async (_payload: unknown, products: unknown[]) => products },
     ...extra,
   }
@@ -91,7 +93,7 @@ test('real quote, saved order and PayPal amounts agree with legacy selling price
 test('Studio creates legacy fields for a sale or regular price and rejects reversed prices', async () => {
   let created: any
   const payload = {
-    auth: async () => ({ user: { id: 1 } }),
+    auth: async () => ({ user: { id: 1, collection: 'users' } }),
     findGlobal: async () => ({ dimensions: [] }),
     create: async ({ data }: any) => { created = data; return { id: 10 } },
   }
@@ -132,7 +134,7 @@ test('Studio read-save preserves variant IDs, SKUs, charges and inherited fields
   ] }
   let saved: any
   const payload = {
-    auth: async () => ({ user: { id: 1 } }),
+    auth: async () => ({ user: { id: 1, collection: 'users' } }),
     findGlobal: async () => ({ dimensions: [] }),
     findByID: async () => structuredClone(original),
     find: async () => ({ docs: [] }),
@@ -180,7 +182,7 @@ test('Studio edit resolves media relations whether Payload returns IDs or popula
     { id: 13, filename: 'variant.webp', mimeType: 'image/webp', url: 'https://cdn.example/variant.webp' },
   ]
   const payload = {
-    auth: async () => ({ user: { id: 1 } }),
+    auth: async () => ({ user: { id: 1, collection: 'users' } }),
     findGlobal: async () => ({ dimensions: [] }),
     findByID: async () => ({ id: 1, updatedAt: '2026-10-16', title: 'test1', status: 'draft', price: 20, featuredImage: 11, gallery: [12], variants: [{ length: 'short', shape: 'almond', size: 's', image: { id: 13 }, stock: 1, enabled: true }] }),
     find: async ({ collection }: any) => collection === 'media' ? { docs: media } : { docs: [] },
@@ -200,7 +202,7 @@ test('Studio can read and save a size-only Mystery Box', async () => {
   ] }
   let saved: any
   const payload = {
-    auth: async () => ({ user: { id: 1 } }),
+    auth: async () => ({ user: { id: 1, collection: 'users' } }),
     findGlobal: async () => ({ dimensions: [] }),
     findByID: async () => structuredClone(original),
     find: async () => ({ docs: [] }),

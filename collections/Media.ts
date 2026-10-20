@@ -1,11 +1,14 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 import { getPublishedProductMediaIDs } from '@/lib/public-product-media'
 
 export const Media: CollectionConfig = {
   slug: 'media',
   access: {
+    create: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
     read: async ({ req }) => {
-      if (req.user) return true
+      if (isAdminUser(req.user)) return true
       const { docs } = await req.payload.find({
         collection: 'products',
         where: { status: { equals: 'published' } },

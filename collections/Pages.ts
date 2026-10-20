@@ -1,13 +1,14 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
   access: {
     read: ({ req }) =>
-      req.user ? true : { status: { equals: 'published' } },
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+      isAdminUser(req.user) ? true : { status: { equals: 'published' } },
+    create: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
+    delete: ({ req }) => isAdminUser(req.user),
   },
   admin: {
     group: 'Website',

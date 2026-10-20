@@ -32,6 +32,7 @@ export const adminDashboardSections = [
     title: 'Store',
     links: [
       { label: 'Users', href: '/admin/collections/users', description: 'Manage administrator accounts and access.' },
+      { label: 'Customers', href: '/admin/collections/customers', description: 'Manage storefront customer accounts and migration references.' },
       { label: 'Contact forms', href: '/admin/collections/contact-messages', description: 'Review messages submitted through the storefront contact form.' },
     ],
   },

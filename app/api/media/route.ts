@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { REST_GET } from '@payloadcms/next/routes'
 import { getPayload } from 'payload'
 import { NextResponse } from 'next/server'
@@ -16,7 +17,7 @@ const applyTemplate = (template: string, values: Record<string, string>) =>
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ errors: [{ message: 'Authentication required.' }] }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ errors: [{ message: 'Authentication required.' }] }, { status: 401 })
 
   let originalID: string | number | undefined
   let stage = 'reading upload'

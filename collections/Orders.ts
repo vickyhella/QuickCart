@@ -1,12 +1,13 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
   access: {
-    read: ({ req }) => Boolean(req.user),
+    read: ({ req }) => isAdminUser(req.user),
     create: () => false,
-    update: ({ req }) => Boolean(req.user),
-    delete: ({ req }) => Boolean(req.user),
+    update: ({ req }) => isAdminUser(req.user),
+    delete: ({ req }) => isAdminUser(req.user),
   },
   admin: {
     group: 'Commerce',

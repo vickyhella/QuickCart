@@ -1,3 +1,4 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { GlobalConfig } from 'payload'
 import { defaultProductDimensionOptions } from '../lib/product-dimensions'
 
@@ -11,8 +12,8 @@ export const ProductDimensions: GlobalConfig = {
   label: 'Product dimensions',
   admin: { group: false },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
+    read: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
   },
   fields: [
     { name: 'lengths', type: 'array', defaultValue: [...defaultProductDimensionOptions.lengths], fields: optionFields },

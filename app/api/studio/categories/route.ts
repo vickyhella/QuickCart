@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { defaultProductDimensionOptions, variantEditorOptions } from '@/lib/product-dimensions'
@@ -88,7 +89,7 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return responseError('Authentication required.', 401)
+  if (!isAdminUser(user)) return responseError('Authentication required.', 401)
   try {
     const snapshot = await getSnapshot(payload, user)
     if (new URL(request.url).searchParams.get('optionsOnly') === 'true') {
@@ -106,7 +107,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return responseError('Authentication required.', 401)
+  if (!isAdminUser(user)) return responseError('Authentication required.', 401)
   try {
     const body = await request.json() as Record<string, unknown>
     const action = String(body.action || '')

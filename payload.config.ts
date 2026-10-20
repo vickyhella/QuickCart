@@ -5,6 +5,7 @@ import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { s3Storage } from '@payloadcms/storage-s3'
 import { buildConfig } from 'payload'
+import { restrictDocumentLocksToAdmins } from './lib/admin-access'
 import sharp from 'sharp'
 import { Media } from './collections/Media'
 import { MediaOriginals } from './collections/MediaOriginals'
@@ -17,6 +18,7 @@ import { Products } from './collections/Products'
 import { Suppliers } from './collections/Suppliers'
 import { PinterestPosts } from './collections/PinterestPosts'
 import { Users } from './collections/Users'
+import { Customers } from './collections/Customers'
 import { StoreSettings } from './globals/StoreSettings'
 import { MarketingSettings } from './globals/MarketingSettings'
 import { ProductDimensions } from './globals/ProductDimensions'
@@ -61,7 +63,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, ContactMessages, Products, Suppliers, Media, MediaOriginals, MarketingWorkspace, Pages, Orders, Discounts, PinterestPosts],
+  collections: [Users, Customers, ContactMessages, Products, Suppliers, Media, MediaOriginals, MarketingWorkspace, Pages, Orders, Discounts, PinterestPosts],
   globals: [StoreSettings, MarketingSettings, ProductDimensions],
   plugins: [
     s3Storage({
@@ -100,4 +102,4 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(path.dirname(filename), 'payload-types.ts'),
   },
-})
+}).then(restrictDocumentLocksToAdmins)

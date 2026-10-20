@@ -1,3 +1,4 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { GlobalConfig } from 'payload'
 import { shippingCountries } from '../lib/countries'
 import { productTemplateRefreshFields } from '../lib/product-template-sync'
@@ -7,8 +8,8 @@ export const MarketingSettings: GlobalConfig = {
   label: 'Marketing settings',
   admin: { group: false },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
+    read: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
   },
   hooks: {
     afterChange: [async ({ doc, previousDoc, req }) => {

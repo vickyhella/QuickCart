@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { mergeProductVariants } from '@/lib/merge-product-variants'
@@ -17,7 +18,7 @@ const sizesAllowed = ['xs', 's', 'm', 'l']
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return error('Authentication required.', 401)
+  if (!isAdminUser(user)) return error('Authentication required.', 401)
   try {
     const { id } = await context.params
     const product: any = await payload.findByID({ collection: 'products', id, depth: 1, overrideAccess: false, user })
@@ -54,7 +55,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return error('Authentication required.', 401)
+  if (!isAdminUser(user)) return error('Authentication required.', 401)
   const { id } = await context.params
   let body: any
   try { body = await request.json() } catch { return error('Invalid request body.') }

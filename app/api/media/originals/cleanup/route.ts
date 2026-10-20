@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { getOriginalUsage } from '@/lib/original-media-cleanup'
@@ -15,7 +16,7 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>) {
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return Response.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return Response.json({ error: 'Authentication required.' }, { status: 401 })
   try {
     const { usage } = await getSnapshot(payload)
     return Response.json({ total: usage.length, unreferenced: usage.filter((item) => !item.referenced).length, referenced: usage.filter((item) => item.referenced) })
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return Response.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return Response.json({ error: 'Authentication required.' }, { status: 401 })
   const body = await request.json().catch(() => ({}))
   const includeReferenced = body.includeReferenced === true
 

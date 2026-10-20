@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 
@@ -7,7 +8,7 @@ const errorResponse = (message: string, status = 400) => Response.json({ error: 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return errorResponse('Authentication required.', 401)
+  if (!isAdminUser(user)) return errorResponse('Authentication required.', 401)
 
   try {
     const { id } = await context.params
@@ -43,7 +44,7 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return errorResponse('Authentication required.', 401)
+  if (!isAdminUser(user)) return errorResponse('Authentication required.', 401)
 
   let body: any
   try { body = await request.json() } catch { return errorResponse('Invalid request body.') }

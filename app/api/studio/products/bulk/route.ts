@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { storedProductPublishError } from '@/lib/product-validation'
@@ -7,7 +8,7 @@ import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return Response.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return Response.json({ error: 'Authentication required.' }, { status: 401 })
   let body: any
   try { body = await request.json() } catch { return Response.json({ error: 'Invalid request body.' }, { status: 400 }) }
   const items = Array.isArray(body.items) ? body.items : []

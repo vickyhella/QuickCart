@@ -1,9 +1,15 @@
 import type { CollectionConfig } from 'payload'
+import { isAdminUser } from '../lib/admin-access'
 
 /** Untouched source uploads retained for future WebP reprocessing. */
 export const MediaOriginals: CollectionConfig = {
   slug: 'media-originals',
-  access: { delete: () => false },
+  access: {
+    create: ({ req }) => isAdminUser(req.user),
+    read: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
+    delete: () => false,
+  },
   admin: {
     group: false,
     useAsTitle: 'filename',

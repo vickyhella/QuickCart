@@ -50,6 +50,14 @@
 | `docs/` | 产品要求、配置说明、上线验收和已知风险；从 [文档索引](./docs/README.md) 开始。 |
 | `AGENTS.md` | 项目开发约定，包括架构边界、测试和文档更新规则。 |
 
+## 顾客登录与迁移
+
+导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。
+
+迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。当前不开放自助注册，也尚未配置密码重设邮件；登录问题可通过联系页面处理。备份中的顾客与订单尚未导入，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
+
+**本次上线顺序：测试库验证 → Production 运行 `20261020_120000_add_customers` migration → 部署代码。** 这是新增顾客表和关联列，旧代码可以继续运行；migration 不会导入旧站数据，也不会改动现有商品、订单、库存或管理员账户。回退代码时保留顾客数据。
+
 ### Payload schema 变更
 
 新增或修改 collection / global 字段时：

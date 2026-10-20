@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { toEditorPriceFields } from '@/lib/product-pricing'
@@ -5,7 +6,7 @@ import { toEditorPriceFields } from '@/lib/product-pricing'
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return Response.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return Response.json({ error: 'Authentication required.' }, { status: 401 })
   const { id } = await context.params
   try {
     const product: any = await payload.findByID({ collection: 'products', id, depth: 0, overrideAccess: false, user })

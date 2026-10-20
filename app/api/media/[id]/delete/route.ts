@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -8,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
   try {
     const { id } = await context.params

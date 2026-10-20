@@ -1,3 +1,4 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 import { hideSupplierDetails } from '@/lib/product-privacy'
 import { storedProductPublishError } from '@/lib/product-validation'
@@ -112,7 +113,7 @@ export const Products: CollectionConfig = {
     }],
     afterRead: [
       ({ doc, req }) => {
-        if (!req.user && doc) return hideSupplierDetails(doc as any)
+        if (!isAdminUser(req.user) && doc) return hideSupplierDetails(doc as any)
         return doc
       },
     ],
@@ -217,9 +218,9 @@ export const Products: CollectionConfig = {
     ],
   },
   access: {
-    read: ({ req }) => (req.user ? true : { status: { equals: 'published' } }),
-    create: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
+    read: ({ req }) => (isAdminUser(req.user) ? true : { status: { equals: 'published' } }),
+    create: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
     // Product deletion is available only through the guarded admin control/API.
     delete: () => false,
   },

@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { productPublishError } from '@/lib/product-validation'
@@ -13,7 +14,7 @@ function jsonError(message: string, status: number) {
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return jsonError('Authentication required.', 401)
+  if (!isAdminUser(user)) return jsonError('Authentication required.', 401)
 
   const params = new URL(request.url).searchParams
   const page = Math.max(1, Number(params.get('page')) || 1)
@@ -71,7 +72,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return jsonError('Authentication required.', 401)
+  if (!isAdminUser(user)) return jsonError('Authentication required.', 401)
 
   let body: Record<string, unknown>
   try {

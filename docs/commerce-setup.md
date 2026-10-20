@@ -28,4 +28,6 @@ Products Payload 列表可多选文档并批量编辑共同字段；Product Stud
 
 ## 订单与折扣
 
+顾客可从导航栏人像图标进入 `/account` 登录、查看本人订单；账户在 **Admin → Store → Customers** 管理，管理员仍使用 Users。旧站顾客与历史订单尚未导入，密码兼容及发布顺序见[顾客与订单迁移](./customer-order-migration.md)。
+
 Paid 和 Pending 订单保存在 **Admin → Orders**。PayPal 确认后更新付款状态；履约状态和物流追踪号可在订单中维护。顾客可通过订单号和结账邮箱进入 **Order status** 查看付款 / 履约状态及物流追踪号。折扣码在 **Admin → Discounts** 创建；Checkout 在服务端重新计算折扣，PayPal 确认付款后才增加使用次数。

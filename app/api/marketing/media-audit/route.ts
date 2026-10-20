@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { access } from 'node:fs/promises'
 import path from 'node:path'
 import { NextResponse } from 'next/server'
@@ -33,7 +34,7 @@ async function imageExists(image: any): Promise<boolean | null> {
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
   const result = await payload.find({ collection: 'products', limit: 5000, pagination: false, depth: 1, sort: 'title', overrideAccess: true })
   const issues: Array<{ id: string; title: string; slug: string; slot: string; reason: string }> = []

@@ -68,7 +68,7 @@ const Navbar = () => {
             <nav className="relative z-40 flex items-center justify-between gap-5 border-b border-[#eadfdb] bg-[#fffdfa]/95 px-4 py-4 text-[#302522] shadow-[0_5px_30px_rgba(48,27,38,.04)] backdrop-blur sm:px-5 md:px-12 lg:px-16">
                 <Link
                     href="/"
-                    className="shrink-0 font-serif text-[1.65rem] tracking-[.06em]"
+                    className="shrink-0 font-serif text-[1.65rem] max-[360px]:text-[1.4rem] tracking-[.06em]"
                 >
                     Ginny <span className="italic text-[#985c70]">Nana</span>
                 </Link>
@@ -124,14 +124,17 @@ const Navbar = () => {
                         On Sale
                     </Link>
                 </div>
-                <div className="ml-auto flex items-center gap-3 text-sm">
+                <div className="ml-auto flex items-center gap-1 sm:gap-3 text-sm">
+                    <Link href="/account" aria-label="Customer account" title="Your account" className="rounded-full p-2 hover:text-[#985c70]">
+                        <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="12" cy="8" r="4" /><path d="M4 21v-2a8 8 0 0 1 16 0v2" /></svg>
+                    </Link>
                     <button type="button" aria-expanded={searchOpen} aria-controls="site-search" aria-label="Search products" onClick={() => setSearchOpen(!searchOpen)} className="rounded-full p-2 hover:text-[#985c70]">
                         <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 5 5" /></svg>
                     </button>
                     {process.env.NODE_ENV === "development" && (
                         <Link
                             href="/admin"
-                            className="hidden xl:inline border border-[#d8c9c1] rounded-full px-4 py-2 hover:bg-[#f8f3ef]"
+                            className="hidden 2xl:inline border border-[#d8c9c1] rounded-full px-4 py-2 hover:bg-[#f8f3ef]"
                         >
                             Manage products
                         </Link>

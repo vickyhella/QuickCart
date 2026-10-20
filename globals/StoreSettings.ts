@@ -1,3 +1,4 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { GlobalConfig } from 'payload'
 import { shippingCountries } from '../lib/countries'
 
@@ -6,8 +7,8 @@ export const StoreSettings: GlobalConfig = {
   label: 'Store settings',
   admin: { group: 'Commerce' },
   access: {
-    read: ({ req }) => Boolean(req.user),
-    update: ({ req }) => Boolean(req.user),
+    read: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user),
   },
   hooks: {
     afterRead: [async ({ doc, req }) => {

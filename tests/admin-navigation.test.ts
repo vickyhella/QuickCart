@@ -22,7 +22,7 @@ test('admin dashboard groups and shortcuts follow the unified sidebar order', ()
   )
   assert.deepEqual(
     adminDashboardSections.map(({ links }) => links.map(({ label }) => label)),
-    [['Product Studio', 'Marketing Studio'], ['Users', 'Contact forms'], ['Media'], ['Pages'], ['Orders', 'Discounts', 'Store settings']],
+    [['Product Studio', 'Marketing Studio'], ['Users', 'Customers', 'Contact forms'], ['Media'], ['Pages'], ['Orders', 'Discounts', 'Store settings']],
   )
   assert.deepEqual(
     studioLinks.map(({ href }) => href),

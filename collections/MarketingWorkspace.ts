@@ -1,10 +1,11 @@
+import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 
 export const MarketingWorkspace: CollectionConfig = {
   slug: 'marketing',
   labels: { singular: 'Marketing workspace', plural: 'Marketing workspace' },
   access: {
-    read: ({ req }) => Boolean(req.user),
+    read: ({ req }) => isAdminUser(req.user),
     create: () => false,
     update: () => false,
     delete: () => false,

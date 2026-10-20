@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -11,7 +12,7 @@ export async function DELETE(
 ) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user)
+  if (!isAdminUser(user))
     return NextResponse.json(
       { error: 'Authentication required.' },
       { status: 401 },

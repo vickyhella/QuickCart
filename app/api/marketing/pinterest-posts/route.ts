@@ -1,3 +1,4 @@
+import { isAdminUser } from '@/lib/admin-access'
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
@@ -7,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
   const posts = await payload.find({
     collection: 'pinterest-posts',
@@ -34,7 +35,7 @@ export async function GET(request: Request) {
 export async function PATCH(request: Request) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: request.headers })
-  if (!user) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
+  if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
   try {
     const body = await request.json()

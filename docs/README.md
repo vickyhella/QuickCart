@@ -13,10 +13,10 @@
 
 | 文档 | 用途 | 当前状态 |
 | --- | --- | --- |
-| [PRD](./prd.md) | 产品行为和架构的长期依据，首页维护唯一的未完成事项清单 | 规格文档；顶部待办包括通用变体链路、Instagram 能力决策、剩余商品迁移、供应商删除规则及上线核验 |
+| [PRD](./prd.md) | 产品行为和架构的长期依据，首页维护唯一的未完成事项清单 | 规格文档；顶部待办包括通用变体链路、Instagram 能力决策、剩余商品迁移、供应商删除规则、Netlify 域名与 HTTPS，以及 PayPal Live 收款上线核验 |
 | [电商上线检查清单](./ecommerce-readiness-checklist.md) | 生产前人工走查与运营验收 | 多数功能已有代码；端到端验收、外部账号配置和运营决策仍需逐项记录 |
 | [Commerce 配置指南](./commerce-setup.md) | 配置支付、配送、商品、Feed、订单和折扣 | 操作说明；PayPal 变量和 Card Fields 的细节以专项文档为准 |
-| [PayPal 高级银行卡收款](./paypal-advanced-checkout.md) | Card Fields 部署配置、支付流程、联调测试和风险 | 代码路径已实现；Sandbox/Live 联调待凭证和账号条件；订单、优惠次数与库存尚非原子事务，正式收款前须处理 |
+| [PayPal 高级银行卡收款](./paypal-advanced-checkout.md) | Card Fields 部署配置、支付流程、联调测试和风险 | 代码路径已实现；Live 凭证、商户资格和端到端验收待完成；订单、优惠次数与库存尚非原子事务，正式收款前须处理 |
 
 ## 标记说明
 

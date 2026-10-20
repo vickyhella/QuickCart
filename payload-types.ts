@@ -200,6 +200,26 @@ export interface Customer {
   id: number;
   fullName?: string | null;
   legacyWordpressID?: string | null;
+  billingAddress?: {
+    company?: string | null;
+    address1?: string | null;
+    address2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
+    phone?: string | null;
+  };
+  shippingAddress?: {
+    company?: string | null;
+    address1?: string | null;
+    address2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
+    phone?: string | null;
+  };
   legacyPasswordHash?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -477,18 +497,37 @@ export interface Page {
 export interface Order {
   id: number;
   orderNumber: string;
+  legacyWooCommerceID?: string | null;
+  legacyWooCommerceDate?: string | null;
+  customer?: (number | null) | Customer;
   customerEmail: string;
+  legacyPaymentMethod?: string | null;
+  legacyPaymentMethodTitle?: string | null;
   currency: string;
   items: {
-    product: number | Product;
+    product?: (number | null) | Product;
+    legacyProductID?: string | null;
     title: string;
     sku?: string | null;
     variant?: string | null;
     variantId?: string | null;
     quantity: number;
     unitPrice: number;
+    lineSubtotal?: number | null;
+    lineTotal?: number | null;
     id?: string | null;
   }[];
+  billingAddress?: {
+    fullName?: string | null;
+    company?: string | null;
+    phone?: string | null;
+    address1?: string | null;
+    address2?: string | null;
+    city?: string | null;
+    state?: string | null;
+    postalCode?: string | null;
+    country?: string | null;
+  };
   shippingAddress: {
     fullName: string;
     phone?: string | null;
@@ -507,7 +546,7 @@ export interface Order {
   promoCode?: string | null;
   paymentProvider?: ('stripe' | 'paypal') | null;
   paymentReference?: string | null;
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | 'cancelled';
   fulfillmentStatus: 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   trackingNumber?: string | null;
   customerNote?: string | null;
@@ -722,6 +761,30 @@ export interface UsersSelect<T extends boolean = true> {
 export interface CustomersSelect<T extends boolean = true> {
   fullName?: T;
   legacyWordpressID?: T;
+  billingAddress?:
+    | T
+    | {
+        company?: T;
+        address1?: T;
+        address2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
+        phone?: T;
+      };
+  shippingAddress?:
+    | T
+    | {
+        company?: T;
+        address1?: T;
+        address2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
+        phone?: T;
+      };
   legacyPasswordHash?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -901,19 +964,40 @@ export interface PagesSelect<T extends boolean = true> {
  */
 export interface OrdersSelect<T extends boolean = true> {
   orderNumber?: T;
+  legacyWooCommerceID?: T;
+  legacyWooCommerceDate?: T;
+  customer?: T;
   customerEmail?: T;
+  legacyPaymentMethod?: T;
+  legacyPaymentMethodTitle?: T;
   currency?: T;
   items?:
     | T
     | {
         product?: T;
+        legacyProductID?: T;
         title?: T;
         sku?: T;
         variant?: T;
         variantId?: T;
         quantity?: T;
         unitPrice?: T;
+        lineSubtotal?: T;
+        lineTotal?: T;
         id?: T;
+      };
+  billingAddress?:
+    | T
+    | {
+        fullName?: T;
+        company?: T;
+        phone?: T;
+        address1?: T;
+        address2?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
       };
   shippingAddress?:
     | T

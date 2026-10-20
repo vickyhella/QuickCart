@@ -25,6 +25,9 @@
 | `npm run lint` | ESLint 检查 |
 | `npm run test` | 运行 `tests/` 下的测试 |
 | `npm run migrate` | 对当前环境配置的数据库应用 Payload migrations；运行前先确认目标环境 |
+| `npm run migrate:woocommerce-data -- --source-only <备份.wpress>` | 只读盘点 WooCommerce 备份中的顾客和订单，不连接数据库 |
+| `npm run migrate:woocommerce-data -- <备份.wpress>` | 对当前 `.env.local` 数据库做导入预览，不写入 |
+| `npm run migrate:woocommerce-data -- --apply <备份.wpress>` | 将预览确认的数据通过 Payload API 导入当前 `.env.local` 数据库；可重复运行 |
 
 ## 目录与关键文件
 
@@ -56,7 +59,7 @@
 
 迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。当前不开放自助注册，也尚未配置密码重设邮件；登录问题可通过联系页面处理。备份中的顾客与订单尚未导入，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
 
-**本次上线顺序：测试库验证 → Production 运行 `20261020_120000_add_customers` migration → 部署代码。** 这是新增顾客表和关联列，旧代码可以继续运行；migration 不会导入旧站数据，也不会改动现有商品、订单、库存或管理员账户。回退代码时保留顾客数据。
+顾客和历史订单迁移的脚本、字段规则和本次执行结果见[顾客与订单迁移](./docs/customer-order-migration.md)。WooCommerce 数据导入命令默认只预览；只有加 `--apply` 才会写入，并且目标是当前 `.env.local`。脚本按旧站 ID 和订单号去重，不会触发付款、库存扣减或邮件。数据库结构已通过 `20261020_122640_add_woocommerce_customer_order_history_fields` 增量 migration 扩展。
 
 ### Payload schema 变更
 

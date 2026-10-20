@@ -25,6 +25,8 @@
 | `npm run lint` | ESLint 检查 |
 | `npm run test` | 运行 `tests/` 下的测试 |
 | `npm run migrate` | 对当前环境配置的数据库应用 Payload migrations；运行前先确认目标环境 |
+| `npm run migrate:preview -- status` / `-- apply` | 使用 `.env.netlify-dev` 检查 / 执行 dev 数据库 migration；省略参数只检查 |
+| `npm run migrate:production -- status` / `-- apply` | 使用专用 `.env.netlify-production` 检查 / 执行正式库 migration；文件缺失会停止，不会回退到 `.env.local` |
 | `npm run migrate:woocommerce-data -- --source-only <备份.wpress>` | 只读盘点 WooCommerce 备份中的顾客和订单，不连接数据库 |
 | `npm run migrate:woocommerce-data -- <备份.wpress>` | 对当前 `.env.local` 数据库做导入预览，不写入 |
 | `npm run migrate:woocommerce-data -- --apply <备份.wpress>` | 将预览确认的数据通过 Payload API 导入当前 `.env.local` 数据库；可重复运行 |
@@ -75,6 +77,8 @@
 
 只新增或编辑商品内容不需要数据库 migration。Payload Admin 的自定义组件若新增或改名，也要更新生成的 `importMap.js`。
 
+本地开发库可以使用自动 schema push；已部署的 dev Preview 和 Production 使用正式 migration，同一数据库不混用两种方式。dev 只放测试数据，不导入正式客户或订单。`payload.config.ts` 明确只允许 development 自动 push。
+
 ## 生产数据库迁移与部署顺序
 
 部署顺序取决于代码和数据库是否兼容；**每次有 schema migration 时，先在目标环境检查 migration 状态**。
@@ -85,19 +89,23 @@
 
 判断两个问题：迁移前新代码能否运行？迁移后旧代码能否运行？不确定时先查对应 PRD 和 migration，不能兼容就分阶段发布。
 
-查看 Production migration 状态：
+同一份 migration 文件只生成一次，随代码提交；先在 dev 执行并测试，再在 Production 执行。合并 Git 分支不会自动修改数据库。本次待上线的两项是订单 Tracking URL（`20261020_150000`）和允许变体 Length / Shape 为空（`20261020_170400`）；后者补齐现有仅尺码商品规则的数据库约束，不改已有规格、SKU 或库存。
+
+查看 dev 状态并执行：
 
 ```bash
-npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npx payload migrate:status
+npm run migrate:preview -- status
+npm run migrate:preview -- apply
 ```
 
-确认新增 migration 尚未运行，且部署方案要求先迁移后，应用到 Production：
+Production 先把 **Netlify Production 的实际变量**写入被 Git 忽略的 `.env.netlify-production`（使用无后缀键名，见 `.env.example`），确认目标、备份和待执行 migration 后：
 
 ```bash
-npx vercel@latest env run -e production -- env NODE_ENV=production VERCEL_ENV=production npm run migrate
+npm run migrate:production -- status
+npm run migrate:production -- apply
 ```
 
-若状态显示所有 migration 都已运行，就不需要重跑。单独运行 `npm run migrate` 使用当前本地环境变量，**不要用它代替 Production 迁移命令**。不要仅凭开发环境 schema push 提示判断生产库状态。
+两个新命令会显示环境和数据库主机，强制使用迁移模式；缺少专用文件或必要变量就停止。遇到历史 schema push / 数据丢失提示时不要直接确认，要先核对结构和迁移记录。dev 的一次性基线整理、验证范围及 Production 尚未执行的步骤见 [数据库迁移说明](./docs/database-migrations.md)。单独运行 `npm run migrate` 仍会读取当前本地配置，不建议用于环境切换。
 
 ## 修改代码时
 

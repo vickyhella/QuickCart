@@ -30,6 +30,7 @@ assertRuntimeEnvironmentConfigured()
 const databaseURL = getEnvironmentVariable('DATABASE_URL')
 const databaseAdapter = databaseURL
   ? postgresAdapter({
+      push: runtimeEnvironment === 'development',
       pool: {
         connectionString: databaseURL,
       },

@@ -8,6 +8,8 @@
     "build": "next build --webpack",
     "start": "next start",
     "migrate": "payload migrate",
+    "migrate:preview": "node --import tsx/esm scripts/migrate-database.mts preview",
+    "migrate:production": "node --import tsx/esm scripts/migrate-database.mts production",
     "migrate:woocommerce-data": "node --import tsx/esm scripts/migrate-woocommerce-customers-orders.mts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

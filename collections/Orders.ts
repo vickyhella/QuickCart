@@ -17,12 +17,7 @@ export const Orders: CollectionConfig = {
   },
   fields: [
     { name: 'orderNumber', type: 'text', required: true, unique: true, index: true },
-    { name: 'legacyWooCommerceID', type: 'text', unique: true, index: true, admin: { readOnly: true } },
-    { name: 'legacyWooCommerceDate', type: 'date', index: true },
-    { name: 'customer', type: 'relationship', relationTo: 'customers', index: true },
     { name: 'customerEmail', type: 'email', required: true },
-    { name: 'legacyPaymentMethod', type: 'text', admin: { readOnly: true } },
-    { name: 'legacyPaymentMethodTitle', type: 'text', admin: { readOnly: true } },
     { name: 'currency', type: 'text', required: true, defaultValue: 'USD' },
     {
       name: 'items',
@@ -30,30 +25,12 @@ export const Orders: CollectionConfig = {
       required: true,
       fields: [
         { name: 'product', type: 'relationship', relationTo: 'products' },
-        { name: 'legacyProductID', type: 'text', admin: { readOnly: true } },
         { name: 'title', type: 'text', required: true },
         { name: 'sku', type: 'text' },
         { name: 'variant', type: 'text' },
         { name: 'variantId', type: 'text' },
         { name: 'quantity', type: 'number', required: true, min: 1 },
         { name: 'unitPrice', type: 'number', required: true, min: 0 },
-        { name: 'lineSubtotal', type: 'number', min: 0 },
-        { name: 'lineTotal', type: 'number', min: 0 },
-      ],
-    },
-    {
-      name: 'billingAddress',
-      type: 'group',
-      fields: [
-        { name: 'fullName', type: 'text' },
-        { name: 'company', type: 'text' },
-        { name: 'phone', type: 'text' },
-        { name: 'address1', type: 'text' },
-        { name: 'address2', type: 'text' },
-        { name: 'city', type: 'text' },
-        { name: 'state', type: 'text' },
-        { name: 'postalCode', type: 'text' },
-        { name: 'country', type: 'text' },
       ],
     },
     {
@@ -95,7 +72,6 @@ export const Orders: CollectionConfig = {
         { label: 'Paid', value: 'paid' },
         { label: 'Failed', value: 'failed' },
         { label: 'Refunded', value: 'refunded' },
-        { label: 'Cancelled', value: 'cancelled' },
       ],
     },
     {

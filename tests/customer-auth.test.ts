@@ -65,7 +65,7 @@ test('isolated Payload customer login, legacy upgrade, sessions, orders and admi
     }).then(restrictDocumentLocksToAdmins) })
     const nativePassword = 'Native-Customer-Only-123'
     const customer = await payload.create({ collection: 'customers', data: { email: 'customer@example.test', fullName: 'Test Customer', password: nativePassword }, overrideAccess: true })
-    const legacy = await payload.create({ collection: 'customers', data: { email: 'legacy@example.test', password: randomBytes(32).toString('hex'), legacyPasswordHash: legacyHash, legacyWordpressID: '123' }, overrideAccess: true })
+    const legacy = await payload.create({ collection: 'customers', data: { email: 'legacy@example.test', password: randomBytes(32).toString('hex'), legacyPasswordHash: legacyHash }, overrideAccess: true })
     const admin = await payload.create({ collection: 'users', data: { email: 'admin@example.test', password: nativePassword }, overrideAccess: true })
     const session = loadRoute('app/api/customer/session/route.ts', payload)
     const login = (email: string, password: string) => session.POST(request('POST', { email, password }))

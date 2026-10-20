@@ -11,6 +11,7 @@ import * as migration_20261017_190000_add_supplier_linked_products_count from '.
 import * as migration_20261017_210000_add_product_dimensions from './20261017_210000_add_product_dimensions';
 import * as migration_20261020_120000_add_customers from './20261020_120000_add_customers';
 import * as migration_20261020_122640_add_woocommerce_customer_order_history_fields from './20261020_122640_add_woocommerce_customer_order_history_fields';
+import * as migration_20261020_132125_simplify_order_fields from './20261020_132125_simplify_order_fields';
 
 export const migrations = [
   {
@@ -77,5 +78,10 @@ export const migrations = [
     up: migration_20261020_122640_add_woocommerce_customer_order_history_fields.up,
     down: migration_20261020_122640_add_woocommerce_customer_order_history_fields.down,
     name: '20261020_122640_add_woocommerce_customer_order_history_fields',
+  },
+  {
+    up: migration_20261020_132125_simplify_order_fields.up,
+    down: migration_20261020_132125_simplify_order_fields.down,
+    name: '20261020_132125_simplify_order_fields'
   },
 ];

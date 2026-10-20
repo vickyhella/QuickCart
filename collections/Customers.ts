@@ -16,7 +16,7 @@ export const Customers: CollectionConfig = {
   admin: {
     group: 'Store',
     useAsTitle: 'email',
-    defaultColumns: ['email', 'fullName', 'legacyWordpressID', 'createdAt'],
+    defaultColumns: ['email', 'fullName', 'createdAt'],
     description: 'Storefront customers. Administrator accounts are managed separately in Users.',
   },
   access: {
@@ -40,35 +40,6 @@ export const Customers: CollectionConfig = {
   },
   fields: [
     { name: 'fullName', type: 'text' },
-    { name: 'legacyWordpressID', type: 'text', label: 'Legacy WordPress ID', unique: true, index: true, admin: { readOnly: true } },
-    {
-      name: 'billingAddress',
-      type: 'group',
-      fields: [
-        { name: 'company', type: 'text' },
-        { name: 'address1', type: 'text' },
-        { name: 'address2', type: 'text' },
-        { name: 'city', type: 'text' },
-        { name: 'state', type: 'text' },
-        { name: 'postalCode', type: 'text' },
-        { name: 'country', type: 'text' },
-        { name: 'phone', type: 'text' },
-      ],
-    },
-    {
-      name: 'shippingAddress',
-      type: 'group',
-      fields: [
-        { name: 'company', type: 'text' },
-        { name: 'address1', type: 'text' },
-        { name: 'address2', type: 'text' },
-        { name: 'city', type: 'text' },
-        { name: 'state', type: 'text' },
-        { name: 'postalCode', type: 'text' },
-        { name: 'country', type: 'text' },
-        { name: 'phone', type: 'text' },
-      ],
-    },
     {
       name: 'legacyPasswordHash', type: 'text', hidden: true,
       access: { read: () => false, create: () => false, update: () => false },

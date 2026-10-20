@@ -57,9 +57,11 @@
 
 导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。
 
-迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。当前不开放自助注册，也尚未配置密码重设邮件；登录问题可通过联系页面处理。备份中的顾客与订单尚未导入，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
+迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。当前不开放自助注册，也尚未配置密码重设邮件；登录问题可通过联系页面处理。当前 `.env.local` 数据库已导入备份内 1 个顾客和 10 笔订单，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
 
-顾客和历史订单迁移的脚本、字段规则和本次执行结果见[顾客与订单迁移](./docs/customer-order-migration.md)。WooCommerce 数据导入命令默认只预览；只有加 `--apply` 才会写入，并且目标是当前 `.env.local`。脚本按旧站 ID 和订单号去重，不会触发付款、库存扣减或邮件。数据库结构已通过 `20261020_122640_add_woocommerce_customer_order_history_fields` 增量 migration 扩展。
+订单复用原有字段，不保留旧站 ID、重复日期、付款方式原文、账单地址、客户保存地址或明细总额字段。订单号使用新站 `GN-…` 格式，日期使用 `createdAt`，商品和变体仅在准确匹配时关联；缺失商品保留名称 / 规格快照，`items.product` 允许为空。Customers 只保留登录资料及首次登录后清除的旧密码哈希。
+
+导入命令默认只预览；只有 `--apply` 才写入当前 `.env.local`，不会触发付款、库存扣减或邮件。已执行 `20261020_132125_simplify_order_fields` 清理 migration；连接同一数据库时无需重跑。其他环境有旧版导入数据时，先按专项文档转换、部署精简后的兼容代码，再清理数据库字段。
 
 ### Payload schema 变更
 

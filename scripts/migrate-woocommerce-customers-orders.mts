@@ -1,13 +1,14 @@
 import { open, stat } from 'node:fs/promises'
-import { randomBytes } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import nextEnv from '@next/env'
 import type { Payload } from 'payload'
 
 const HEADER_BYTES = 4377
 const TABLE_SUFFIXES = [
   'users', 'usermeta', 'wc_orders', 'wc_order_addresses', 'wc_orders_meta',
-  'woocommerce_order_items', 'woocommerce_order_itemmeta', 'postmeta',
+  'woocommerce_order_items', 'woocommerce_order_itemmeta',
 ]
 
 type Row = Record<string, string | null>
@@ -19,7 +20,6 @@ type ArchiveData = {
   orderMeta: Row[]
   items: Row[]
   itemMeta: Row[]
-  postMeta: Row[]
 }
 
 function tableSuffix(table: string) {
@@ -142,11 +142,11 @@ async function parseArchive(archivePath: string): Promise<ArchiveData> {
     definitions.set(match[1], [...match[2].matchAll(/^\s*`([^`]+)`\s+/gm)].map((column) => column[1]))
   }
 
-  const data: ArchiveData = { customers: [], usermeta: [], orders: [], addresses: [], orderMeta: [], items: [], itemMeta: [], postMeta: [] }
+  const data: ArchiveData = { customers: [], usermeta: [], orders: [], addresses: [], orderMeta: [], items: [], itemMeta: [] }
   const target = new Map<string, keyof ArchiveData>([
     ['users', 'customers'], ['usermeta', 'usermeta'], ['wc_orders', 'orders'],
     ['wc_order_addresses', 'addresses'], ['wc_orders_meta', 'orderMeta'],
-    ['woocommerce_order_items', 'items'], ['woocommerce_order_itemmeta', 'itemMeta'], ['postmeta', 'postMeta'],
+    ['woocommerce_order_items', 'items'], ['woocommerce_order_itemmeta', 'itemMeta'],
   ])
   const insertPattern = /INSERT INTO `([^`]+)`(?:\s*\(([^)]*)\))?\s*VALUES\s*/gi
   for (const match of sql.matchAll(insertPattern)) {
@@ -186,25 +186,11 @@ function amount(input: string | null | undefined) {
   return Number.isFinite(parsed) ? parsed : 0
 }
 
-function customerAddress(meta: Map<string, string>, prefix: 'billing' | 'shipping') {
-  const address = {
-    address1: meta.get(`${prefix}_address_1`) || undefined,
-    address2: meta.get(`${prefix}_address_2`) || undefined,
-    city: meta.get(`${prefix}_city`) || undefined,
-    state: meta.get(`${prefix}_state`) || undefined,
-    postalCode: meta.get(`${prefix}_postcode`) || undefined,
-    country: meta.get(`${prefix}_country`) || undefined,
-    phone: prefix === 'billing' ? meta.get('billing_phone') || undefined : undefined,
-  }
-  return Object.values(address).some(Boolean) ? address : undefined
-}
-
 function orderAddress(row: Row | undefined) {
   if (!row) return undefined
   const fullName = [value(row, 'first_name'), value(row, 'last_name')].filter(Boolean).join(' ').trim()
   return {
     ...(fullName ? { fullName } : {}),
-    ...(value(row, 'company') ? { company: value(row, 'company') } : {}),
     ...(value(row, 'phone') ? { phone: value(row, 'phone') } : {}),
     ...(value(row, 'address_1') ? { address1: value(row, 'address_1') } : {}),
     ...(value(row, 'address_2') ? { address2: value(row, 'address_2') } : {}),
@@ -260,52 +246,94 @@ function itemVariant(meta: Map<string, string> | undefined) {
   return parts.length ? parts.join(' · ') : undefined
 }
 
-function buildOrder(row: Row, data: ArchiveData, customersByWpID: Map<string, number | string>, skuByPost: Map<string, string>) {
+type CatalogProduct = {
+  id: number | string
+  title: string
+  sku?: string | null
+  variants?: { id?: string | null; sku?: string | null; length?: string | null; shape?: string | null; size?: string | null }[] | null
+}
+
+// Stable new-format numbers make a repeated import safe without storing Woo IDs.
+export function nativeOrderNumber(sourceID: string) {
+  return `GN-${createHash('sha256').update(`ginnynana.com:woocommerce:${sourceID}`).digest('hex').slice(0, 24).toUpperCase()}`
+}
+
+function productName(title: string) {
+  return title.normalize('NFKC').toLowerCase()
+    .replace(/\([^)]*\)/g, '')
+    .replace(/\s+-\s+\d+\s+sets?,.*$/i, '')
+    .replace(/cat eyes/g, 'cat eye').replace(/[^a-z0-9]/g, '')
+}
+
+export function matchProduct(title: string, products: CatalogProduct[]) {
+  const matches = products.filter((product) => productName(product.title) === productName(title))
+  return matches.length === 1 ? matches[0] : undefined
+}
+
+export function matchVariant(specification: string | undefined, product: CatalogProduct | undefined) {
+  if (!specification || !product) return undefined
+  const options = new Map(specification.split(' · ').map((part) => {
+    const colon = part.indexOf(':')
+    return [part.slice(0, colon).trim(), part.slice(colon + 1).trim().toLowerCase()]
+  }))
+  // An obsolete pack quantity must not be mistaken for a current size-only variant.
+  if ([...options.keys()].some((key) => !['length', 'shape', 'size', 'length and shape'].includes(key))) return undefined
+  const matches = (product.variants || []).filter((variant) => {
+    if (options.get('size') !== String(variant.size || '').toLowerCase()) return false
+    const combined = options.get('length and shape')
+    if (combined) {
+      const pair = `${variant.length}-${variant.shape}`
+      return combined === pair || combined.startsWith(`${pair}-`)
+    }
+    return (options.get('length') || '') === (variant.length || '') && (options.get('shape') || '') === (variant.shape || '')
+  })
+  return matches.length === 1 ? matches[0] : undefined
+}
+
+export function buildOrder(row: Row, data: ArchiveData, products: CatalogProduct[]) {
   const orderID = value(row, 'id')
   const itemMeta = groupMeta(data.itemMeta, 'order_item_id')
   const orderMeta = groupMeta(data.orderMeta, 'order_id').get(orderID)
   const orderAddresses = new Map(data.addresses.filter((address) => value(address, 'order_id') === orderID).map((address) => [value(address, 'address_type'), address]))
   const orderItems = data.items.filter((item) => value(item, 'order_id') === orderID)
   const lineItems = orderItems.filter((item) => value(item, 'order_item_type') === 'line_item')
-  const importedItems = lineItems.map((item) => {
+  const lineAmounts = lineItems.map((item) => ({
+    subtotal: amount(itemMeta.get(value(item, 'order_item_id'))?.get('_line_subtotal')),
+    total: amount(itemMeta.get(value(item, 'order_item_id'))?.get('_line_total')),
+  }))
+  const importedItems = lineItems.map((item, index) => {
     const itemID = value(item, 'order_item_id')
     const meta = itemMeta.get(itemID)
-    const productID = meta?.get('_product_id') || ''
-    const variationID = meta?.get('_variation_id') || ''
     const quantity = Math.max(1, Math.floor(amount(meta?.get('_qty')) || 1))
-    const lineSubtotal = amount(meta?.get('_line_subtotal'))
-    const lineTotal = amount(meta?.get('_line_total'))
-    const sku = (variationID && skuByPost.get(variationID)) || (productID && skuByPost.get(productID))
     const variant = itemVariant(meta)
+    const title = value(item, 'order_item_name') || 'WooCommerce product'
+    const product = matchProduct(title, products)
+    const currentVariant = matchVariant(variant, product)
     return {
-      ...(sku ? { sku } : {}),
+      product: product?.id ?? null,
+      sku: currentVariant?.sku || product?.sku || '',
       ...(variant ? { variant } : {}),
-      ...(variationID && variationID !== '0' ? { variantId: variationID } : {}),
-      ...(productID ? { legacyProductID: productID } : {}),
-      title: value(item, 'order_item_name') || 'WooCommerce product',
+      variantId: currentVariant?.id || '',
+      title,
       quantity,
-      unitPrice: Number((lineTotal / quantity).toFixed(2)),
-      lineSubtotal: Number(lineSubtotal.toFixed(2)),
-      lineTotal: Number(lineTotal.toFixed(2)),
+      unitPrice: Number((lineAmounts[index].subtotal / quantity).toFixed(2)),
     }
   })
-  const subtotal = importedItems.reduce((sum, item) => sum + item.lineSubtotal, 0)
-  const itemTotals = importedItems.reduce((sum, item) => sum + item.lineTotal, 0)
+  const subtotal = lineAmounts.reduce((sum, item) => sum + item.subtotal, 0)
+  const itemTotals = lineAmounts.reduce((sum, item) => sum + item.total, 0)
   const couponDiscount = orderItems.filter((item) => value(item, 'order_item_type') === 'coupon')
     .reduce((sum, item) => sum + amount(itemMeta.get(value(item, 'order_item_id'))?.get('discount_amount')), 0)
   const shippingTotal = orderItems.filter((item) => value(item, 'order_item_type') === 'shipping')
     .reduce((sum, item) => sum + amount(itemMeta.get(value(item, 'order_item_id'))?.get('cost')), 0)
   const date = wpDate(value(row, 'date_created_gmt'))
   const address = orderAddress(orderAddresses.get('shipping'))
-  const billing = orderAddress(orderAddresses.get('billing'))
-  const customerId = customersByWpID.get(value(row, 'customer_id'))
   const paymentMethod = value(row, 'payment_method')
   const methodLower = paymentMethod.toLowerCase()
   const paymentProvider = methodLower.includes('paypal') || methodLower.includes('ppcp') ? 'paypal'
     : methodLower.includes('stripe') ? 'stripe' : undefined
   const status = value(row, 'status').replace(/^wc-/, '')
   const paymentStatus = status === 'completed' || status === 'processing' ? 'paid'
-    : status === 'cancelled' ? 'cancelled' : status === 'refunded' ? 'refunded'
+    : status === 'refunded' ? 'refunded'
       : status === 'failed' ? 'failed' : 'pending'
   const fulfillmentStatus = status === 'completed' ? 'delivered'
     : status === 'cancelled' ? 'cancelled' : status === 'processing' ? 'processing' : 'unfulfilled'
@@ -315,19 +343,14 @@ function buildOrder(row: Row, data: ArchiveData, customersByWpID: Map<string, nu
   const taxTotal = amount(row.tax_amount)
   const legacyNumber = orderMeta?.get('_order_number') || orderID
   const dataToCreate = {
-    orderNumber: legacyNumber,
-    legacyWooCommerceID: orderID,
-    ...(date ? { createdAt: date, legacyWooCommerceDate: date } : {}),
-    ...(customerId ? { customer: customerId } : {}),
+    orderNumber: nativeOrderNumber(orderID),
+    ...(date ? { createdAt: date } : {}),
     customerEmail: (value(row, 'billing_email') || '').trim().toLowerCase(),
     currency: value(row, 'currency') || 'USD',
     ...(paymentProvider ? { paymentProvider } : {}),
-    ...(paymentMethod ? { legacyPaymentMethod: paymentMethod } : {}),
-    ...(value(row, 'payment_method_title') ? { legacyPaymentMethodTitle: value(row, 'payment_method_title') } : {}),
     ...(value(row, 'transaction_id') ? { paymentReference: value(row, 'transaction_id') } : {}),
     items: importedItems,
     shippingAddress: address,
-    ...(billing ? { billingAddress: billing } : {}),
     subtotal: Number(subtotal.toFixed(2)),
     shippingTotal: Number(shippingTotal.toFixed(2)),
     taxTotal: Number(taxTotal.toFixed(2)),
@@ -341,6 +364,7 @@ function buildOrder(row: Row, data: ArchiveData, customersByWpID: Map<string, nu
   }
   return {
     id: orderID,
+    sourceNumber: legacyNumber,
     sourceStatus: status,
     date,
     total,
@@ -348,12 +372,13 @@ function buildOrder(row: Row, data: ArchiveData, customersByWpID: Map<string, nu
     currency: value(row, 'currency') || 'USD',
     missingEmail: !dataToCreate.customerEmail,
     missingShippingAddress: !address?.address1 || !address.city || !address.postalCode || !address.country,
-    reconciled: Math.abs(subtotal + shippingTotal + taxTotal - dataToCreate.discountTotal - total) < 0.02,
+    reconciled: Math.abs(subtotal + shippingTotal + taxTotal - dataToCreate.discountTotal - total) < 0.02
+      && Math.abs(importedItems.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) - subtotal) < 0.02,
     data: dataToCreate,
   }
 }
 
-async function findOne(payload: Payload, collection: 'customers' | 'orders', field: string, equals: string) {
+async function findOne<T extends 'customers' | 'orders'>(payload: Payload, collection: T, field: string, equals: string) {
   const result = await payload.find({ collection, where: { [field]: { equals } }, limit: 1, depth: 0, overrideAccess: true, showHiddenFields: collection === 'customers' })
   return result.docs[0] as (typeof result.docs)[number] | undefined
 }
@@ -362,6 +387,7 @@ async function main() {
   const args = process.argv.slice(2)
   const apply = args.includes('--apply')
   const sourceOnly = args.includes('--source-only')
+  const normalizeExisting = args.includes('--normalize-existing')
   const sourcePath = args.find((arg) => !arg.startsWith('--'))
   if (!sourcePath) throw new Error('Usage: npm run migrate:woocommerce-data -- [--source-only | --apply] /path/to/backup.wpress')
 
@@ -372,8 +398,7 @@ async function main() {
     return roles.includes('customer') && !roles.includes('administrator')
   })
   const orders = archive.orders.filter((row) => value(row, 'type') === 'shop_order')
-  const skuByPost = new Map(archive.postMeta.filter((row) => value(row, 'meta_key') === '_sku').map((row) => [value(row, 'post_id'), value(row, 'meta_value')]))
-  const sourceOnlyOrders = orders.map((row) => buildOrder(row, archive, new Map(), skuByPost))
+  const sourceOnlyOrders = orders.map((row) => buildOrder(row, archive, []))
   if (sourceOnly) {
     const statusCounts = Object.fromEntries([...new Set(sourceOnlyOrders.map(({ sourceStatus }) => sourceStatus))]
       .map((status) => [status, sourceOnlyOrders.filter((order) => order.sourceStatus === status).length]))
@@ -393,14 +418,12 @@ async function main() {
     return
   }
 
-  process.env.NODE_ENV = 'production'
-  process.env.VERCEL_ENV = 'production'
+  Object.assign(process.env, { NODE_ENV: 'production', VERCEL_ENV: 'production' })
   nextEnv.loadEnvConfig(process.cwd(), false)
-  const { default: config } = await import('../payload.config.ts')
+  const { default: config } = await import('../payload.config')
   const { getPayload } = await import('payload')
   const payload = await getPayload({ config })
   try {
-    const customersByWpID = new Map<string, number | string>()
     let newCustomers = 0
     let existingCustomers = 0
     let conflictingCustomers = 0
@@ -412,15 +435,11 @@ async function main() {
       const lastName = meta.get('last_name') || meta.get('billing_last_name') || ''
       const fullName = value(user, 'display_name') || [firstName, lastName].filter(Boolean).join(' ')
       const hash = value(user, 'user_pass')
-      const billingAddress = customerAddress(meta, 'billing')
-      const shippingAddress = customerAddress(meta, 'shipping')
       return {
-        wpID: value(user, 'ID'), email, fullName, hash,
+        email, fullName, hash,
         data: {
-          email, fullName, legacyWordpressID: value(user, 'ID'), legacyPasswordHash: hash,
+          email, fullName, legacyPasswordHash: hash,
           password: randomBytes(32).toString('base64url'),
-          ...(billingAddress ? { billingAddress } : {}),
-          ...(shippingAddress ? { shippingAddress } : {}),
         },
       }
     })
@@ -433,37 +452,43 @@ async function main() {
       }
       const supported = supportedLegacyHash(customer.hash)
       if (!supported) unsupportedHashes += 1
-      const existingByID = await findOne(payload, 'customers', 'legacyWordpressID', customer.wpID)
-      if (existingByID) {
-        const id = existingByID.id as number | string
-        customersByWpID.set(customer.wpID, id)
-        existingCustomers += 1
-        customerPlans.push({ record: customer, existingID: id })
-        continue
-      }
       const existingByEmail = await findOne(payload, 'customers', 'email', customer.email)
       if (existingByEmail) {
-        conflictingCustomers += 1
-        customerPlans.push({ record: customer, conflict: true })
+        existingCustomers += 1
+        customerPlans.push({ record: customer, existingID: existingByEmail.id })
         continue
       }
       newCustomers += 1
       customerPlans.push({ record: customer })
     }
 
-    const builtOrders = orders.map((row) => buildOrder(row, archive, customersByWpID, skuByPost))
+    const products: CatalogProduct[] = []
+    let page = 1
+    while (true) {
+      const result = await payload.find({ collection: 'products', limit: 200, page, depth: 0, overrideAccess: true })
+      products.push(...result.docs)
+      if (!result.hasNextPage) break
+      page += 1
+    }
+    const builtOrders = orders.map((row) => buildOrder(row, archive, products))
     let newOrders = 0
     let existingOrders = 0
     let conflictingOrders = 0
+    const orderPlans = []
     for (const order of builtOrders) {
-      const existing = await findOne(payload, 'orders', 'legacyWooCommerceID', order.id)
+      const current = await findOne(payload, 'orders', 'orderNumber', order.data.orderNumber)
+      const previous = normalizeExisting ? await findOne(payload, 'orders', 'orderNumber', order.sourceNumber) : undefined
+      const existing = current || previous
+      if (current && previous) conflictingOrders += 1
       if (existing) {
+        if (existing.currency !== order.data.currency || existing.total !== order.total
+          || existing.createdAt !== order.date || existing.items?.length !== order.itemCount
+          || existing.items.some((item, index) => item.title !== order.data.items[index].title || item.quantity !== order.data.items[index].quantity)) {
+          conflictingOrders += 1
+        }
         existingOrders += 1
-        continue
-      }
-      const number = String(order.data.orderNumber)
-      if (await findOne(payload, 'orders', 'orderNumber', number)) conflictingOrders += 1
-      else newOrders += 1
+      } else newOrders += 1
+      orderPlans.push({ order, existing, needsUpdate: Boolean(previous) })
     }
 
     const statusCounts = Object.fromEntries([...new Set(builtOrders.map(({ sourceStatus }) => sourceStatus))]
@@ -473,32 +498,31 @@ async function main() {
       source: path.basename(sourcePath),
       customers: { sourceCustomerAccounts: customerSource.length, plannedNew: newCustomers, alreadyImported: existingCustomers, conflicts: conflictingCustomers, unsupportedPasswordHashes: unsupportedHashes },
       orders: { sourceOrders: orders.length, statusCounts, plannedNew: newOrders, alreadyImported: existingOrders, orderNumberConflicts: conflictingOrders, lineItems: builtOrders.reduce((sum, order) => sum + order.itemCount, 0), totalUSD: Number(builtOrders.reduce((sum, order) => sum + order.total, 0).toFixed(2)), missingBillingEmail: builtOrders.filter((order) => order.missingEmail).length, incompleteShippingAddress: builtOrders.filter((order) => order.missingShippingAddress).length, amountReconciliationIssues: builtOrders.filter((order) => !order.reconciled).length },
+      matchedProductItems: builtOrders.flatMap((order) => order.data.items).filter((item) => item.product != null).length,
+      matchedVariantItems: builtOrders.flatMap((order) => order.data.items).filter((item) => item.variantId).length,
+      unmatchedProducts: [...new Set(builtOrders.flatMap((order) => order.data.items).filter((item) => item.product == null).map((item) => item.title))],
+      normalizeExisting,
+      plannedUpdates: orderPlans.filter((plan) => plan.needsUpdate).length,
       mode: apply ? 'apply' : 'dry-run',
     }
     console.log(JSON.stringify(summary, null, 2))
 
     if (!apply) return
-    if (process.env.VERCEL_ENV !== 'production') throw new Error('Apply mode requires the explicitly selected Production environment.')
-    if (conflictingCustomers || conflictingOrders || unsupportedHashes || builtOrders.some((order) => order.missingEmail || order.missingShippingAddress || !order.reconciled)) {
+    if (conflictingCustomers || conflictingOrders || unsupportedHashes || (normalizeExisting && newOrders)
+      || builtOrders.some((order) => order.missingEmail || order.missingShippingAddress || !order.reconciled)) {
       throw new Error('Preflight found conflicts or incomplete source records; no records were written.')
     }
 
     for (const plan of customerPlans) {
       if (plan.conflict || plan.existingID) continue
-      const created = await payload.create({ collection: 'customers', data: plan.record.data, overrideAccess: true, showHiddenFields: true, disableVerificationEmail: true })
-      customersByWpID.set(plan.record.wpID, created.id as number | string)
+      await payload.create({ collection: 'customers', data: plan.record.data, overrideAccess: true, showHiddenFields: true, disableVerificationEmail: true })
     }
-    for (const order of builtOrders) {
-      if (await findOne(payload, 'orders', 'legacyWooCommerceID', order.id)) continue
-      const duplicateNumber = await findOne(payload, 'orders', 'orderNumber', String(order.data.orderNumber))
-      if (duplicateNumber) throw new Error(`Order number conflict for source order ${order.id}; import stopped.`)
-      const data = {
-        ...order.data,
-        ...(customersByWpID.get(value(archive.orders.find((row) => value(row, 'id') === order.id) || {}, 'customer_id'))
-          ? { customer: customersByWpID.get(value(archive.orders.find((row) => value(row, 'id') === order.id) || {}, 'customer_id')) }
-          : {}),
-      }
-      await payload.create({ collection: 'orders', data, overrideAccess: true })
+    for (const { order, existing, needsUpdate } of orderPlans) {
+      if (existing && !needsUpdate) continue
+      if (existing) {
+        const items = order.data.items.map((item, index) => ({ ...item, id: existing.items?.[index]?.id }))
+        await payload.update({ collection: 'orders', id: existing.id, data: { ...order.data, items }, overrideAccess: true })
+      } else await payload.create({ collection: 'orders', data: order.data, overrideAccess: true })
     }
     console.log('Import complete. Re-run the command to verify it reports all source rows as already imported.')
   } finally {
@@ -506,7 +530,10 @@ async function main() {
   }
 }
 
-main().catch((error) => {
-  console.error(`WooCommerce migration failed: ${error instanceof Error ? error.message : 'unknown error'}`)
-  process.exitCode = 1
-})
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().then(() => process.exit(0)).catch((error) => {
+    const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error
+    console.error(`WooCommerce migration failed: ${cause instanceof Error ? cause.message : 'unknown error'}`)
+    process.exit(1)
+  })
+}

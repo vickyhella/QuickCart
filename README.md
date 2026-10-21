@@ -37,7 +37,7 @@
 | --- | --- |
 | `app/(storefront)/` | 顾客访问的页面：主页、商品详情、分类筛选、购物车、结账、订单状态。调整页面或路由时从这里开始。 |
 | `components/` | Storefront 共用组件，如导航栏、商品卡、购物车和支付按钮。 |
-| `app/studio/product-studio.tsx` | Product Studio 的商品列表和编辑界面。 |
+| `app/studio/product-studio.tsx` | Product Studio 的商品列表和编辑界面；当前变体支持 Length + Shape + Size 及 Mystery Box Size-only，自定义组合与商品级 Color 筛选待补齐（见 PRD）。 |
 | `app/marketing-studio/` | Marketing Studio 的路由入口。 |
 | `app/(payload)/components/` | Payload 后台的自定义界面，如 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
 | `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |
@@ -59,7 +59,7 @@
 
 导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。
 
-迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。当前不开放自助注册，也尚未配置密码重设邮件；登录问题可通过联系页面处理。当前 `.env.local` 数据库已导入备份内 1 个顾客和 10 笔订单，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
+迁移顾客的旧密码哈希仅服务端可读，首次正确登录时由 `lib/legacy-customer-password.ts` 验证 WordPress bcrypt，并自动升级为 Payload 密码、删除旧哈希。使用轻量依赖 `bcryptjs`，不保存明文密码。迁移顾客可直接使用旧站密码登录，无需强制重设密码；用户已确认备份之后无需补迁移顾客或订单。当前不开放自助注册，登录问题可通过联系页面处理。备份内 1 个顾客和 10 笔订单已导入，详见 [顾客与订单迁移](./docs/customer-order-migration.md)。
 
 订单复用原有字段，不保留旧站 ID、重复日期、付款方式原文、账单地址、客户保存地址或明细总额字段。订单号使用新站 `GN-…` 格式，日期使用 `createdAt`，商品和变体仅在准确匹配时关联；缺失商品保留名称 / 规格快照，`items.product` 允许为空。Customers 只保留登录资料及首次登录后清除的旧密码哈希。订单付款确认和发货通知由 `collections/Orders.ts` 调用 `lib/order-email.js` 经 Resend 发送；在订单中填写物流单号和可选 Tracking URL 后，顾客可以在账户或订单查询页查看并点击追踪。需要配置 `RESEND_API_KEY` 和已验证发件地址 `ORDER_EMAIL_FROM`；具体步骤见[电商配置指南](./docs/commerce-setup.md)。
 

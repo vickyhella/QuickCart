@@ -13,7 +13,7 @@
 
 | 文档 | 用途 | 当前状态 |
 | --- | --- | --- |
-| [PRD](./prd.md) | 产品行为和架构的长期依据，首页维护唯一的未完成事项清单 | 商品级 Color 筛选、通用变体组合和完整交易链路待补齐；上线验收包括 Netlify HTTPS、R2、Feeds、PayPal、订单邮件和商城 E2E；其他讨论项已暂缓 |
+| [PRD](./prd.md) | 产品行为和架构的长期依据，首页维护唯一的未完成事项清单 | 通用变体组合和完整交易链路待补齐；商品级 Color 筛选已实现、待端到端验收；上线验收包括 Netlify HTTPS、R2、Feeds、PayPal、订单邮件和商城 E2E；其他讨论项已暂缓 |
 | [电商上线检查清单](./ecommerce-readiness-checklist.md) | 生产前人工走查与运营验收 | 多数功能已有代码；端到端验收、外部账号配置和运营决策仍需逐项记录 |
 | [Commerce 配置指南](./commerce-setup.md) | 配置支付、配送、商品、Feed、订单和折扣 | 操作说明；PayPal 变量和 Card Fields 的细节以专项文档为准 |
 | [数据库迁移说明](./database-migrations.md) | Preview / Production 命令、dev 基线、本次两项 schema 升级与上线顺序 | Production 只读状态核对显示登记的 16 项 migration 均已执行；业务 E2E 仍按 PRD 验收，不导入正式客户或订单到 dev |

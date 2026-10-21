@@ -9,6 +9,7 @@ import * as validation from '../lib/product-validation.js'
 import * as shipping from '../lib/shipping-tiers.js'
 import * as mergeVariants from '../lib/merge-product-variants.js'
 import * as variantAttributes from '../lib/product-variant-attributes.js'
+import * as productColor from '../lib/product-color.js'
 import * as adminAccess from '../lib/admin-access'
 
 // Exercise the real route handlers with isolated CMS and payment boundaries.
@@ -26,6 +27,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/shipping-tiers': shipping,
     '@/lib/merge-product-variants': mergeVariants,
     '@/lib/product-variant-attributes': variantAttributes,
+    '@/lib/product-color': productColor,
     '@/lib/checkout-error': { getCheckoutFailure: (error: Error) => ({ message: error.message, status: 400 }) },
     '@/lib/countries': { shippingCountries: [['US', 'United States']] },
     '@/lib/product-seo-templates': { resolveProductSeoTemplates: () => ({ title: '', description: '' }) },
@@ -54,7 +56,7 @@ const request = (body: unknown, method = 'POST') => new Request('https://shop.ex
 test('real quote, saved order and PayPal amounts agree with legacy selling prices and overrides', async () => {
   for (const variantPrice of [null, 27, 35]) {
     for (const promoCode of ['', 'SAVE10']) {
-      const product = { id: 1, title: 'Test', status: 'published', price: 25, compareAtPrice: 30, variants: [{ id: 'v1', price: variantPrice, compareAtPrice: null, enabled: true, stock: 10, trackStock: true }] }
+      const product = { id: 1, title: 'Test', status: 'published', price: 25, compareAtPrice: 30, variants: [{ id: 'v1', price: variantPrice, compareAtPrice: null, attributes: { color: 'pink' }, enabled: true, stock: 10, trackStock: true }] }
       let order: any
       let payment: any
       const payload = {
@@ -82,6 +84,8 @@ test('real quote, saved order and PayPal amounts agree with legacy selling price
       assert.equal(quoted.shippingTotal, shippingCost)
       assert.equal(quoted.total, subtotal - discount + shippingCost)
       assert.equal(order.items[0].unitPrice, actualPrice)
+      assert.equal(order.items[0].variant, '')
+      assert.doesNotMatch(payment.items[0].name, /color: pink/i)
       assert.equal(order.total, quoted.total)
       assert.equal(payment.items[0].unit_amount.value, actualPrice.toFixed(2))
       assert.equal(payment.amount.value, quoted.total.toFixed(2))
@@ -94,7 +98,7 @@ test('Studio creates legacy fields for a sale or regular price and rejects rever
   let created: any
   const payload = {
     auth: async () => ({ user: { id: 1, collection: 'users' } }),
-    findGlobal: async () => ({ dimensions: [] }),
+    findGlobal: async () => ({ dimensions: [{ key: 'color', label: 'Color', valueType: 'text', options: [{ value: 'pink', label: 'Pink' }, { value: 'nude', label: 'Nude' }] }] }),
     create: async ({ data }: any) => { created = data; return { id: 10 } },
   }
   const route = loadRoute('app/api/studio/products/route.ts', payload)
@@ -117,14 +121,16 @@ test('Studio creates legacy fields for a sale or regular price and rejects rever
   assert.equal(created.variants[0].price, 20)
   assert.equal(pricing.getPriceDetails(created, created.variants[0]).salePrice, null)
 
-  const mysteryBox = await route.POST(request({ title: 'Mystery Box', category: 'mystery-box', price: 13.9,
+  const mysteryBox = await route.POST(request({ title: 'Mystery Box', category: 'mystery-box', color: 'pink', price: 13.9,
     combinations: [{ length: '', shape: '' }], sizes: ['xs'],
-    variants: [{ length: '', shape: '', size: 'xs', price: 13.9, stock: 10, enabled: true }],
+    variants: [{ length: '', shape: '', size: 'xs', attributes: { color: 'pink' }, price: 13.9, stock: 10, enabled: true }],
   }))
   assert.equal(mysteryBox.status, 201)
   assert.equal(created.category, 'mystery-box')
   assert.equal(created.variants[0].length, '')
   assert.equal(created.variants[0].shape, '')
+  assert.equal(created.color, 'pink')
+  assert.equal('color' in created.variants[0].attributes, false)
 })
 
 test('Studio read-save preserves variant IDs, SKUs, charges and inherited fields', async () => {
@@ -198,12 +204,12 @@ test('Studio edit resolves media relations whether Payload returns IDs or popula
 
 test('Studio can read and save a size-only Mystery Box', async () => {
   const original = { id: 162, updatedAt: '2026-10-17', title: 'Mystery Box', category: 'mystery-box', status: 'draft', price: 13.9, compareAtPrice: 17.9, variants: [
-    { id: 'xs', sku: '5439-5464', length: '', shape: '', size: 'xs', price: 13.9, compareAtPrice: 17.9, stock: 10, enabled: true },
+    { id: 'xs', sku: '5439-5464', length: '', shape: '', size: 'xs', attributes: { color: 'nude' }, price: 13.9, compareAtPrice: 17.9, stock: 10, enabled: true },
   ] }
   let saved: any
   const payload = {
     auth: async () => ({ user: { id: 1, collection: 'users' } }),
-    findGlobal: async () => ({ dimensions: [] }),
+    findGlobal: async () => ({ dimensions: [{ key: 'color', label: 'Color', valueType: 'text', options: [{ value: 'nude', label: 'Nude' }] }] }),
     findByID: async () => structuredClone(original),
     find: async () => ({ docs: [] }),
     update: async ({ data }: any) => { saved = data; return { id: 162, updatedAt: 'new' } },
@@ -215,10 +221,14 @@ test('Studio can read and save a size-only Mystery Box', async () => {
   assert.equal(editor.combinations.length, 1)
   assert.equal(editor.combinations[0].length, '')
   assert.equal(editor.combinations[0].shape, '')
+  assert.equal(editor.color, 'nude')
+  assert.equal('color' in editor.variants[0].attributes, false)
   const response = await route.PUT(request({ ...editor, mediaIDs: [], action: 'save' }, 'PUT'), context)
   assert.equal(response.status, 200)
   assert.equal(saved.variants[0].length, '')
   assert.equal(saved.variants[0].shape, '')
+  assert.equal(saved.color, 'nude')
+  assert.equal('color' in saved.variants[0].attributes, false)
 })
 
 test('both feeds map the same legacy prices and never emit a sale for a regular-priced variant', async () => {

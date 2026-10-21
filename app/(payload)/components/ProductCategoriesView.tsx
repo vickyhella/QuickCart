@@ -19,6 +19,7 @@ const initialDimensions: Dimension[] = [
     ['lengths', 'Length', defaultProductDimensionOptions.lengths],
     ['shapes', 'Shape', defaultProductDimensionOptions.shapes],
   ] as const).map(([key, label, options]) => ({ key, label, valueType: 'text' as const, options: options.map((option) => ({ ...option, products: [] })) })),
+  { key: 'color', label: 'Color', valueType: 'text', options: [] },
   { key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] },
 ]
 
@@ -100,7 +101,7 @@ export function ProductCategoriesView() {
       setError('Enter a positive whole number.')
       return
     }
-    const value = nextLabel
+    const value = dimension === 'color' ? nextLabel : nextLabel
       .toLocaleLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^\p{L}\p{N}-]+/gu, '')
@@ -146,7 +147,7 @@ export function ProductCategoriesView() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Categories</h1>
           <p className="mt-2 text-sm text-[#766966]">
-            Manage the dimensions and options used by product variants.
+            Manage variant dimensions and product-level filter categories.
           </p>
         </div>
       </header>
@@ -236,7 +237,9 @@ export function ProductCategoriesView() {
             <p className="mt-1 text-sm text-[#968680]">
               {currentDimension?.valueType === 'integer'
                 ? 'Enter integer values directly on each product variant. The values below are collected from products.'
-                : 'Display names can change without changing values stored in product variants.'}
+                : currentDimension?.key === 'color'
+                  ? 'Assign one color to each product in Product Studio. Color is used for filtering and is not a variant choice.'
+                  : 'Display names can change without changing values stored in product variants.'}
             </p>
           </div>
           <span className="rounded-full border border-[#e7ddd8] bg-white px-3 py-2 text-sm text-[#806e68]">
@@ -257,7 +260,7 @@ export function ProductCategoriesView() {
               className="mt-1 block w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522]"
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder={dimension === 'lengths' ? 'e.g. XX-Long' : dimension === 'shapes' ? 'e.g. Coffin' : 'e.g. Glossy'}
+              placeholder={dimension === 'lengths' ? 'e.g. XX-Long' : dimension === 'shapes' ? 'e.g. Coffin' : dimension === 'color' ? 'e.g. Nude Pink' : 'e.g. Glossy'}
               type="text"
               disabled={busy}
             />

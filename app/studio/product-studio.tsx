@@ -150,6 +150,7 @@ export default function ProductStudio() {
   const [title, setTitle] = useState('')
   const [chineseName, setChineseName] = useState('')
   const [category, setCategory] = useState('press-on-nails')
+  const [color, setColor] = useState('')
   const [price, setPrice] = useState('')
   const [salePrice, setSalePrice] = useState('')
   const [supplierSKU, setSupplierSKU] = useState('')
@@ -174,6 +175,7 @@ export default function ProductStudio() {
     shapes: [...defaultProductDimensionOptions.shapes],
   })
   const [customDimensions, setCustomDimensions] = useState<CustomDimension[]>([])
+  const [colorOptions, setColorOptions] = useState<DimensionOption[]>([])
   const [combinations, setCombinations] = useState<{ length: string; shape: string }[]>([])
   const [sizes, setSizes] = useState<string[]>(['xs', 's', 'm', 'l'])
   const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({})
@@ -291,7 +293,8 @@ export default function ProductStudio() {
           setDimensionOptions((current) => ({ ...current, shapes }))
           setShape((current) => shapes.some(({ value }) => String(value) === current) ? current : String(shapes[0]?.value || ''))
         }
-        setCustomDimensions((data.dimensions || []).filter((item: CustomDimension) => !['lengths', 'shapes'].includes(item.key)))
+        setColorOptions((data.dimensions || []).find((item: CustomDimension) => item.key === 'color')?.options || [])
+        setCustomDimensions((data.dimensions || []).filter((item: CustomDimension) => !['lengths', 'shapes', 'color'].includes(item.key)))
       })
       .catch(() => undefined)
     return () => { active = false }
@@ -306,13 +309,13 @@ export default function ProductStudio() {
       const response = await fetch(editingId ? `/api/studio/products/${editingId}` : '/api/studio/products', {
         method: editingId ? 'PUT' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, chineseName, category, price, salePrice, supplierSKU, suppliers: supplierIDs, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, attributes: variantAttributes[key] || {}, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], suppliers: variantSupplierIDs[key] || [], purchaseURL: variantPurchaseURLs[key] } }), action }),
+        body: JSON.stringify({ requestID: editingId ? undefined : requestID.current, updatedAt: editingUpdatedAt, title, chineseName, category, color, price, salePrice, supplierSKU, suppliers: supplierIDs, purchaseURL, descriptionMode, description, seoTitleMode, seoTitle, seoDescriptionMode, seoDescription, mediaIDs: images.map((image) => image.id), combinations, sizes: orderedSizes, variants: variantRows.map(({ combo, size }) => { const key = `${combo.length}|${combo.shape}|${size}`; return { ...combo, size, attributes: variantAttributes[key] || {}, stock: stockOverrides[key] ?? 10, enabled: variantEnabled[key] !== false, price: priceOverrides[key], salePrice: salePriceOverrides[key], image: imageOverrides[key], supplierSKU: variantSupplierSKUs[key], suppliers: variantSupplierIDs[key] || [], purchaseURL: variantPurchaseURLs[key] } }), action }),
       })
       const data = await responseData(response)
       const wasEditing = Boolean(editingId)
       if (!wasEditing) requestID.current = ''
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setSalePrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
+      setTitle(''); setColor(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setSalePrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
       setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({})
       if (wasEditing) { setCombinations([]); setSizes(['xs', 's', 'm', 'l']) }
       const successMessage = action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.'
@@ -383,7 +386,7 @@ export default function ProductStudio() {
       const data = await response.json()
       if (!response.ok) { notifyStudioError(setError, data.error || 'Could not load product to duplicate.'); return }
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
-      setTitle(''); setChineseName(''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes(data.attributeOverrides || {})
+      setTitle(''); setChineseName(''); setCategory(data.category); setColor(data.color || ''); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice)); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(data.priceOverrides || {}); setSalePriceOverrides(data.salePriceOverrides || {}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes(data.attributeOverrides || {})
       setImages([]); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setDescription(''); setSeoTitle(''); setSeoDescription('')
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
       setNotice('Product details copied. Add a new name and images; inventory starts at 10.')
@@ -417,7 +420,7 @@ export default function ProductStudio() {
       }
       setEditingId(id); setEditingUpdatedAt(data.updatedAt); setEditingStatus(data.status)
       setEditingPurchaseURL(false)
-      setTitle(data.title || ''); setChineseName(data.chineseName || ''); setCategory(data.category); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
+      setTitle(data.title || ''); setChineseName(data.chineseName || ''); setCategory(data.category); setColor(data.color || ''); setPrice(data.price === '' ? '' : String(data.price)); setSalePrice(data.salePrice === '' ? '' : String(data.salePrice))
       setSupplierSKU(data.supplierSKU); setSupplierIDs(data.suppliers || []); setPurchaseURL(data.purchaseURL); setDescriptionMode(data.descriptionMode); setDescription(data.description); setSeoTitleMode(data.seoTitleMode); setSeoTitle(data.seoTitle); setSeoDescriptionMode(data.seoDescriptionMode); setSeoDescription(data.seoDescription)
       setImages(data.media); setCombinations(data.combinations); setSizes(sortProductSizes(data.sizes)); setPriceOverrides(prices); setSalePriceOverrides(salePrices); setImageOverrides(imagesByVariant); setStockOverrides(stocks); setVariantSupplierSKUs(supplierSKUs); setVariantSupplierIDs(suppliersByVariant); setVariantPurchaseURLs(purchaseURLs); setVariantEnabled(enabled); setVariantAttributes(attributes)
       document.getElementById('quick-add')?.scrollIntoView({ behavior: 'smooth' })
@@ -483,7 +486,7 @@ export default function ProductStudio() {
 
   function cancelEditing() {
     requestID.current = ''
-    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
+    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setColor(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
   }
 
   return (
@@ -557,8 +560,9 @@ export default function ProductStudio() {
               </div>
               <form onSubmit={(event) => { event.preventDefault(); void saveDraft(false) }} className="space-y-5">
                 <div className="grid gap-4 sm:grid-cols-2"><div><FieldLabel>Product name <span className="text-[#b45749]">*</span></FieldLabel><input className={inputClass} required value={title} onChange={(event) => setTitle(event.target.value)} placeholder="e.g. Rosewater" /></div><div><FieldLabel>Chinese Name</FieldLabel><input className={inputClass} value={chineseName} onChange={(event) => setChineseName(event.target.value)} placeholder="Internal reference only" /></div></div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr]">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.2fr_1fr_1fr_1fr]">
                   <div><FieldLabel>Category</FieldLabel><select className={inputClass} value={category} onChange={(event) => { const next = event.target.value; setCategory(next); if (next === 'mystery-box' && !combinations.length) setCombinations([{ length: '', shape: '' }]); else if (next !== 'mystery-box' && combinations.every((item) => !item.length && !item.shape)) setCombinations([]) }}>{categories.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+                  <div><FieldLabel>Color <span className="text-sm font-normal text-[#968680]">(product filter)</span></FieldLabel><select className={inputClass} value={color} onChange={(event) => setColor(event.target.value)}><option value="">No color</option>{colorOptions.map((option) => <option key={String(option.value)} value={String(option.value)}>{option.label}</option>)}</select></div>
                   <div><FieldLabel>Price <span className="text-[#b45749]">*</span> <span className="text-sm font-normal text-[#968680]">(required to publish)</span></FieldLabel><PriceInput label="Price" value={price} onChange={setPrice} placeholder="Optional for drafts" prefix /></div>
                   <div><FieldLabel>Sale price <span className="text-sm font-normal text-[#968680]">(optional)</span></FieldLabel><PriceInput label="Sale price" value={salePrice} onChange={setSalePrice} placeholder="Leave blank when not on sale" prefix /></div>
                 </div>

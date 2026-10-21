@@ -37,7 +37,7 @@
 | --- | --- |
 | `app/(storefront)/` | 顾客访问的页面：主页、商品详情、分类筛选、购物车、结账、订单状态。调整页面或路由时从这里开始。 |
 | `components/` | Storefront 共用组件，如导航栏、商品卡、购物车和支付按钮。 |
-| `app/studio/product-studio.tsx` | Product Studio 的商品列表和编辑界面；当前变体支持 Length + Shape + Size 及 Mystery Box Size-only，自定义组合与商品级 Color 筛选待补齐（见 PRD）。 |
+| `app/studio/product-studio.tsx` | Product Studio 的商品列表和编辑界面；当前变体支持 Length + Shape + Size 及 Mystery Box Size-only；商品级 Color 分类筛选已实现，复用现有字段和规格配置，无需 migration。Pack quantity 等自定义组合待补齐（见 PRD）。 |
 | `app/marketing-studio/` | Marketing Studio 的路由入口。 |
 | `app/(payload)/components/` | Payload 后台的自定义界面，如 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
 | `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |

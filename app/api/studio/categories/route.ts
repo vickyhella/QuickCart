@@ -2,6 +2,7 @@ import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { defaultProductDimensionOptions, variantEditorOptions } from '@/lib/product-dimensions'
+import { getProductColor } from '@/lib/product-color'
 
 type DimensionValue = string | number
 type Option = { value: DimensionValue; label: string; products?: { id: string | number; title: string; status: string }[] }
@@ -27,16 +28,18 @@ function normalizeOptions(value: unknown, fallback: Option[] = [], valueType: Di
 }
 
 function normalizeCustomDimensions(value: unknown): Dimension[] {
-  if (!Array.isArray(value)) return [{ key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] }]
-  return value.flatMap((item) => {
+  const dimensions: Dimension[] = !Array.isArray(value) ? [] : value.flatMap((item) => {
     if (!item || typeof item !== 'object') return []
     const dimension = item as Record<string, unknown>
     const key = String(dimension.key || '').trim()
     const label = String(dimension.label || '').trim()
     if (!/^[a-z][a-z0-9-]*$/.test(key) || !label || builtIn.some((entry) => entry.key === key)) return []
-    const valueType = dimension.valueType === 'integer' ? 'integer' : 'text'
+    const valueType: Dimension['valueType'] = dimension.valueType === 'integer' ? 'integer' : 'text'
     return [{ key, label, valueType, options: normalizeOptions(dimension.options, [], valueType) }]
   })
+  if (!dimensions.some((dimension) => dimension.key === 'color')) dimensions.unshift({ key: 'color', label: 'Color', valueType: 'text', options: [] })
+  if (!dimensions.some((dimension) => dimension.key === 'quantity')) dimensions.push({ key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] })
+  return dimensions
 }
 
 function humanize(value: string) {
@@ -60,7 +63,9 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user
     const known = new Set(dimension.options.map(({ value }) => value))
     for (const product of products) {
       const variants = Array.isArray(product.variants) ? product.variants : []
-      const values = dimension.key === 'lengths'
+      const values = dimension.key === 'color'
+        ? [getProductColor(product)]
+        : dimension.key === 'lengths'
         ? [...variants.map((variant) => variant.length), ...String(product.length || '').split(',')]
         : dimension.key === 'shapes'
           ? [...variants.map((variant) => variant.shape), ...String(product.shape || '').split(',')]
@@ -76,10 +81,12 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user
     }
     dimension.options = dimension.options.map((option) => ({
       ...option,
-      products: products.filter((product) => (product.variants || []).some((variant: any) => {
+      products: products.filter((product) => dimension.key === 'color'
+        ? getProductColor(product) === String(option.value)
+        : (product.variants || []).some((variant: any) => {
         const value = dimension.key === 'lengths' ? variant.length : dimension.key === 'shapes' ? variant.shape : variant.attributes?.[dimension.key]
         return String(value ?? '').trim() === String(option.value)
-      }) || (dimension.key === 'lengths' || dimension.key === 'shapes') && String(product[dimension.key === 'lengths' ? 'length' : 'shape'] || '').split(',').map((value: string) => value.trim()).includes(String(option.value)))
+        }) || (dimension.key === 'lengths' || dimension.key === 'shapes') && String(product[dimension.key === 'lengths' ? 'length' : 'shape'] || '').split(',').map((value: string) => value.trim()).includes(String(option.value)))
         .map(({ id, title, status }) => ({ id, title, status })),
     }))
   }
@@ -143,7 +150,7 @@ export async function POST(request: Request) {
       if (index < 0) return responseError('That category no longer exists.', 404)
       currentOptions[index] = { value, label }
     } else {
-      if (products.length) return responseError(`This category is still used by ${products.length} product(s). Remove it from those variants first.`, 409)
+      if (products.length) return responseError(`This category is still used by ${products.length} product(s). Remove it from those products first.`, 409)
       if (!selected) return responseError('That category no longer exists.', 404)
       const remaining = currentOptions.filter((option) => String(option.value) !== String(value))
       if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: remaining } as never, overrideAccess: false, user })

@@ -134,7 +134,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   useEffect(() => {
     fetch('/api/studio/categories?optionsOnly=true', { credentials: 'same-origin' })
       .then((response) => response.ok ? response.json() : { dimensions: [] })
-      .then((result) => setCustomDimensions((result.dimensions || []).filter((item: CustomDimension) => !['lengths', 'shapes'].includes(item.key))))
+      .then((result) => setCustomDimensions((result.dimensions || []).filter((item: CustomDimension) => !['lengths', 'shapes', 'color'].includes(item.key))))
       .catch(() => setCustomDimensions([]))
   }, [])
 

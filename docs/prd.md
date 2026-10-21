@@ -14,7 +14,6 @@
 
 ### 已确认方案，待补齐开发与验收
 
-- [ ] **商品级 Color 筛选**：Color 属于商品级分类 / 筛选属性，不是 Mystery Box 或其他商品的变体维度。由 Categories 管理可选颜色，Product Studio 为商品设置颜色，商品列表按颜色筛选；实现时明确与 Google Merchant Center 商品级 `color` 字段的复用或同步方式。当前 GMC `color` 字段不等于店铺筛选功能。
 - [ ] **通用自定义变体组合与完整交易链路**：现有 Length + Shape + Size 组合以及 Mystery Box 的 Size-only 变体已支持创建、保存、发布和前台选择；Mystery Box 允许 Length / Shape 为空。部分通用属性基础也已实现：Categories 可管理自定义维度，变体可保存自定义属性，服务端会校验属性，前台能显示和选择已有属性组合。仍缺少按商品选择变体维度 / 选项并自动生成组合的完整流程，例如 Pack quantity + Size。目标方案参考 WooCommerce / Shopify 的“公共属性 + 商品选项 + 具体变体”模式。
   - 将套装件数命名为 **Pack quantity**，和购物车购买数量分开；只有不同套装是不同售卖规格时，才为它生成变体。
   - Length + Shape 继续按明确勾选的配对生成，不能自动扩成所有排列；Size 和其他已启用选项再与其组合。
@@ -22,6 +21,10 @@
   - 商品前台展示对应选择器；服务端发布、购物车、报价、结账、订单记录、库存扣减及支付失败 / 重试流程均按商品所属的有效变体校验。顾客提交的价格不能作为计价来源。
   - 维度或选项仍被商品使用时，阻止删除并显示关联商品。保存配置或变体如需新增数据结构，先做向后兼容的增量 migration，并在测试环境验证后再部署。
   - 验收覆盖：只有 Size、Pack quantity + Size、Length + Shape + Size；编辑保留已有数据；无效 / 停用 / 缺货组合无法购买；订单准确记录所选组合并正确扣减库存。Mystery Box 的 Size-only 已有代码级测试；仍需补真实前台到订单的端到端验收。
+
+### 已实现，待端到端验收
+
+- **商品级 Color 分类筛选**：Categories 管理 Color 选项，Product Studio 为商品设置单一颜色，商品列表按颜色筛选。Color 不生成 Variant、不要求顾客在商品详情选择；复用现有商品级 `color` 字段，也作为 Google Merchant Center 的颜色值。历史变体中一致的 Color 会在编辑时转为商品级字段并从 Variant 属性移除；不一致时由管理员选择商品颜色。
 
 ### 暂缓：以后再看
 

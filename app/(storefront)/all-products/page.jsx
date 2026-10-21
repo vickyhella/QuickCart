@@ -6,16 +6,18 @@ import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
 import { useAppContext } from '@/context/AppContext'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { getProductColor, matchesProductColor } from '@/lib/product-color'
 
 export default function AllProducts() {
   const { products, productsStatus, fetchProductData } = useAppContext()
-  const [filters, setFilters] = useState({ length: '', shape: '', sale: false, isNew: false })
+  const [filters, setFilters] = useState({ length: '', shape: '', color: '', sale: false, isNew: false })
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     setFilters({
       length: params.get('length') || '',
       shape: params.get('shape') || '',
+      color: params.get('color') || '',
       sale: params.get('sale') === 'true',
       isNew: params.get('isNew') === 'true',
     })
@@ -25,10 +27,12 @@ export default function AllProducts() {
     const enabledVariants = (product.variants || []).filter((variant) => variant.enabled !== false)
     if (filters.length && !String(product.length || '').split(',').map((item) => item.trim()).includes(filters.length) && !enabledVariants.some((variant) => variant.length === filters.length)) return false
     if (filters.shape && !String(product.shape || '').split(',').map((item) => item.trim()).includes(filters.shape) && !enabledVariants.some((variant) => variant.shape === filters.shape)) return false
+    if (!matchesProductColor(product, filters.color)) return false
     if (filters.sale && !getPriceDetails(product).onSale) return false
     if (filters.isNew && !product.isNew) return false
     return true
   }), [products, filters])
+  const colorOptions = useMemo(() => [...new Set(products.map(getProductColor).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [products])
 
   return (
     <main className="bg-[#fffdfa] min-h-screen text-[#302522]">
@@ -44,6 +48,9 @@ export default function AllProducts() {
           <select aria-label="Filter by shape" value={filters.shape} onChange={(event) => setFilters({ ...filters, shape: event.target.value })} className="rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white capitalize">
             <option value="">All shapes</option>
             <option value="square">Square</option><option value="oval">Oval</option><option value="almond">Almond</option><option value="round">Round</option>
+          </select>
+          <select aria-label="Filter by color" value={filters.color} onChange={(event) => setFilters({ ...filters, color: event.target.value })} className="rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white">
+            <option value="">All colors</option>{colorOptions.map((color) => <option key={color} value={color}>{color}</option>)}
           </select>
           <label className="flex items-center gap-2 rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white"><input type="checkbox" checked={filters.sale} onChange={(event) => setFilters({ ...filters, sale: event.target.checked })} /> On sale</label>
           <label className="flex items-center gap-2 rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white"><input type="checkbox" checked={filters.isNew} onChange={(event) => setFilters({ ...filters, isNew: event.target.checked })} /> New arrivals</label>

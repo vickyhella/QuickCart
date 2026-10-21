@@ -2,6 +2,7 @@ import { isAdminUser } from '@/lib/admin-access'
 import config from '@payload-config'
 import { getPayload } from 'payload'
 import { toEditorPriceFields } from '@/lib/product-pricing'
+import { getProductColor } from '@/lib/product-color'
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const payload = await getPayload({ config })
@@ -16,9 +17,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const mapped = variants.map((variant: any) => ({ key: `${variant.length}|${variant.shape}|${variant.size}`, ...toEditorPriceFields(variant, product) }))
     const priceOverrides = Object.fromEntries(mapped.filter((variant: any) => variant.price != null).map((variant: any) => [variant.key, variant.price]))
     const salePriceOverrides = Object.fromEntries(mapped.filter((variant: any) => variant.salePrice != null).map((variant: any) => [variant.key, variant.salePrice]))
-    const attributeOverrides = Object.fromEntries(variants.filter((variant: any) => variant.attributes && Object.keys(variant.attributes).length).map((variant: any) => [`${variant.length}|${variant.shape}|${variant.size}`, variant.attributes]))
+    const attributeOverrides = Object.fromEntries(variants.flatMap((variant: any) => {
+      const attributes = { ...(variant.attributes || {}) }
+      delete attributes.color
+      return Object.keys(attributes).length ? [[`${variant.length}|${variant.shape}|${variant.size}`, attributes]] : []
+    }))
     const pricing = toEditorPriceFields(product)
-    return Response.json({ category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', combinations, sizes, priceOverrides, salePriceOverrides, attributeOverrides })
+    return Response.json({ category: product.category, color: getProductColor(product), price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', combinations, sizes, priceOverrides, salePriceOverrides, attributeOverrides })
   } catch {
     return Response.json({ error: 'Could not load product for duplication.' }, { status: 404 })
   }

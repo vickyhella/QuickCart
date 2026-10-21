@@ -6,6 +6,7 @@ import { resolveProductSeoTemplates } from '@/lib/product-seo-templates'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE } from '@/lib/studio-description-template'
 import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
 import { validateProductVariantAttributes } from '@/lib/product-variant-attributes'
+import { withoutProductColorVariantAttribute } from '@/lib/product-color'
 
 function jsonError(message: string, status: number) {
   return Response.json({ error: message }, { status })
@@ -148,7 +149,7 @@ export async function POST(request: Request) {
       catch { throw new Error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
     }
     const rowSuppliers = Array.isArray(item.suppliers) ? [...new Set(item.suppliers.map(Number))] : []
-    const attributes = validateProductVariantAttributes(item.attributes, productDimensions?.dimensions)
+    const attributes = validateProductVariantAttributes(withoutProductColorVariantAttribute(item.attributes), productDimensions?.dimensions)
     return { length, shape, size: size as 'xs' | 's' | 'm' | 'l', attributes, stock, trackStock: true, enabled: item.enabled !== false, ...(variantPrice === undefined ? {} : { price: variantPrice }), ...(variantSalePrice === undefined ? {} : { salePrice: variantSalePrice }), ...(image ? { image: Number(image) } : {}), ...(item.supplierSKU ? { supplierSKU: String(item.supplierSKU).trim() } : {}), suppliers: rowSuppliers, purchaseURL: variantPurchaseURL }
   }) } catch (error) { return jsonError(error instanceof Error ? error.message : 'Invalid variants.', 400) }
   if (safeVariants.length !== combinations.length * sizes.length || safeVariants.some((item) => !combinations.some((combo) => combo.length === item.length && combo.shape === item.shape) || !sizes.includes(item.size))) return jsonError('Variant rows must match the selected combinations and sizes.', 400)
@@ -178,6 +179,7 @@ export async function POST(request: Request) {
       chineseName: String(body.chineseName || '').trim(),
       slug: title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'product',
       category: validCategory,
+      color: String(body.color || '').trim(),
       ...storedPricing,
       descriptionMode,
       ...(descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),

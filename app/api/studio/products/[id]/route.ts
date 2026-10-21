@@ -7,6 +7,7 @@ import { resolveStudioProductMedia } from '@/lib/studio-product-media'
 import { getEnvironmentVariable } from '@/lib/environment-config'
 import { toEditorPriceFields, toStoredPriceFields } from '@/lib/product-pricing'
 import { validateProductVariantAttributes } from '@/lib/product-variant-attributes'
+import { getProductColor, withoutProductColorVariantAttribute } from '@/lib/product-color'
 
 const error = (message: string, status = 400) => Response.json({ error: message }, { status })
 const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
@@ -38,13 +39,13 @@ export async function GET(request: Request, context: { params: Promise<{ id: str
     const resolvedMedia = await resolveStudioProductMedia(media, { r2PublicURL: getEnvironmentVariable('R2_PUBLIC_URL'), requestURL: request.url })
     const pricing = toEditorPriceFields(product)
     return Response.json({
-      id: product.id, updatedAt: product.updatedAt, title: product.title, chineseName: product.chineseName || '', category: product.category, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', status: product.status,
+      id: product.id, updatedAt: product.updatedAt, title: product.title, chineseName: product.chineseName || '', category: product.category, color: getProductColor(product), price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', status: product.status,
       supplierSKU: product.supplierSKU || '', suppliers: (product.suppliers || []).map(relationID), purchaseURL: product.purchaseURL || '',
       descriptionMode: product.descriptionMode || 'auto', description: product.description || '', seoTitleMode: product.seoTitleMode || 'auto', seoTitle: product.seoTitle || '', seoDescriptionMode: product.seoDescriptionMode || 'auto', seoDescription: product.seoDescription || '',
       media: resolvedMedia.media.map((item) => ({ ...item, existing: true })), unavailableMediaCount: resolvedMedia.unavailableCount,
       combinations, sizes, variants: variants.map((variant: any) => {
         const pricing = toEditorPriceFields(variant, product)
-        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, attributes: variant.attributes || {}, stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', suppliers: (variant.suppliers || []).map(relationID), purchaseURL: variant.purchaseURL || '' }
+        return { key: `${variant.length}|${variant.shape}|${variant.size}`, id: variant.id, sku: variant.sku, length: variant.length, shape: variant.shape, size: variant.size, attributes: withoutProductColorVariantAttribute(variant.attributes || {}), stock: variant.stock ?? 10, enabled: variant.enabled !== false, price: pricing.price ?? '', salePrice: pricing.salePrice ?? '', image: relationID(variant.image) || '', supplierSKU: variant.supplierSKU || '', suppliers: (variant.suppliers || []).map(relationID), purchaseURL: variant.purchaseURL || '' }
       }),
     })
   } catch {
@@ -116,7 +117,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
         catch { return error('Variant purchase URLs must be valid HTTP or HTTPS URLs.') }
       }
       const previous = oldVariants.find((old: any) => old.length === row.length && old.shape === row.shape && old.size === row.size)
-      const attributes = validateProductVariantAttributes(row.attributes ?? previous?.attributes, productDimensions?.dimensions)
+      const attributes = validateProductVariantAttributes(withoutProductColorVariantAttribute(row.attributes ?? previous?.attributes), productDimensions?.dimensions)
       selectedVariants.push({ length: row.length, shape: row.shape, size: row.size, attributes, stock, trackStock: true, enabled: row.enabled !== false, price: variantPrice, salePrice: variantSalePrice, image: imageID ? Number(imageID) : null, suppliers: Array.isArray(row.suppliers) ? row.suppliers.map(Number) : [], supplierSKU: String(row.supplierSKU || '').trim(), purchaseURL: variantPurchaseURL })
     }
     if (rows.length !== combinations.length * sizes.length) return error('Variant rows must match selected combinations and sizes.')
@@ -134,7 +135,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
     const updated: any = await payload.update({
       collection: 'products', id,
       data: {
-        title, chineseName: String(body.chineseName || '').trim(), category: body.category, ...toStoredPriceFields({ price, salePrice }, original),
+        title, chineseName: String(body.chineseName || '').trim(), category: body.category, color: String(body.color || '').trim(), ...toStoredPriceFields({ price, salePrice }, original),
         supplierSKU: String(body.supplierSKU || '').trim(), suppliers: supplierIDs, purchaseURL,
         descriptionMode: body.descriptionMode === 'custom' ? 'custom' : 'auto', ...(body.descriptionMode === 'custom' ? { description: String(body.description || '') } : {}),
         seoTitleMode: body.seoTitleMode === 'custom' ? 'custom' : 'auto', seoDescriptionMode: body.seoDescriptionMode === 'custom' ? 'custom' : 'auto',

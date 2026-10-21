@@ -14,6 +14,7 @@ import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { sortProductSizes } from '@/lib/product-size-order'
+import { productVariantAttributeKeys } from '@/lib/product-color'
 
 export default function ProductPage() {
   const { id } = useParams()
@@ -44,7 +45,7 @@ export default function ProductPage() {
     }
   }, [id, product?.variants?.length])
 
-  const attributeKeys = [...new Set(variants.flatMap((variant) => Object.keys(variant.attributes || {})))]
+  const attributeKeys = productVariantAttributeKeys(variants)
   const selectedVariant = variants.find((variant) => (variant.length || '') === selectedLength && (variant.shape || '') === selectedShape && (variant.size || 's') === selectedSize && attributeKeys.every((key) => String(variant.attributes?.[key] ?? '') === String(selectedAttributes[key] ?? '')))
   useEffect(() => {
     if (selectedVariant?.image?.url) setMainImage(selectedVariant.image.url)

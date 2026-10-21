@@ -117,7 +117,7 @@ export async function POST(request) {
           product: product.id,
           title: product.title,
           sku: variant?.sku || product.sku || '',
-          variant: variant ? [variant.shape, variant.length, ...(Object.entries(variant.attributes || {}).map(([key, value]) => `${key}: ${value}`)), variant.size?.toUpperCase()].filter(Boolean).join(' / ') : '',
+          variant: variant ? [variant.shape, variant.length, ...Object.entries(variant.attributes || {}).filter(([key]) => key.toLowerCase() !== 'color').map(([key, value]) => `${key}: ${value}`), variant.size?.toUpperCase()].filter(Boolean).join(' / ') : '',
           variantId: variant ? String(variant.id) : '',
           quantity,
           unitPrice,
@@ -168,7 +168,7 @@ export async function POST(request) {
               },
             },
             items: lines.map(({ product, variant, quantity, unitPrice }) => ({
-              name: `${product.title}${variant ? ` - ${[variant.shape, variant.length, ...Object.entries(variant.attributes || {}).map(([key, value]) => `${key}: ${value}`), variant.size?.toUpperCase()].filter(Boolean).join(' ')}` : ''}`.slice(0, 127),
+              name: `${product.title}${variant ? ` - ${[variant.shape, variant.length, ...Object.entries(variant.attributes || {}).filter(([key]) => key.toLowerCase() !== 'color').map(([key, value]) => `${key}: ${value}`), variant.size?.toUpperCase()].filter(Boolean).join(' ')}` : ''}`.slice(0, 127),
               ...(variant?.sku || product.sku ? { sku: String(variant?.sku || product.sku).slice(0, 127) } : {}),
               quantity: String(quantity),
               category: 'PHYSICAL_GOODS',

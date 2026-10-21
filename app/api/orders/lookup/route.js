@@ -32,6 +32,7 @@ export async function POST(request) {
       paymentStatus: order.paymentStatus,
       fulfillmentStatus: order.fulfillmentStatus,
       trackingNumber: order.trackingNumber || '',
+      trackingUrl: /^https?:\/\//i.test(String(order.trackingUrl || '')) ? order.trackingUrl : '',
       items: (order.items || []).map((item) => ({ title: item.title, variant: item.variant, quantity: item.quantity })),
     })
   } catch (error) {

@@ -55,7 +55,7 @@ export default function OrderLookupPage() {
           <div className="grid sm:grid-cols-2 gap-3 mt-5 text-sm">
             <p>Payment: <strong className="capitalize">{order.paymentStatus}</strong></p>
             <p>Fulfillment: <strong className="capitalize">{order.fulfillmentStatus}</strong></p>
-            {order.trackingNumber && <p className="sm:col-span-2">Tracking number: <strong>{order.trackingNumber}</strong></p>}
+            {(order.trackingNumber || order.trackingUrl) && <p className="sm:col-span-2">{order.trackingNumber && <>Tracking number: <strong>{order.trackingNumber}</strong></>}{order.trackingNumber && order.trackingUrl && ' · '}{order.trackingUrl && <a href={order.trackingUrl} target="_blank" rel="noreferrer" className="underline">Track shipment</a>}</p>}
           </div>
           <ul className="border-t border-[#e8ded8] mt-5 pt-4 space-y-2 text-sm">
             {order.items.map((item, index) => <li key={`${item.title}-${index}`}>{item.title}{item.variant ? ` — ${item.variant}` : ''} × {item.quantity}</li>)}

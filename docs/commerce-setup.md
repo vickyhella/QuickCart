@@ -30,4 +30,8 @@ Products Payload 列表可多选文档并批量编辑共同字段；Product Stud
 
 顾客可从导航栏人像图标进入 `/account` 登录、查看本人订单；账户在 **Admin → Store → Customers** 管理，管理员仍使用 Users。旧站顾客与历史订单尚未导入，密码兼容及发布顺序见[顾客与订单迁移](./customer-order-migration.md)。
 
-Paid 和 Pending 订单保存在 **Admin → Orders**。PayPal 确认后更新付款状态；履约状态和物流追踪号可在订单中维护。顾客可通过订单号和结账邮箱进入 **Order status** 查看付款 / 履约状态及物流追踪号。折扣码在 **Admin → Discounts** 创建；Checkout 在服务端重新计算折扣，PayPal 确认付款后才增加使用次数。
+Paid 和 Pending 订单保存在 **Admin → Orders**。PayPal 确认后更新付款状态；履约状态、物流追踪号及可选 Tracking URL 可在订单中维护。顾客可在账户或通过订单号和结账邮箱进入 **Order status** 查看订单；填写追踪链接后可点击进入承运商页面。
+
+订单从未付款变为 Paid 时，系统发送付款确认邮件；订单设为 Shipped，或已发货订单的追踪号 / 链接更改时，系统发送发货通知。邮件使用 Resend；在 Netlify Production 环境变量中配置 `RESEND_API_KEY` 和 `ORDER_EMAIL_FROM`（格式如 `Ginny Nana <orders@你的已验证域名>`），并在 Resend 中完成发信域名 DNS 验证。Preview / Branch Deploy 可配置 `_PREVIEW` 后缀变量，本地开发使用 `_DEVELOPMENT` 后缀。未配置邮件服务时订单仍正常保存，但邮件会跳过；发送失败会记入函数日志，不会回滚付款或订单状态。已导入的旧订单不会补发邮件。
+
+折扣码在 **Admin → Discounts** 创建；Checkout 在服务端重新计算折扣，PayPal 确认付款后才增加使用次数。

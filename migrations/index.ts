@@ -12,6 +12,8 @@ import * as migration_20261017_210000_add_product_dimensions from './20261017_21
 import * as migration_20261020_120000_add_customers from './20261020_120000_add_customers';
 import * as migration_20261020_122640_add_woocommerce_customer_order_history_fields from './20261020_122640_add_woocommerce_customer_order_history_fields';
 import * as migration_20261020_132125_simplify_order_fields from './20261020_132125_simplify_order_fields';
+import * as migration_20261020_150000_add_order_tracking_url from './20261020_150000_add_order_tracking_url';
+import * as migration_20261020_170400_allow_size_only_variants from './20261020_170400_allow_size_only_variants';
 
 export const migrations = [
   {
@@ -83,5 +85,15 @@ export const migrations = [
     up: migration_20261020_132125_simplify_order_fields.up,
     down: migration_20261020_132125_simplify_order_fields.down,
     name: '20261020_132125_simplify_order_fields'
+  },
+  {
+    up: migration_20261020_150000_add_order_tracking_url.up,
+    down: migration_20261020_150000_add_order_tracking_url.down,
+    name: '20261020_150000_add_order_tracking_url',
+  },
+  {
+    up: migration_20261020_170400_allow_size_only_variants.up,
+    down: migration_20261020_170400_allow_size_only_variants.down,
+    name: '20261020_170400_allow_size_only_variants',
   },
 ];

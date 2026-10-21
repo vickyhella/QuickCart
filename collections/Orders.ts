@@ -1,5 +1,6 @@
 import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
+import { getOrderEmailEvents, sendOrderEmail } from '../lib/order-email.js'
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -14,6 +15,19 @@ export const Orders: CollectionConfig = {
     useAsTitle: 'orderNumber',
     defaultColumns: ['orderNumber', 'customerEmail', 'total', 'paymentStatus', 'fulfillmentStatus', 'createdAt'],
     description: 'Customer orders and fulfillment status.',
+  },
+  hooks: {
+    afterChange: [async ({ doc, previousDoc }) => {
+      for (const type of getOrderEmailEvents(doc, previousDoc)) {
+        try {
+          const result = await sendOrderEmail(doc, type)
+          if (!result.sent) console.info(`Order ${type} email skipped: email service is not configured.`)
+        } catch (error) {
+          console.error(`Order ${type} email failed for ${doc.orderNumber}:`, error)
+        }
+      }
+      return doc
+    }],
   },
   fields: [
     { name: 'orderNumber', type: 'text', required: true, unique: true, index: true },
@@ -88,6 +102,13 @@ export const Orders: CollectionConfig = {
       ],
     },
     { name: 'trackingNumber', type: 'text' },
+    {
+      name: 'trackingUrl',
+      type: 'text',
+      label: 'Tracking URL',
+      validate: (value) => !value || /^https?:\/\/\S+$/i.test(String(value)) || 'Enter a full http or https tracking URL.',
+      admin: { description: 'Optional courier tracking link included in the customer shipment email.' },
+    },
     { name: 'customerNote', type: 'textarea' },
   ],
 }

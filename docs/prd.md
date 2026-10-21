@@ -10,7 +10,7 @@
 
 ## 当前待办与开放讨论
 
-**更新日期：2026-10-20。** 本节是当前唯一待办清单。已完成且有验收记录的事项移除；状态不明的事项列为“待核验”，不默认视为完成。
+**更新日期：2026-10-21。** 本节是当前唯一待办清单。已完成且有验收记录的事项移除；状态不明的事项列为“待核验”，不默认视为完成。
 
 ### 已确认方案，待开发
 
@@ -44,11 +44,14 @@
 
 ### 上线与运营验收（当前状态待核验）
 
+- [ ] **Production 数据库升级待上线**：dev 已验证订单 Tracking URL 与允许变体 Length / Shape 为空的 migration；正式库仍需确认目标、备份并处理历史 push 标记后执行，再合并部署。环境命令和基线说明见 [数据库迁移说明](./database-migrations.md)。不向 dev 导入正式客户或订单。
+
 - [ ] **Netlify 自定义域名与 HTTPS**：`ginnynana.com` 已在阿里云注册，NS 已切换到 Netlify；Netlify 当前显示 DNS propagating、证书等待 DNS。确认 apex 与 `www` 均验证成功；按 Netlify CDN 建议将 `www.ginnynana.com` 设为 Primary domain，并将 Production `NEXT_PUBLIC_SITE_URL` 更新为 `https://www.ginnynana.com` 后重新部署。证书有效后启用 Force HTTPS，并确认 HTTP 自动跳转到 HTTPS。
 - [ ] 核验 R2 正式、Preview、开发环境隔离；确认本地或 Preview 的上传、替换、删除、重新压缩不会改动生产媒体及引用。
 - [ ] 核验 Google Merchant Center Feed、商品诊断、价格 / 库存、图片、落地页和配送设置。
 - [ ] 核验 Pinterest 实际发布、图片 / 文案 / 落地页、Variant 参数、发布记录和失败重试。
 - [ ] **PayPal 正式收款上线**：配置 Production Live Client ID、Client Secret、Webhook ID 和 `PAYPAL_ENV=live`；确认商户 Live 收款及高级银行卡支付资格，完成 Sandbox 与 Live 支付、取消、失败、Webhook 重试、金额 / 币种及库存验收。修复并验证订单完成、优惠次数和库存更新的非原子事务风险后，才启用真实收款。详见 `docs/paypal-advanced-checkout.md`。
+- [ ] 配置并验收订单邮件：Resend 发件域名及 Netlify 环境变量；验证付款确认、发货通知和物流链接。逻辑已实现，未完成正式环境配置前不会发出邮件。
 - [ ] 完成商城端到端验收：商品页、购物车、结账、运费与免邮、订单创建及订单确认。
 
 ---

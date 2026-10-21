@@ -509,6 +509,10 @@ export interface Order {
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
   fulfillmentStatus: 'unfulfilled' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   trackingNumber?: string | null;
+  /**
+   * Optional courier tracking link included in the customer shipment email.
+   */
+  trackingUrl?: string | null;
   customerNote?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -936,6 +940,7 @@ export interface OrdersSelect<T extends boolean = true> {
   paymentStatus?: T;
   fulfillmentStatus?: T;
   trackingNumber?: T;
+  trackingUrl?: T;
   customerNote?: T;
   updatedAt?: T;
   createdAt?: T;

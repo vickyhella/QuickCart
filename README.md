@@ -55,6 +55,12 @@
 | `docs/` | 产品要求、配置说明、上线验收和已知风险；从 [文档索引](./docs/README.md) 开始。 |
 | `AGENTS.md` | 项目开发约定，包括架构边界、测试和文档更新规则。 |
 
+## 商品变体
+
+线上规则暂时保持不变：普通商品使用已选定的 Length + Shape 组合及尺码；Mystery Box 仅使用尺码。通用商品仅尺码变体暂缓开发。变体按 `Length + Shape + Size` 组合匹配；编辑时组合键不变会保留原 Variant ID。若以后改变组合键（例如把普通商品改成仅尺码），旧变体会停用，新组合可能获得新 ID。历史订单保留原 Variant ID 和规格快照；实施这类改动前需评估购物车及外部变体链接，并明确旧变体 ID 的映射和库存处理。详见 [Product Studio PRD](./docs/prd.md)。
+
+URL 当前仍使用 `?variant=ID`；改用可读规格参数及保留旧链接兼容的方案列为待讨论，暂不改动。可读 URL 不能替代 Variant ID 保留和规格变更映射。
+
 ## 顾客登录与迁移
 
 导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。

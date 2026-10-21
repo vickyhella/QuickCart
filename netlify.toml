@@ -1,0 +1,11 @@
+[build]
+  ignore = """
+    if [ -z "$CACHED_COMMIT_REF" ] || [ -z "$COMMIT_REF" ] || [ "$CACHED_COMMIT_REF" = "$COMMIT_REF" ]; then
+      exit 1
+    fi
+    if git diff --quiet "$CACHED_COMMIT_REF" "$COMMIT_REF" -- . ':(exclude)README.md' ':(exclude)AGENTS.md' ':(exclude)docs/**' ':(exclude).env.example' ':(exclude).env.netlify-dev.example'; then
+      exit 0
+    else
+      exit 1
+    fi
+  """

@@ -12,7 +12,7 @@
 4. 启动：`npm run dev`
 5. 打开网站 `http://localhost:3000`，后台为 `http://localhost:3000/admin`。Product Studio 在 `/admin/collections/products/studio`。
 
-不要把密钥提交到 Git。开发环境变量放在被忽略的 `.env.development.local`；Preview 使用 `*_PREVIEW` 变量，Production 使用无后缀变量。Netlify `dev` 分支只在 Branch deploys context 设置 `QUICKCART_ENVIRONMENT=preview` 和独立 Preview 配置。必需变量、用途及 Secret 勾选建议见 [.env.example](./.env.example)；不要用 `netlify env:import` 导入模板。环境选择逻辑见 [环境配置实现](./lib/environment-config.ts)。
+不要把密钥提交到 Git。开发环境变量放在被忽略的 `.env.development.local`；Preview 使用 `*_PREVIEW` 变量，Production 使用无后缀变量。Netlify `dev` 分支只在 Branch deploys context 设置 `QUICKCART_ENVIRONMENT=preview` 和独立 Preview 配置。必需变量、用途及 Secret 勾选建议见 [.env.example](./.env.example)；不要用 `netlify env:import` 导入模板。Netlify 只在提交仅改动 `README.md`、`AGENTS.md`、`docs/`、`.env.example` 或 `.env.netlify-dev.example` 时跳过构建；应用、依赖及部署配置改动仍会构建，见 [netlify.toml](./netlify.toml)。环境选择逻辑见 [环境配置实现](./lib/environment-config.ts)。
 
 ## 常用命令
 

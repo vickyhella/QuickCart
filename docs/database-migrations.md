@@ -9,9 +9,9 @@ dev 分支部署使用 Preview Neon / R2；main 部署使用 Production Neon / R
 3. 测试后台保存、已有数据兼容性，以及相关业务功能。
 4. 确认 Production 目标并备份。对兼容旧代码的新增字段 / 放宽约束，先在正式库运行同一份 migration，再将 dev 合并到 main 并部署。删除或重命名字段需另做分阶段兼容方案。
 
-Preview 命令只读取 `.env.netlify-dev` 的 `*_PREVIEW` 值；Production 命令只读取 `.env.netlify-production` 的无后缀值。两个文件均被 Git 忽略。文件缺失或变量缺失即停止，不使用 `.env.local` 或继承的密钥补齐缺项；命令固定 `NODE_ENV=production` 并显式选择运行环境，避免本地开发自动 push。
+Preview 命令只读取 `.env.netlify-dev` 的 `*_PREVIEW` 值；Production 命令读取 `.env.local` 的无后缀值。两个文件均被 Git 忽略。配置文件或必需变量缺失即停止，不使用继承的 shell 变量补齐缺项；命令固定 `NODE_ENV=production` 并显式选择运行环境，避免本地开发自动 push。
 
-`.env.netlify-production` 必须来自 Netlify Production 的实际配置；不能仅凭 `.env.local` 有数据就认为它等于线上库。本次不创建这个密钥文件，也不执行正式库 migration。Netlify 构建仍是 `npm run build`，没有加入自动修改数据库的步骤。
+本项目约定 `.env.local` 保存 Netlify Production 对应的无后缀变量。运行 `migrate:production` 前，确认其中的 `DATABASE_URL` 指向正式库；脚本会显示数据库主机供核对。Netlify 构建仍是 `npm run build`，不会自动修改数据库。
 
 ## 2026-10-21：dev 基线与本次升级
 

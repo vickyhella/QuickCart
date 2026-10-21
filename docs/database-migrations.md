@@ -40,8 +40,8 @@ Preview 最初通过 schema push 初始化，已有完整结构和一个管理�
 
 已执行相关测试、真实 PostgreSQL migration 集成测试、`npm run typecheck`、修改文件的 ESLint，以及明确指定 Preview 变量的 `npm run build`；均通过。本次不是实付下单或真实发信验收，邮件域名与服务配置仍按 PRD 待办处理。
 
-## Production 待处理
+## Production 状态（2026-10-21）
 
-本次仅修改 Preview。只读发现 `.env.local` 对应的现有数据所在库已有 157 件商品、1 位顾客、10 笔订单，缺少 Tracking URL，且 Length / Shape 仍为必填；该库仍保留历史 `dev / batch=-1` 标记。
+通过 `npm run migrate:production -- status` 对 `.env.local` 对应的 Production 数据库进行只读核对；Payload 登记的 16 项 migration 均显示 `Ran: Yes`，包括 `20261020_150000_add_order_tracking_url` 与 `20261020_170400_allow_size_only_variants`。本次状态检查没有应用 migration 或修改数据。
 
-正式上线前应先确认它是否与 Netlify Production 为同一目标，备份后核对已执行记录，审查并处理旧 push 标记，再执行上述两项升级。不要自动确认 Payload 的数据丢失提示，不要把已执行的历史 migration 重新应用，也不需要重新导入客户或订单。
+该结果确认 migration 执行记录，不替代商品创建、结账、订单、库存和支付等线上流程验收；这些项目仍按 [PRD 当前待办](./prd.md#当前待办与开放讨论) 完成。不要重新应用已执行的历史 migration，也不要向 dev 导入正式客户或订单。

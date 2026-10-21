@@ -1,6 +1,6 @@
 # QuickCart 文档索引
 
-**最后整理：2026-10-20**
+**最后整理：2026-10-21**
 
 ## 先看这里
 
@@ -16,7 +16,7 @@
 | [PRD](./prd.md) | 产品行为和架构的长期依据，首页维护唯一的未完成事项清单 | 规格文档；顶部待办包括通用变体链路、Instagram 能力决策、剩余商品迁移、供应商删除规则、Netlify 域名与 HTTPS，以及 PayPal Live 收款上线核验 |
 | [电商上线检查清单](./ecommerce-readiness-checklist.md) | 生产前人工走查与运营验收 | 多数功能已有代码；端到端验收、外部账号配置和运营决策仍需逐项记录 |
 | [Commerce 配置指南](./commerce-setup.md) | 配置支付、配送、商品、Feed、订单和折扣 | 操作说明；PayPal 变量和 Card Fields 的细节以专项文档为准 |
-| [数据库迁移说明](./database-migrations.md) | Preview / Production 命令、dev 基线、本次两项 schema 升级与上线顺序 | dev 验证；Production 尚未执行，不导入正式客户或订单到 dev |
+| [数据库迁移说明](./database-migrations.md) | Preview / Production 命令、dev 基线、本次两项 schema 升级与上线顺序 | Production 只读状态核对显示登记的 16 项 migration 均已执行；业务 E2E 仍按 PRD 验收，不导入正式客户或订单到 dev |
 | [顾客与订单迁移](./customer-order-migration.md) | 顾客登录、旧密码兼容、历史数据导入及部署顺序 | 当前 `.env.local` 数据库已导入 1 个顾客和 10 笔订单；备份时点之后的增量及密码重设流程待处理 |
 | [PayPal 高级银行卡收款](./paypal-advanced-checkout.md) | Card Fields 部署配置、支付流程、联调测试和风险 | 代码路径已实现；Live 凭证、商户资格和端到端验收待完成；订单、优惠次数与库存尚非原子事务，正式收款前须处理 |
 

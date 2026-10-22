@@ -55,6 +55,10 @@
 | `docs/` | 产品要求、配置说明、上线验收和已知风险；从 [文档索引](./docs/README.md) 开始。 |
 | `AGENTS.md` | 项目开发约定，包括架构边界、测试和文档更新规则。 |
 
+## PayPal 当前状态（2026-10-23）
+
+Sandbox 已完成一笔端到端付款测试，订单显示 Paid；Production Live 环境变量已配置并完成 Netlify 部署，`/api/checkout/paypal-config` 返回 `environment: production`，银行卡字段保持关闭。Live Webhook 尚未用真实付款验证；后续待核对 Live `PAYMENT.CAPTURE.COMPLETED` 投递和订单状态。订单付款、折扣使用次数与库存更新仍存在非原子事务风险。配置和已知风险见[PayPal 专项文档](./docs/paypal-advanced-checkout.md)，待办见[PRD](./docs/prd.md#当前待办与开放讨论)。
+
 ## 商品变体
 
 线上规则暂时保持不变：普通商品使用已选定的 Length + Shape 组合及尺码；Mystery Box 仅使用尺码。通用商品仅尺码变体暂缓开发。变体按 `Length + Shape + Size` 组合匹配；编辑时组合键不变会保留原 Variant ID。若以后改变组合键（例如把普通商品改成仅尺码），旧变体会停用，新组合可能获得新 ID。历史订单保留原 Variant ID 和规格快照；实施这类改动前需评估购物车及外部变体链接，并明确旧变体 ID 的映射和库存处理。详见 [Product Studio PRD](./docs/prd.md)。

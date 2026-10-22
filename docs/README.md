@@ -1,6 +1,6 @@
 # QuickCart 文档索引
 
-**最后整理：2026-10-21**
+**最后整理：2026-10-23**
 
 ## 先看这里
 
@@ -18,7 +18,7 @@
 | [Commerce 配置指南](./commerce-setup.md) | 配置支付、配送、商品、Feed、订单和折扣 | 操作说明；PayPal 变量和 Card Fields 的细节以专项文档为准 |
 | [数据库迁移说明](./database-migrations.md) | Preview / Production 命令、dev 基线、本次两项 schema 升级与上线顺序 | Production 只读状态核对显示登记的 16 项 migration 均已执行；业务 E2E 仍按 PRD 验收，不导入正式客户或订单到 dev |
 | [顾客与订单迁移](./customer-order-migration.md) | 顾客登录、旧密码兼容、历史数据导入及部署顺序 | 备份内 1 个顾客和 10 笔订单已导入；用户确认无需补迁移。顾客可直接用旧密码登录并自动升级哈希，无需强制重设密码 |
-| [PayPal 高级银行卡收款](./paypal-advanced-checkout.md) | Card Fields 部署配置、支付流程、联调测试和风险 | 代码路径已实现；Live 凭证、商户资格和端到端验收待完成；订单、优惠次数与库存尚非原子事务，正式收款前须处理 |
+| [PayPal 高级银行卡收款](./paypal-advanced-checkout.md) | Card Fields 部署配置、支付流程、联调测试和风险 | Sandbox 单笔端到端付款通过；Production Live 配置和部署完成，Card Fields 关闭；Live Webhook 与订单链路尚待真实付款验证，订单、优惠次数与库存更新仍有非原子事务风险 |
 
 ## 标记说明
 

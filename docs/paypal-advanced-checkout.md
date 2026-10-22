@@ -1,6 +1,6 @@
 # PayPal 高级银行卡收款
 
-**状态：代码路径已实现，Sandbox / Live 端到端验收待凭证、账号资格和完整测试；已知订单完成事务风险尚未解决。** 待办总表见 [PRD 首页](./prd.md#当前待办与开放讨论)，文档索引见 [docs/README.md](./README.md)。
+**当前状态（2026-10-23）：** Sandbox 完成一笔端到端 PayPal 付款测试，站内订单显示 Paid。Production Live 环境变量已配置，Webhook ID 已填入，Netlify Production 部署完成；正式配置接口返回 `environment: production`，银行卡字段保持关闭。Live Webhook 尚未通过真实付款验证。订单付款、折扣使用次数和库存更新的非原子事务风险仍未解决。未完成事项见 [PRD 首页](./prd.md#当前待办与开放讨论)，文档索引见 [docs/README.md](./README.md)。
 
 保留现有 PayPal 跳转付款，银行卡使用 PayPal JavaScript SDK v5 Card Fields（官方仍支持）。不安装新的支付依赖，不迁移 Payload 订单。参考 Payload 官方支付适配器的创建支付、验证支付、完成订单流程；其电商插件目前仅内置 Stripe，项目未安装该插件。
 
@@ -29,7 +29,7 @@ Preview 使用 `_PREVIEW` 后缀；Production 使用无后缀变量，`PAYPAL_EN
 - SDK 获批后调用同源 POST `/api/checkout/paypal-capture`；服务端核实本地关联、订单金额和币种，使用固定请求 ID 扣款，仅在扣款 COMPLETED 后完成订单。
 - PayPal 跳转回调及签名验证通过的 Webhook 复用相同支付校验。扣款结果不明确时阻止页面再次付款，提示联系商家核查，避免盲目重付。
 
-## 添加凭证后必须联调
+## 尚待验收
 
 - PayPal 钱包付款原有流程、取消与失败。
 - 银行卡成功、无效卡、银行拒绝、3D Secure 成功/失败/取消。
@@ -38,11 +38,11 @@ Preview 使用 `_PREVIEW` 后缀；Production 使用无后缀变量，`PAYPAL_EN
 - 付款期间重复点击、刷新回调、Webhook 重试、付款后立即关闭页面。
 - 核对 PayPal 实收金额、币种与后台订单，优惠使用次数及库存仅处理一次。
 
-没有凭证时只能进行模拟与静态检查，无法证明账号权限、银行验证和真实扣款成功。
+Sandbox 的单笔测试只证明该次测试付款能够更新站内订单；它不覆盖取消、失败、重试、并发回调、优惠和库存边界。Live Webhook 的验签及订单处理需要真实 Live `PAYMENT.CAPTURE.COMPLETED` 通知才能确认。Card Fields 目前关闭，PayPal App 页面中的功能选项不能替代商户资格核验。
 
 ## 现有订单完成逻辑限制
 
-项目既有 `markOrderPaid` 对已经完成的订单会跳过重复处理，但付款标记、优惠次数和库存更新尚非一个原子事务；并发回调或更新中途出错存在重复或遗漏库存处理风险（PRD 已记录）。本次未迁移订单模型，正式上线前必须处理并验证这项限制，不能仅凭模拟测试开放收款。
+项目既有 `markOrderPaid` 对已经完成的订单会跳过重复处理，但付款标记、优惠次数和库存更新尚非一个原子事务；并发回调或更新中途出错存在重复或遗漏库存处理风险（PRD 已记录）。Production 已配置并部署 Live 收款；在扩大正式销售前仍应处理并验证这项限制，Sandbox 单笔测试不能覆盖该风险。
 
 ## 官方参考
 

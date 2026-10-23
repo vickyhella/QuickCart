@@ -1,6 +1,12 @@
+'use client'
+
 import Link from 'next/link'
+import { useAppContext } from '@/context/AppContext'
 
 export default function Footer() {
+  const { storefrontNavigation } = useAppContext()
+  const explorePages = storefrontNavigation.pages.filter((page) => page.placement === 'footer-explore')
+  const carePages = storefrontNavigation.pages.filter((page) => page.placement === 'footer-customer-care')
   return (
     <footer className="border-t border-[#3d2b36] bg-[#261a22] text-white/65">
       <div className="grid gap-10 md:grid-cols-3 px-5 md:px-12 lg:px-20 py-12">
@@ -14,17 +20,13 @@ export default function Footer() {
             <Link href="/all-products">All products</Link>
             <Link href="/all-products?isNew=true">New arrivals</Link>
             <Link href="/all-products?sale=true">On sale</Link>
-            <Link href="/about-us/">About us</Link>
-            <Link href="/contact-us/">Contact us</Link>
+            {explorePages.map((page) => <Link key={page.slug} href={`/${page.slug}/`}>{page.title}</Link>)}
           </div>
         </div>
         <div>
           <h2 className="text-sm font-medium text-white">Customer care</h2>
           <div className="text-sm flex flex-col gap-3 mt-4">
-            <Link href="/privacy-policy/">Privacy policy</Link>
-            <Link href="/terms-conditions/">Terms of service</Link>
-            <Link href="/refunds-returns/">Refunds & returns</Link>
-            <Link href="/shipping-policy/">Shipping policy</Link>
+            {carePages.map((page) => <Link key={page.slug} href={`/${page.slug}/`}>{page.title}</Link>)}
             <a href="mailto:ginnynana@hotmail.com">ginnynana@hotmail.com</a>
           </div>
         </div>

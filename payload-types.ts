@@ -461,6 +461,10 @@ export interface Page {
    * Markdown supported: headings, lists, links, bold, italic, quotes, and tables.
    */
   body?: string | null;
+  /**
+   * Choose where this published page appears in the storefront. Set Status to Published for it to appear.
+   */
+  placement: 'navigation' | 'footer-explore' | 'footer-customer-care' | 'hidden';
   seoTitle?: string | null;
   seoDescription?: string | null;
   status: 'draft' | 'published';
@@ -891,6 +895,7 @@ export interface PagesSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   body?: T;
+  placement?: T;
   seoTitle?: T;
   seoDescription?: T;
   status?: T;

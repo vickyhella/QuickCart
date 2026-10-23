@@ -5,7 +5,7 @@ import { defaultProductDimensionOptions, variantEditorOptions } from '@/lib/prod
 import { getProductColor } from '@/lib/product-color'
 
 type DimensionValue = string | number
-type Option = { value: DimensionValue; label: string; products?: { id: string | number; title: string; status: string }[] }
+type Option = { value: DimensionValue; label: string; image?: any; products?: { id: string | number; title: string; status: string }[] }
 type Dimension = { key: string; label: string; valueType: 'text' | 'integer'; options: Option[] }
 const builtIn: Dimension[] = [
   { key: 'lengths', label: 'Length', valueType: 'text', options: [...defaultProductDimensionOptions.lengths] },
@@ -23,7 +23,7 @@ function normalizeOptions(value: unknown, fallback: Option[] = [], valueType: Di
     const option = item as Record<string, unknown>
     const optionValue = valueType === 'integer' ? Number(option.value) : String(option.value || '').trim()
     if (valueType === 'integer' ? !Number.isSafeInteger(Number(optionValue)) || Number(optionValue) < 1 : !optionValue) return []
-    return [{ value: optionValue, label: String(option.label || optionValue).trim() || String(optionValue) }]
+    return [{ value: optionValue, label: String(option.label || optionValue).trim() || String(optionValue), ...(option.image ? { image: option.image } : {}) }]
   })
 }
 
@@ -42,20 +42,32 @@ function normalizeCustomDimensions(value: unknown): Dimension[] {
   return dimensions
 }
 
+function categoryImages(value: unknown): Record<string, string> {
+  if (!Array.isArray(value)) return {}
+  const entry = value.find((item: any) => item?.key === '__category-preview-images')
+  return Object.fromEntries((Array.isArray(entry?.options) ? entry.options : []).flatMap((item: any) => item?.value && item?.image ? [[String(item.value), String(typeof item.image === 'object' ? item.image.id : item.image)]] : []))
+}
+
+function withCategoryImages(dimensions: Dimension[], images: Record<string, string>) {
+  return [...dimensions, { key: '__category-preview-images', label: 'Category preview images', valueType: 'text' as const, options: Object.entries(images).map(([value, image]) => ({ value, label: value, image })) }]
+}
+
 function humanize(value: string) {
   return value.replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user: any) {
-  const [stored, result] = await Promise.all([
-    payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null) as Promise<Record<string, any> | null>,
+  const [stored, result, mediaResult] = await Promise.all([
+    payload.findGlobal({ slug: 'product-dimensions', depth: 1, overrideAccess: false, user }).catch(() => null) as Promise<Record<string, any> | null>,
     // shortcut: scans up to 10,000 products, raise this if the catalog grows beyond that.
     payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: false, user }),
+    payload.find({ collection: 'media', limit: 1000, pagination: false, sort: '-createdAt', depth: 0, overrideAccess: false, user }),
   ])
   const products = result.docs as Record<string, any>[]
+  const images = categoryImages(stored?.dimensions)
   const dimensions = [
-    { ...builtIn[0], options: normalizeOptions(stored?.lengths, builtIn[0].options) },
-    { ...builtIn[1], options: normalizeOptions(stored?.shapes, builtIn[1].options) },
+    { ...builtIn[0], options: normalizeOptions(stored?.lengths, builtIn[0].options).map((option) => ({ ...option, ...(images[`lengths:${option.value}`] ? { image: images[`lengths:${option.value}`] } : {}) })) },
+    { ...builtIn[1], options: normalizeOptions(stored?.shapes, builtIn[1].options).map((option) => ({ ...option, ...(images[`shapes:${option.value}`] ? { image: images[`shapes:${option.value}`] } : {}) })) },
     ...normalizeCustomDimensions(stored?.dimensions),
   ]
   for (const dimension of dimensions) {
@@ -90,7 +102,11 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user
         .map(({ id, title, status }) => ({ id, title, status })),
     }))
   }
-  return { dimensions }
+  const mediaByID = new Map(mediaResult.docs.map(({ id, url }) => [String(id), url]))
+  for (const option of dimensions.flatMap(({ options }) => options)) {
+    if (option.image) option.image = { id: String(option.image), url: mediaByID.get(String(option.image)) }
+  }
+  return { dimensions, media: mediaResult.docs.map(({ id, filename, url }) => ({ id, filename, url })) }
 }
 
 export async function GET(request: Request) {
@@ -126,21 +142,34 @@ export async function POST(request: Request) {
       if (!key || !label) return responseError('Enter a dimension name using letters or numbers.', 400)
       if ([...builtIn, ...customDimensions].some((dimension) => dimension.key === key || dimension.label.toLowerCase() === label.toLowerCase())) return responseError('That dimension already exists.', 409)
       customDimensions.push({ key, label, valueType: body.valueType === 'integer' || key === 'quantity' ? 'integer' : 'text', options: [] })
-      await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: customDimensions } as never, overrideAccess: false, user })
+      await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: withCategoryImages(customDimensions, categoryImages(globalData?.dimensions)) } as never, overrideAccess: false, user })
       return Response.json(await getSnapshot(payload, user))
     }
 
     const dimensionKey = typeof body.dimension === 'string' ? body.dimension : ''
     const dimensions = [...builtIn, ...customDimensions]
-    const dimension = dimensions.find((item) => item.key === dimensionKey)
-    if (!dimension || !['add', 'rename', 'delete'].includes(action)) return responseError('Choose a dimension and a valid category action.', 400)
+    const configuredDimension = dimensions.find((item) => item.key === dimensionKey)
+    const dimension = configuredDimension && (dimensionKey === 'lengths' || dimensionKey === 'shapes')
+      ? { ...configuredDimension, options: normalizeOptions(globalData?.[dimensionKey], configuredDimension.options) }
+      : configuredDimension
+    if (!dimension || !['add', 'rename', 'delete', 'set-image'].includes(action)) return responseError('Choose a dimension and a valid category action.', 400)
     if (dimension?.valueType === 'integer') return responseError('Enter integer values on each product variant instead of adding shared categories.', 400)
     const value: DimensionValue = typeof body.value === 'string' ? body.value.trim() : ''
     if (!value) return responseError('Enter a category value.', 400)
-    const currentOptions = dimension.options.map(({ value, label }) => ({ value, label }))
+    const currentOptions = dimension.options.map(({ value, label, image }) => ({ value, label, ...(image ? { image: typeof image === 'object' ? image.id : image } : {}) }))
     const selected = currentOptions.find((option) => String(option.value) === String(value))
     const products = (await getSnapshot(payload, user)).dimensions.find((item) => item.key === dimensionKey)?.options.find((item) => String(item.value) === String(value))?.products || []
-    if (action === 'add') {
+    if (action === 'set-image') {
+      const index = currentOptions.findIndex((option) => String(option.value) === String(value))
+      if (index < 0) return responseError('That category no longer exists.', 404)
+      const image = typeof body.image === 'string' && body.image ? body.image : null
+      const images = categoryImages(globalData?.dimensions)
+      const imageKey = `${dimensionKey}:${value}`
+      if (image) images[imageKey] = image
+      else delete images[imageKey]
+      await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: withCategoryImages(customDimensions, images) } as never, overrideAccess: false, user })
+      return Response.json(await getSnapshot(payload, user))
+    } else if (action === 'add') {
       if (!label) return responseError('Enter a display name.', 400)
       if (currentOptions.some((option) => String(option.value).toLocaleLowerCase() === String(value).toLocaleLowerCase())) return responseError('That category already exists.', 409)
       currentOptions.push({ value, label })
@@ -148,17 +177,19 @@ export async function POST(request: Request) {
       if (!label) return responseError('Enter a display name.', 400)
       const index = currentOptions.findIndex((option) => String(option.value) === String(value))
       if (index < 0) return responseError('That category no longer exists.', 404)
-      currentOptions[index] = { value, label }
+      currentOptions[index] = { ...currentOptions[index], value, label }
     } else {
       if (products.length) return responseError(`This category is still used by ${products.length} product(s). Remove it from those products first.`, 409)
       if (!selected) return responseError('That category no longer exists.', 404)
       const remaining = currentOptions.filter((option) => String(option.value) !== String(value))
-      if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: remaining } as never, overrideAccess: false, user })
-      else await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: customDimensions.map((item) => item.key === dimensionKey ? { ...item, options: remaining } : item) } as never, overrideAccess: false, user })
+      const images = categoryImages(globalData?.dimensions)
+      delete images[`${dimensionKey}:${value}`]
+      if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: remaining, dimensions: withCategoryImages(customDimensions, images) } as never, overrideAccess: false, user })
+      else await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: withCategoryImages(customDimensions.map((item) => item.key === dimensionKey ? { ...item, options: remaining } : item), images) } as never, overrideAccess: false, user })
       return Response.json(await getSnapshot(payload, user))
     }
-    if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: currentOptions } as never, overrideAccess: false, user })
-    else await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: customDimensions.map((item) => item.key === dimensionKey ? { ...item, options: currentOptions } : item) } as never, overrideAccess: false, user })
+    if (dimensionKey === 'lengths' || dimensionKey === 'shapes') await payload.updateGlobal({ slug: 'product-dimensions', data: { [dimensionKey]: currentOptions, dimensions: withCategoryImages(customDimensions, categoryImages(globalData?.dimensions)) } as never, overrideAccess: false, user })
+    else await payload.updateGlobal({ slug: 'product-dimensions', data: { dimensions: withCategoryImages(customDimensions.map((item) => item.key === dimensionKey ? { ...item, options: currentOptions } : item), categoryImages(globalData?.dimensions)) } as never, overrideAccess: false, user })
     return Response.json(await getSnapshot(payload, user))
   } catch (error) {
     return responseError(error instanceof Error ? error.message : 'Could not update product categories.', 500)

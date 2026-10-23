@@ -5,7 +5,7 @@ import { useAppContext } from "@/context/AppContext";
 import CartDrawer from "@/components/CartDrawer";
 
 const Navbar = () => {
-    const { products, getCartCount } = useAppContext();
+    const { products, getCartCount, storefrontNavigation } = useAppContext();
     const [cartOpen, setCartOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     useEffect(() => {
@@ -13,7 +13,7 @@ const Navbar = () => {
     }, [searchOpen]);
     const lengthOrder = ["x-short", "short", "medium", "long", "x-long"];
     const shapeOrder = ["square", "oval", "almond", "round"];
-    const lengths = [
+    const lengths = storefrontNavigation.lengths.length ? storefrontNavigation.lengths.map((option) => option.value) : [
         ...new Set([
             ...lengthOrder,
             ...products.flatMap((product) =>
@@ -35,7 +35,7 @@ const Navbar = () => {
                 (lengthOrder.indexOf(b) < 0 ? 100 : lengthOrder.indexOf(b)) ||
             a.localeCompare(b),
     );
-    const shapes = [
+    const shapes = storefrontNavigation.shapes.length ? storefrontNavigation.shapes.map((option) => option.value) : [
         ...new Set([
             ...shapeOrder,
             ...products.flatMap((product) =>
@@ -123,6 +123,12 @@ const Navbar = () => {
                     >
                         On Sale
                     </Link>
+                    {storefrontNavigation.pages.some((page) => page.placement === 'navigation') && <div className="relative group h-full py-2">
+                        <button type="button" className="hover:text-[#8b5e56]">How to Use</button>
+                        <div className="absolute left-0 top-full hidden min-w-48 rounded-lg border border-[#eadfdb] bg-white p-2 shadow-xl group-hover:block group-focus-within:block">
+                            {storefrontNavigation.pages.filter((page) => page.placement === 'navigation').map((page) => <Link key={page.slug} href={`/${page.slug}/`} className="block rounded-md px-3 py-2 hover:bg-[#f8f3ef]">{page.title}</Link>)}
+                        </div>
+                    </div>}
                 </div>
                 <div className="ml-auto flex items-center gap-1 sm:gap-3 text-sm">
                     <Link href="/account" aria-label="Customer account" title="Your account" className="rounded-full p-2 hover:text-[#985c70]">
@@ -165,6 +171,10 @@ const Navbar = () => {
                 <Link href="/by-shape" className="shrink-0">By Shape</Link>
                 <Link href="/all-products?isNew=true" className="shrink-0">New Arrivals</Link>
                 <Link href="/all-products?sale=true" className="shrink-0">On Sale</Link>
+                {storefrontNavigation.pages.some((page) => page.placement === 'navigation') && <>
+                    <span className="shrink-0 font-medium">How to Use</span>
+                    {storefrontNavigation.pages.filter((page) => page.placement === 'navigation').map((page) => <Link key={page.slug} href={`/${page.slug}/`} className="shrink-0">{page.title}</Link>)}
+                </>}
                 <Link href="/my-orders" className="shrink-0">Order Status</Link>
             </nav>
         </>

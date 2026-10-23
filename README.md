@@ -36,13 +36,13 @@
 | 路径 | 作用；通常什么时候修改 |
 | --- | --- |
 | `app/(storefront)/` | 顾客访问的页面：主页、商品详情、分类筛选、购物车、结账、订单状态。调整页面或路由时从这里开始。 |
-| `components/` | Storefront 共用组件，如导航栏、商品卡、购物车和支付按钮。 |
+| `components/` | Storefront 共用组件，如导航栏、商品卡、购物车和支付按钮；Length / Shape 分类入口使用后台配置的图片和分类名称。 |
 | `app/studio/product-studio.tsx` | Product Studio 的商品列表和编辑界面；当前变体支持 Length + Shape + Size 及 Mystery Box Size-only；商品级 Color 分类筛选已实现，复用现有字段和规格配置，无需 migration。Pack quantity 等自定义组合待补齐（见 PRD）。 |
 | `app/marketing-studio/` | Marketing Studio 的路由入口。 |
 | `app/(payload)/components/` | Payload 后台的自定义界面，如 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
 | `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |
 | `app/api/` | Next.js 服务端 API：商品后台、媒体、Checkout / PayPal、Merchant / Pinterest Feed 和定时任务。改 API 时同时检查调用它的页面与测试。 |
-| `collections/` | Payload 集合的数据结构、字段、权限和 Hook。商品、Variant、Supplier、Media、Order 等 schema 在这里。 |
+| `collections/` | Payload 集合的数据结构、字段、权限和 Hook。商品、Variant、Supplier、Media、Order、Discounts 和带展示位置的 Pages schema 在这里。 |
 | `globals/` | Payload 单例配置数据，如配送设置、营销设置和商品规格维度。 |
 | `payload.config.ts` | 注册 Payload collections / globals、数据库、R2 文件存储、Admin 组件和类型输出位置。 |
 | `payload-types.ts` | Payload 根据 schema 生成的 TypeScript 类型；修改 schema 后重新生成，不要手工维护。 |
@@ -62,6 +62,10 @@
 URL 当前仍使用 `?variant=ID`；改用可读规格参数及保留旧链接兼容的方案列为待讨论，暂不改动。可读 URL 不能替代 Variant ID 保留和规格变更映射。
 
 ## 顾客登录与迁移
+## Storefront 页面与分类
+
+`/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；预览图在后台 Product Studio → Categories 设置。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏，切回 storefront 时会刷新导航。新页面需将 Status 设为 Published 才会公开显示。Pages 新增展示位置字段，部署前需按[数据库迁移说明](./docs/database-migrations.md)应用 `20261023_190000_add_page_placement`。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出；Google 各展示位置对格式的保留情况可能不同。Product Studio 批量删除会对关联记录提示二次确认。
+
 
 导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。
 

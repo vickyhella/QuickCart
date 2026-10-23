@@ -33,7 +33,7 @@ export const Discounts: CollectionConfig = {
     { name: 'minimumSubtotal', type: 'number', min: 0 },
     { name: 'usageLimit', type: 'number', min: 1 },
     { name: 'usageCount', type: 'number', min: 0, defaultValue: 0, admin: { readOnly: true } },
-    { name: 'expiresAt', type: 'date' },
+    { name: 'expiresAt', type: 'date', admin: { className: 'discount-expiry-date' } },
     { name: 'active', type: 'checkbox', defaultValue: true },
   ],
 }

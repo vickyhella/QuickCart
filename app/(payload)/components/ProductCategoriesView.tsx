@@ -9,10 +9,11 @@ import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 type CategoryOption = {
   value: string | number
   label: string
+  image?: { id: string | number; url?: string } | string | number | null
   products: { id: string | number; title: string; status: string }[]
 }
 type Dimension = { key: string; label: string; valueType: 'text' | 'integer'; options: CategoryOption[] }
-type CategoryResponse = { dimensions: Dimension[] }
+type CategoryResponse = { dimensions: Dimension[]; media?: { id: string | number; filename: string; url?: string }[] }
 
 const initialDimensions: Dimension[] = [
   ...([
@@ -26,6 +27,7 @@ const initialDimensions: Dimension[] = [
 export function ProductCategoriesView() {
   const [dimension, setDimension] = useState('lengths')
   const [dimensions, setDimensions] = useState<CategoryResponse['dimensions']>(initialDimensions)
+  const [media, setMedia] = useState<CategoryResponse['media']>([])
   const [label, setLabel] = useState('')
   const [newDimension, setNewDimension] = useState('')
   const [newDimensionType, setNewDimensionType] = useState<'text' | 'integer'>('text')
@@ -43,7 +45,7 @@ export function ProductCategoriesView() {
         (response) => readJSONResponse(response) as Promise<CategoryResponse>,
       )
       .then((data) => {
-        if (active) setDimensions(data.dimensions)
+        if (active) { setDimensions(data.dimensions); setMedia(data.media || []) }
       })
       .catch((cause) => {
         if (active)
@@ -77,6 +79,7 @@ export function ProductCategoriesView() {
       })
       const data = (await readJSONResponse(response)) as CategoryResponse
       setDimensions(data.dimensions)
+      setMedia(data.media || [])
       setLabel('')
       setEditingValue('')
       setNotice(
@@ -93,6 +96,21 @@ export function ProductCategoriesView() {
     } finally {
       setBusy(false)
     }
+  }
+
+  const saveImage = async (value: string, image: string) => {
+    setBusy(true)
+    setError('')
+    setNotice('')
+    try {
+      const response = await fetch('/api/studio/categories', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'set-image', dimension, value, image: image || null }) })
+      const data = await readJSONResponse(response) as CategoryResponse
+      setDimensions(data.dimensions)
+      setMedia(data.media || [])
+      setNotice('Preview image saved.')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not save preview image.')
+    } finally { setBusy(false) }
   }
 
   const add = () => {
@@ -316,6 +334,12 @@ export function ProductCategoriesView() {
                       <strong className="min-w-40 text-base font-medium">
                         {option.label}
                       </strong>
+                      {typeof option.image === 'object' && option.image?.url && <img src={option.image.url} alt="" className="h-10 w-10 rounded-md object-cover" />}
+                      {(dimension === 'lengths' || dimension === 'shapes') && <label className="text-sm text-[#766966]">Preview image
+                        <select aria-label={`Preview image for ${option.label}`} className="ml-2 max-w-56 rounded-lg border border-[#e7ddd8] bg-white px-3 py-2" disabled={busy} value={String(typeof option.image === 'object' ? option.image?.id || '' : option.image || '')} onChange={(event) => void saveImage(String(option.value), event.target.value)}>
+                          <option value="">No image</option>{media?.map((item) => <option key={item.id} value={item.id}>{item.filename}</option>)}
+                        </select>
+                      </label>}
                       <code className="rounded-md bg-[#f7f3f0] px-2 py-1 text-sm text-[#766966]">
                         {option.value}
                       </code>

@@ -3,6 +3,10 @@ import config from '@/payload.config'
 import { getEnvironmentVariable } from '@/lib/environment-config'
 import { resolveProductMedia } from '@/lib/resolve-product-media'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -15,6 +19,31 @@ const escapeXML = (value = '') => String(value)
   .replaceAll("'", '&apos;')
 
 const text = (value) => escapeXML(String(value || '').replace(/\s+/g, ' ').trim())
+const merchantDescription = (markdown) => renderToStaticMarkup(createElement(ReactMarkdown, {
+  remarkPlugins: [remarkGfm],
+  components: {
+    p: ({ children }) => createElement('div', null, children),
+    h1: ({ children }) => createElement('div', null, createElement('strong', null, children)),
+    h2: ({ children }) => createElement('div', null, createElement('strong', null, children)),
+    h3: ({ children }) => createElement('div', null, createElement('strong', null, children)),
+    h4: ({ children }) => createElement('div', null, createElement('strong', null, children)),
+    h5: ({ children }) => createElement('div', null, createElement('strong', null, children)),
+    h6: ({ children }) => createElement('div', null, createElement('strong', null, children)),
+    a: ({ children }) => createElement('span', null, children),
+    blockquote: ({ children }) => createElement('div', null, children),
+    hr: () => createElement('br'),
+    img: ({ alt }) => createElement('span', null, alt),
+    pre: ({ children }) => createElement('div', null, children),
+    code: ({ children }) => createElement('span', null, children),
+    del: ({ children }) => createElement('span', null, children),
+    table: ({ children }) => createElement('div', null, children),
+    thead: ({ children }) => createElement('div', null, children),
+    tbody: ({ children }) => createElement('div', null, children),
+    tr: ({ children }) => createElement('div', null, children),
+    th: ({ children }) => createElement('span', null, children, ' · '),
+    td: ({ children }) => createElement('span', null, children, ' · '),
+  },
+}, String(markdown || ''))).replaceAll(']]>', ']]]]><![CDATA[>')
 const amount = (value) => `${Number(value || 0).toFixed(2)} USD`
 
 export async function GET() {
@@ -66,7 +95,7 @@ export async function GET() {
         <g:id>${text(variant?.sku || (variant ? `${product.sku || product.id}-${variant.id}` : product.sku || product.id))}</g:id>
         <g:item_group_id>${text(product.sku || product.id)}</g:item_group_id>
         <g:title>${text(title)}</g:title>
-        <g:description>${text(String(product.description || '').replace(/!\[([^\]]*)\]\([^)]+\)/g, '$1').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[`*_>#~-]/g, ' '))}</g:description>
+        <g:description><![CDATA[${merchantDescription(product.description)}]]></g:description>
         <g:link>${text(productURL.toString())}</g:link>
         <g:image_link>${text(itemImageLink)}</g:image_link>
         ${extraImages}

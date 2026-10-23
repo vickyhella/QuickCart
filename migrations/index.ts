@@ -14,6 +14,7 @@ import * as migration_20261020_122640_add_woocommerce_customer_order_history_fie
 import * as migration_20261020_132125_simplify_order_fields from './20261020_132125_simplify_order_fields';
 import * as migration_20261020_150000_add_order_tracking_url from './20261020_150000_add_order_tracking_url';
 import * as migration_20261020_170400_allow_size_only_variants from './20261020_170400_allow_size_only_variants';
+import * as migration_20261023_190000_add_page_placement from './20261023_190000_add_page_placement';
 
 export const migrations = [
   {
@@ -95,5 +96,10 @@ export const migrations = [
     up: migration_20261020_170400_allow_size_only_variants.up,
     down: migration_20261020_170400_allow_size_only_variants.down,
     name: '20261020_170400_allow_size_only_variants',
+  },
+  {
+    up: migration_20261023_190000_add_page_placement.up,
+    down: migration_20261023_190000_add_page_placement.down,
+    name: '20261023_190000_add_page_placement',
   },
 ];

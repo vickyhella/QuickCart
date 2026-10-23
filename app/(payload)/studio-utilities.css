@@ -1,5 +1,34 @@
 @tailwind utilities;
 
+.discount-expiry-date .date-time-picker .react-datepicker,
+.discount-expiry-date .date-time-picker .react-datepicker__month-container,
+.discount-expiry-date .date-time-picker .react-datepicker__header,
+.discount-expiry-date .date-time-picker .react-datepicker__month {
+  color: #302522 !important;
+  background: #fffdfa !important;
+}
+
+.discount-expiry-date .date-time-picker .react-datepicker__current-month,
+.discount-expiry-date .date-time-picker .react-datepicker__day-name,
+.discount-expiry-date .date-time-picker .react-datepicker__day,
+.discount-expiry-date .date-time-picker .react-datepicker__time-name {
+  color: #302522 !important;
+}
+
+.discount-expiry-date .date-time-picker .react-datepicker__day--outside-month {
+  color: #9a8f89 !important;
+}
+
+.discount-expiry-date .date-time-picker .react-datepicker__day--selected,
+.discount-expiry-date .date-time-picker .react-datepicker__day--keyboard-selected {
+  color: #fff !important;
+  background: #754b43 !important;
+}
+
+.discount-expiry-date .date-time-picker .react-datepicker__navigation-icon::before {
+  border-color: #554944 !important;
+}
+
 .collection-list--products .table-wrap {
   max-width: 100%;
   overflow-x: auto;

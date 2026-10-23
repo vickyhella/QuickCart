@@ -17,6 +17,7 @@ export const AppContextProvider = (props) => {
     const router = useRouter()
 
     const [products, setProducts] = useState([])
+    const [storefrontNavigation, setStorefrontNavigation] = useState({ lengths: [], shapes: [], pages: [] })
     const [productsStatus, setProductsStatus] = useState('loading')
     const [cartItems, setCartItems] = useState({})
     const [cartLoaded, setCartLoaded] = useState(false)
@@ -99,7 +100,9 @@ export const AppContextProvider = (props) => {
     }
 
     const getCartCount = () => {
+        if (!cartLoaded || productsStatus !== 'loaded') return 0
         return Object.values(cartItems).reduce((total, line) => {
+            if (!products.some((product) => String(product._id) === String(line?.productId))) return total
             const quantity = Math.floor(Number(line?.quantity) || 0)
             return total + Math.max(0, quantity)
         }, 0)
@@ -119,11 +122,18 @@ export const AppContextProvider = (props) => {
 
     useEffect(() => {
         fetchProductData()
+        const fetchNavigation = () => fetch('/api/storefront/navigation', { cache: 'no-store' })
+            .then((response) => response.ok ? response.json() : null)
+            .then((data) => { if (data) setStorefrontNavigation(data) })
+            .catch(() => undefined)
+        fetchNavigation()
+        window.addEventListener('focus', fetchNavigation)
+        return () => window.removeEventListener('focus', fetchNavigation)
     }, [])
 
     const value = {
         currency, router,
-        products, productsStatus, fetchProductData,
+        products, productsStatus, fetchProductData, storefrontNavigation,
         cartItems, setCartItems,
         addToCart, updateCartQuantity,
         getCartCount, getCartAmount

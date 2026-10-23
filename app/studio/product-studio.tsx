@@ -450,7 +450,7 @@ export default function ProductStudio() {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'delete', items: ids.map((id) => ({ id })), force }),
     })
-    const data = await responseData(response)
+    const data = await response.json()
     if (response.status === 409 && data.requiresForce) {
       if (!window.confirm(`${data.referenced.length} selected product(s) are referenced by orders or Pinterest posts. Delete the products anyway? Historical records remain; shared or referenced images will be kept.`)) return
       return deleteProducts(ids, true)

@@ -8,10 +8,10 @@ import ProductCard from '@/components/ProductCard'
 import { useAppContext } from '@/context/AppContext'
 
 const values = [
-  ['Handmade', 'Designed and finished by hand for a salon-quality look.'],
-  ['Reusable', 'Wear again with a little care between applications.'],
-  ['Easy to apply', 'A polished manicure in about ten minutes at home.'],
-  ['Made to last', 'Enjoy your set for up to four weeks with nail glue.'],
+  ['Handmade', 'Designed and finished by hand.'],
+  ['Reusable', 'Keep the set and wear it again.'],
+  ['Easy to apply', 'A polished manicure in about ten minutes.'],
+  ['Made to last', 'Up to four weeks with nail glue.'],
 ]
 
 export default function Home() {
@@ -19,82 +19,121 @@ export default function Home() {
   const newProducts = products.filter((product) => product.isNew)
   const visibleProducts = newProducts.length ? newProducts : products
   const heroProduct = products[0]
-  const heroImage = heroProduct?.image?.[0]
+  const heroImage = heroProduct?.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'
 
   return (
-    <main className="bg-[#faf7f5] text-[#271d22]">
+    <main className="bg-[#fffdf7] text-[#201d1b]">
       <Navbar />
-      <section className="px-3 sm:px-5 lg:px-8 pt-3 sm:pt-5">
-        <div className="relative isolate min-h-[700px] overflow-hidden rounded-[1.5rem] bg-[#e8d7d1] sm:min-h-[700px] lg:min-h-[740px]">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_76%_39%,#f5e8e2_0%,#dfc3bb_34%,#b78483_75%,#79505f_100%)]" />
-          <div className="absolute -right-24 -top-16 h-[38rem] w-[38rem] rounded-full border border-white/30 sm:right-[-5%] sm:top-[-22%] sm:h-[48rem] sm:w-[48rem]" />
-          <div className="absolute right-1/2 top-5 h-[17rem] w-[17rem] translate-x-1/2 rotate-6 overflow-hidden rounded-[48%_48%_8%_8%] border-[8px] border-white/40 bg-[#f9efeb] shadow-[0_35px_90px_rgba(63,27,46,.28)] sm:right-[13%] sm:top-[11%] sm:h-[32rem] sm:w-[26rem] sm:translate-x-0 sm:border-[10px]">
-            {heroImage ? <SafeImage unoptimized src={heroImage} alt={heroProduct?.imageAlt?.[0] || heroProduct?.name || 'Ginny Nana press-on nail design'} fill sizes="(max-width: 640px) 72vw, 430px" className="object-cover" priority /> : <div className="h-full w-full bg-[linear-gradient(145deg,#fff7f2_15%,#e6bdb5_54%,#945868)]" />}
+
+      <section className="px-3 pt-3 sm:px-5 sm:pt-5 lg:px-8">
+        <div className="grid overflow-hidden bg-[#254bd8] lg:min-h-[680px] lg:grid-cols-[.88fr_1.12fr]">
+          <div className="order-2 flex flex-col justify-center bg-[#f6ed55] px-6 py-9 sm:px-10 sm:py-12 lg:order-1 lg:px-14 lg:py-16 xl:px-20">
+            <p className="text-xs font-semibold tracking-[0.16em] text-[#254bd8]">Ginny Nana · Handmade press-ons</p>
+            <h1 className="mt-5 max-w-[620px] font-serif text-[3.35rem] leading-[.93] tracking-[-.055em] sm:text-7xl lg:text-[4.8rem] xl:text-[5rem]">
+              A little art.<br />A lot of you.
+            </h1>
+            <p className="mt-6 max-w-md text-[15px] leading-7 text-[#393720] sm:text-base">
+              Wearable nail designs, made by hand and ready when you are. Find a set that feels like your kind of statement.
+            </p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
+              <Link href="/all-products" className="inline-flex min-h-12 items-center justify-center bg-[#e64d35] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#c93d2a] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#201d1b]">
+                Shop the collection
+              </Link>
+              <span className="text-xs font-medium text-[#393720]">Free shipping over $50</span>
+            </div>
+            <div className="mt-10 hidden items-center gap-3 text-xs font-semibold text-[#254bd8] sm:flex">
+              <span className="h-px w-10 bg-[#254bd8]" />
+              Made to match your mood
+            </div>
           </div>
-          <div className="absolute right-[3%] top-[42%] hidden h-44 w-36 -rotate-12 overflow-hidden rounded-[45%_45%_8%_8%] border-[7px] border-white/60 bg-[#e9c7bd] shadow-xl sm:block">
-            {products[1]?.image?.[0] && <SafeImage unoptimized src={products[1].image[0]} alt={products[1].imageAlt?.[0] || products[1].name} fill sizes="144px" className="object-cover" />}
+
+          <div className="relative order-1 min-h-[390px] overflow-hidden bg-[#254bd8] sm:min-h-[520px] lg:order-2 lg:min-h-[680px]">
+            {heroImage ? (
+              <SafeImage
+                unoptimized
+                src={heroImage}
+                alt={heroProduct?.imageAlt?.[0] || heroProduct?.name || 'Ginny Nana handmade press-on nails worn on a hand'}
+                fill
+                sizes="(max-width: 1024px) 100vw, 58vw"
+                className="object-cover object-center"
+                priority
+              />
+            ) : (
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_55%_40%,#f6ed55_0%,#f6ed55_13%,#254bd8_13.3%,#254bd8_100%)]" />
+            )}
+            <span className="absolute bottom-4 right-4 bg-[#f6ed55] px-3 py-2 text-[10px] font-semibold tracking-[.08em] text-[#201d1b] sm:bottom-6 sm:right-6 sm:px-4 sm:py-3 sm:text-xs">YOUR NEXT FAVORITE SET</span>
           </div>
-          <div className="relative z-10 flex min-h-[700px] items-end px-5 pb-8 pt-[20rem] sm:min-h-[700px] sm:px-10 sm:pb-14 sm:pt-14 lg:min-h-[740px] lg:items-center lg:px-16 lg:py-20">
-            <div className="max-w-[610px] rounded-2xl bg-[#fffaf7]/85 p-5 shadow-[0_25px_80px_rgba(50,24,36,.12)] backdrop-blur-md sm:p-10 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-0">
-              <p className="text-[10px] uppercase tracking-[0.32em] text-[#794b5d] sm:text-xs">Ginny Nana · Wearable nail art</p>
-              <h1 className="mt-5 max-w-xl font-serif text-[2.8rem] leading-[.98] tracking-[-.04em] sm:text-6xl lg:text-[5.5rem]">A fresh set.<br /><span className="italic text-[#904f68]">A whole new mood.</span></h1>
-              <p className="mt-5 max-w-md text-sm leading-6 text-[#59444c] sm:text-base sm:leading-7">Salon-inspired press-ons, made for your own rhythm. Find the shape, length, and little details that feel like you.</p>
-              <div className="mt-7 flex flex-wrap items-center gap-3 sm:gap-5">
-                <Link href="/all-products" className="rounded-full bg-[#2c1b25] px-7 py-3.5 text-sm text-white transition hover:bg-[#75465c]">Shop the collection <span aria-hidden="true">↗</span></Link>
-                <span className="text-xs uppercase tracking-[0.14em] text-[#654d55]">Free shipping over $50</span>
+        </div>
+      </section>
+
+      <section aria-label="Why Ginny Nana" className="border-b border-[#e9e5d9] px-5 py-5 sm:px-8 lg:px-16">
+        <div className="mx-auto flex max-w-7xl flex-wrap justify-center gap-x-8 gap-y-2 text-center text-[11px] font-semibold tracking-[.08em] sm:justify-between sm:text-xs">
+          <span>HANDMADE WITH CARE</span>
+          <span>REUSABLE BY DESIGN</span>
+          <span>READY IN MINUTES</span>
+          <span>FREE SHIPPING OVER $50</span>
+        </div>
+      </section>
+
+      <section className="px-5 py-16 sm:px-8 md:py-20 lg:px-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold tracking-[.12em] text-[#254bd8]">THE LATEST SETS</p>
+              <h2 className="mt-2 font-serif text-4xl tracking-[-.04em] sm:text-5xl">Fresh off the nail desk</h2>
+            </div>
+            <Link href="/all-products" className="shrink-0 border-b border-[#e64d35] pb-1 text-sm font-semibold hover:text-[#c93d2a]">Shop all</Link>
+          </div>
+          {visibleProducts.length ? (
+            <div className="mt-8 grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 lg:grid-cols-4 lg:gap-x-7">
+              {visibleProducts.slice(0, 4).map((product) => <ProductCard key={product._id} product={product} />)}
+            </div>
+          ) : productsStatus === 'loading' ? (
+            <div className="mt-8 bg-[#f5f1e7] py-12 text-center text-sm text-[#766f62]" role="status">Loading designs…</div>
+          ) : productsStatus === 'error' ? (
+            <div className="mt-8 bg-[#f5f1e7] py-12 text-center text-sm text-[#766f62]" role="alert">
+              <p>We couldn’t load the collection.</p>
+              <button type="button" onClick={fetchProductData} className="mt-3 underline underline-offset-4">Try again</button>
+            </div>
+          ) : (
+            <div className="mt-8 bg-[#f5f1e7] py-12 text-center text-sm text-[#766f62]">New designs are on the way. Check back soon.</div>
+          )}
+        </div>
+      </section>
+
+      <section className="px-3 pb-16 sm:px-5 lg:px-8 lg:pb-20">
+        <div className="mx-auto grid max-w-[1440px] gap-3 md:grid-cols-2">
+          <Link href="/by-shape" className="group flex min-h-[240px] flex-col justify-between bg-[#254bd8] p-7 text-white transition-colors hover:bg-[#1c3db8] sm:min-h-[300px] sm:p-10">
+            <span className="text-xs font-semibold tracking-[.14em] text-[#f6ed55]">FIND YOUR SHAPE</span>
+            <span className="flex items-end justify-between gap-4">
+              <span className="font-serif text-4xl leading-none tracking-[-.04em] sm:text-6xl">Almond, oval<br />or square?</span>
+              <span aria-hidden="true" className="text-3xl transition-transform group-hover:translate-x-1">↗</span>
+            </span>
+          </Link>
+          <Link href="/by-length" className="group flex min-h-[240px] flex-col justify-between bg-[#e64d35] p-7 text-white transition-colors hover:bg-[#c93d2a] sm:min-h-[300px] sm:p-10">
+            <span className="text-xs font-semibold tracking-[.14em] text-[#fff0a4]">PICK YOUR LENGTH</span>
+            <span className="flex items-end justify-between gap-4">
+              <span className="font-serif text-4xl leading-none tracking-[-.04em] sm:text-6xl">Short and sweet<br />or full drama?</span>
+              <span aria-hidden="true" className="text-3xl transition-transform group-hover:translate-x-1">↗</span>
+            </span>
+          </Link>
+        </div>
+      </section>
+
+      <section className="bg-[#201d1b] px-5 py-16 text-[#fffdf7] sm:px-8 md:py-20 lg:px-16">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-2xl">
+            <p className="text-xs font-semibold tracking-[.14em] text-[#f6ed55]">GOOD NAILS, NO APPOINTMENT</p>
+            <h2 className="mt-3 font-serif text-4xl tracking-[-.04em] sm:text-5xl">Your manicure, your moment.</h2>
+          </div>
+          <div className="mt-10 grid gap-7 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+            {values.map(([title, description]) => (
+              <div className="border-t border-white/25 pt-4" key={title}>
+                <h3 className="font-semibold text-[#f6ed55]">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-white/70">{description}</p>
               </div>
-            </div>
+            ))}
           </div>
-          <span className="absolute bottom-7 right-7 hidden text-[10px] uppercase tracking-[.28em] text-white/90 sm:block">Designed to be noticed</span>
-        </div>
-      </section>
-
-      <section className="px-5 md:px-12 lg:px-20 py-16 md:py-20">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">The collection</p>
-            <h2 className="font-serif text-3xl md:text-4xl mt-2">New arrivals</h2>
-          </div>
-          <Link href="/all-products" className="text-sm underline underline-offset-4">Shop all</Link>
-        </div>
-        {visibleProducts.length ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-7 mt-8">
-            {visibleProducts.slice(0, 4).map((product) => <ProductCard key={product._id} product={product} />)}
-          </div>
-        ) : productsStatus === 'loading' ? (
-          <div className="mt-8 rounded-xl bg-[#f8f3ef] py-12 text-center text-sm text-[#786963]" role="status">Loading designs…</div>
-        ) : productsStatus === 'error' ? (
-          <div className="mt-8 rounded-xl bg-[#f8f3ef] py-12 text-center text-sm text-[#786963]" role="alert">
-            <p>We couldn’t load the collection.</p>
-            <button type="button" onClick={fetchProductData} className="mt-3 underline underline-offset-4">Try again</button>
-          </div>
-        ) : (
-          <div className="mt-8 rounded-xl bg-[#f8f3ef] py-12 text-center text-sm text-[#786963]">New designs are on the way. Check back soon.</div>
-        )}
-      </section>
-
-      <section className="bg-[#261a22] px-5 py-16 text-[#fffaf7] sm:px-8 md:px-12 lg:px-20 md:py-20">
-        <div className="max-w-2xl mx-auto text-center">
-            <p className="text-xs uppercase tracking-[0.25em] text-[#d89caf]">Your manicure, your moment</p>
-          <h2 className="font-serif text-3xl md:text-4xl mt-2">Good nails. No appointment.</h2>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
-          {values.map(([title, description], index) => (
-            <div className="text-center" key={title}>
-              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/25 bg-white/5 font-serif text-[#efb5c4]">0{index + 1}</span>
-              <h3 className="font-medium mt-4">{title}</h3>
-              <p className="mt-2 text-sm leading-6 text-white/65">{description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-      <section className="px-5 md:px-12 lg:px-20 py-14 text-center">
-        <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">Find your fit</p>
-        <h2 className="font-serif text-3xl mt-2">A shape and length for every day</h2>
-        <div className="flex flex-wrap justify-center gap-3 mt-6">
-          {['x-short', 'short', 'medium', 'long', 'x-long'].map((length) => <Link key={length} href={`/all-products?length=${length}`} className="rounded-full border border-[#d8c9c1] px-5 py-2 text-sm hover:bg-[#f8f3ef] capitalize">{length.replace('-', ' ')}</Link>)}
-          <Link href="/all-products?shape=almond" className="rounded-full border border-[#d8c9c1] px-5 py-2 text-sm hover:bg-[#f8f3ef]">Almond</Link>
-          <Link href="/all-products?shape=oval" className="rounded-full border border-[#d8c9c1] px-5 py-2 text-sm hover:bg-[#f8f3ef]">Oval</Link>
         </div>
       </section>
       <Footer />

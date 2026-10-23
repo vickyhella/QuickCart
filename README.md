@@ -42,6 +42,7 @@
 | `app/(payload)/components/` | Payload 后台的自定义界面，如 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
 | `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |
 | `app/api/` | Next.js 服务端 API：商品后台、媒体、Checkout / PayPal、Merchant / Pinterest Feed 和定时任务。改 API 时同时检查调用它的页面与测试。 |
+| `app/api/inventory-sync/products/route.ts` | 商品工作台专用分页快照和确认后状态更新接口；令牌配置及部署验收见[连接说明](./docs/inventory-sync.md)。 |
 | `collections/` | Payload 集合的数据结构、字段、权限和 Hook。商品、Variant、Supplier、Media、Order 等 schema 在这里。 |
 | `globals/` | Payload 单例配置数据，如配送设置、营销设置和商品规格维度。 |
 | `payload.config.ts` | 注册 Payload collections / globals、数据库、R2 文件存储、Admin 组件和类型输出位置。 |

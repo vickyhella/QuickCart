@@ -66,6 +66,8 @@ URL 当前仍使用 `?variant=ID`；改用可读规格参数及保留旧链接�
 
 首页采用明亮的美甲画廊视觉：以钴蓝、柠檬黄和番茄红突出产品摄影，展示新品、按形状 / 长度选购及手工、复用等卖点；首页入口在 `app/(storefront)/page.jsx`，沿用现有商品数据、导航、商品卡和页脚，无需新增环境变量或 migration。
 
+导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。
+
 `/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；预览图在后台 Product Studio → Categories 设置。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏，切回 storefront 时会刷新导航。新页面需将 Status 设为 Published 才会公开显示。Pages 新增展示位置字段，部署前需按[数据库迁移说明](./docs/database-migrations.md)应用 `20261023_190000_add_page_placement`。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出；Google 各展示位置对格式的保留情况可能不同。Product Studio 批量删除会对关联记录提示二次确认。
 
 

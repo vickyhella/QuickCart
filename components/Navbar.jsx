@@ -5,7 +5,7 @@ import { useAppContext } from "@/context/AppContext";
 import CartDrawer from "@/components/CartDrawer";
 
 const Navbar = () => {
-    const { products, getCartCount, storefrontNavigation } = useAppContext();
+    const { products, getCartCount, storefrontNavigation, storefrontNavigationStatus } = useAppContext();
     const [cartOpen, setCartOpen] = useState(false);
     const [searchOpen, setSearchOpen] = useState(false);
     useEffect(() => {
@@ -59,6 +59,7 @@ const Navbar = () => {
         value
             .replaceAll("-", " ")
             .replace(/\b\w/g, (letter) => letter.toUpperCase());
+    const navigationPages = storefrontNavigation.pages.filter((page) => page.placement === 'navigation');
 
     return (
         <>
@@ -123,12 +124,12 @@ const Navbar = () => {
                     >
                         On Sale
                     </Link>
-                    {storefrontNavigation.pages.some((page) => page.placement === 'navigation') && <div className="relative group h-full py-2">
+                    {navigationPages.length ? <div className="relative group h-full py-2">
                         <button type="button" className="hover:text-[#8b5e56]">How to Use</button>
                         <div className="absolute left-0 top-full hidden min-w-48 rounded-lg border border-[#eadfdb] bg-white p-2 shadow-xl group-hover:block group-focus-within:block">
-                            {storefrontNavigation.pages.filter((page) => page.placement === 'navigation').map((page) => <Link key={page.slug} href={`/${page.slug}/`} className="block rounded-md px-3 py-2 hover:bg-[#f8f3ef]">{page.title}</Link>)}
+                            {navigationPages.map((page) => <Link key={page.slug} href={`/${page.slug}/`} className="block rounded-md px-3 py-2 hover:bg-[#f8f3ef]">{page.title}</Link>)}
                         </div>
-                    </div>}
+                    </div> : storefrontNavigationStatus === 'loading' && <span className="h-full py-2">How to Use</span>}
                 </div>
                 <div className="ml-auto flex items-center gap-1 sm:gap-3 text-sm">
                     <Link href="/account" aria-label="Customer account" title="Your account" className="rounded-full p-2 hover:text-[#985c70]">
@@ -171,10 +172,10 @@ const Navbar = () => {
                 <Link href="/by-shape" className="shrink-0">By Shape</Link>
                 <Link href="/all-products?isNew=true" className="shrink-0">New Arrivals</Link>
                 <Link href="/all-products?sale=true" className="shrink-0">On Sale</Link>
-                {storefrontNavigation.pages.some((page) => page.placement === 'navigation') && <>
+                {navigationPages.length ? <>
                     <span className="shrink-0 font-medium">How to Use</span>
-                    {storefrontNavigation.pages.filter((page) => page.placement === 'navigation').map((page) => <Link key={page.slug} href={`/${page.slug}/`} className="shrink-0">{page.title}</Link>)}
-                </>}
+                    {navigationPages.map((page) => <Link key={page.slug} href={`/${page.slug}/`} className="shrink-0">{page.title}</Link>)}
+                </> : storefrontNavigationStatus === 'loading' && <span className="shrink-0 font-medium">How to Use</span>}
                 <Link href="/my-orders" className="shrink-0">Order Status</Link>
             </nav>
         </>

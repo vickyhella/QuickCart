@@ -36,20 +36,33 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
   const labelStyle: CSSProperties = { display: 'grid', gap: 8, minWidth: 0, color: 'var(--brand-text-primary)', fontWeight: 600 }
   const panelStyle: CSSProperties = { padding: '24px clamp(18px, 3vw, 32px)', marginBottom: 18, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-md)', background: 'var(--brand-surface)' }
   const update = (key: string, value: string | number | boolean) => setTemplates((current) => ({ ...current, [key]: value }))
+  const productImageUrl = (product: Record<string, unknown>) => {
+    const image = product.featuredImage
+    if (image && typeof image === 'object' && 'url' in image) return String(image.url || '')
+    return String(seo.media.find((media) => String(media.id) === String(image))?.url || '')
+  }
 
   useEffect(() => {
     let active = true
-    Promise.all([
-      fetch('/api/merchant/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('GMC preview unavailable'))),
-      fetch('/api/pinterest/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('Pinterest preview unavailable'))),
-      fetch('/api/products?limit=100&depth=1&sort=-updatedAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
-      fetch('/api/media?limit=1000&depth=0&sort=-createdAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
-    ]).then(([g, p, products, media]) => {
-      if (active) {
-        setGmc(g); setPinterest(p); setSeo({ products: products.docs || [], media: media.docs || [] })
-      }
-    }).catch((e) => { if (active) setError(e.message || 'Could not load marketing overview.') })
-    fetch('/api/globals/marketing-settings', { credentials: 'same-origin' })
+    if (section === 'feeds') {
+      Promise.all([
+        fetch('/api/merchant/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('GMC preview unavailable'))),
+        fetch('/api/pinterest/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('Pinterest preview unavailable'))),
+      ]).then(([g, p]) => {
+        if (active) { setGmc(g); setPinterest(p) }
+      }).catch((e) => { if (active) setError(e.message || 'Could not load marketing overview.') })
+    }
+    if (section === 'homepage' || section === 'seo' || section === 'metadata') {
+      fetch('/api/products?limit=100&depth=0&sort=-updatedAt', { credentials: 'same-origin' })
+        .then((r) => r.ok ? r.json() : Promise.reject(new Error('Could not load products.')))
+        .then((products) => { if (active) setSeo((current) => ({ ...current, products: products.docs || [] })) })
+        .catch((e) => { if (active) setError(e.message || 'Could not load products.') })
+      fetch('/api/media?limit=1000&depth=0&sort=-createdAt', { credentials: 'same-origin' })
+        .then((r) => r.ok ? r.json() : Promise.reject(new Error('Could not load media.')))
+        .then((media) => { if (active) setSeo((current) => ({ ...current, media: media.docs || [] })) })
+        .catch((e) => { if (active) setError(e.message || 'Could not load media.') })
+    }
+    fetch('/api/globals/marketing-settings?depth=0', { credentials: 'same-origin' })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('Could not load saved Marketing settings.')))
       .then((settings: Record<string, any>) => {
         if (!active) return
@@ -80,13 +93,22 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
     setSaving(true)
     setSaveMessage('')
     try {
-      const settingsToSave = { ...templates, ...values }
-      const arrivalDaysInput = settingsToSave.newArrivalDays ?? 30
-      const arrivalDays = Number(arrivalDaysInput)
-      if (arrivalDaysInput === '' || !Number.isInteger(arrivalDays) || arrivalDays < 0 || arrivalDays > 365) {
-        throw new Error('Automatic New badge window must be a whole number from 0 to 365 days.')
+      const sectionFields: Record<MarketingSection, string[]> = {
+        homepage: ['newArrivalDays', 'homepageHeroImage', 'homepageHeroImageAlt', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxImageAlt', 'homepageMysteryBoxProduct', 'homepageMysteryBoxEyebrow', 'homepageMysteryBoxTitle', 'homepageMysteryBoxDescription'],
+        feeds: [],
+        seo: ['studioDescriptionTemplate', 'productTitleTemplate', 'productDescriptionTemplate'],
+        compression: ['webpQuality'],
+        metadata: ['imageFilenameTemplate', 'imageTitleTemplate', 'imageAltTemplate', 'imageCaptionTemplate'],
       }
-      settingsToSave.newArrivalDays = arrivalDays
+      const settingsToSave = Object.fromEntries(sectionFields[section].map((key) => [key, values[key]]))
+      if (section === 'homepage') {
+        const arrivalDaysInput = settingsToSave.newArrivalDays ?? 30
+        const arrivalDays = Number(arrivalDaysInput)
+        if (arrivalDaysInput === '' || !Number.isInteger(arrivalDays) || arrivalDays < 0 || arrivalDays > 365) {
+          throw new Error('Automatic New badge window must be a whole number from 0 to 365 days.')
+        }
+        settingsToSave.newArrivalDays = arrivalDays
+      }
       for (const key of ['homepageHeroImage', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxProduct']) {
         const relation = settingsToSave[key]
         const relationID = relation && typeof relation === 'object' && 'id' in relation ? relation.id : relation
@@ -177,10 +199,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
               <input style={fieldStyle} value={templates.homepageHeroImageAlt || ''} onChange={(event) => update('homepageHeroImageAlt', event.target.value)} placeholder="Describe the image for screen readers" />
             </label>
             <label style={labelStyle}>Click-through product
-              <select style={fieldStyle} value={String(templates.homepageHeroProduct?.id ?? templates.homepageHeroProduct ?? '')} onChange={(event) => update('homepageHeroProduct', event.target.value || '')}>
-                <option value="">Use the first product</option>
-                {seo.products.filter((product) => product.status === 'published').map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.title || product.name || product.id)}</option>)}
-              </select>
+              <AdminSearchableSelect ariaLabel="Homepage click-through product" options={seo.products.filter((product) => product.status === 'published').map((product) => ({ value: String(product.id), label: String(product.title || product.name || product.id), imageUrl: productImageUrl(product) }))} value={String(templates.homepageHeroProduct?.id ?? templates.homepageHeroProduct ?? '')} onChange={(value) => update('homepageHeroProduct', value)} placeholder="Use the first product" searchPlaceholder="Search product name…" emptyMessage="No products match that name." style={fieldStyle} />
             </label>
           </div>
           {(() => {
@@ -194,10 +213,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           <p style={{ lineHeight: 1.6 }}>Choose a published Mystery Box product to show a clickable feature on the homepage. Its product image is used unless you select a separate banner image.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
             <label style={labelStyle}>Published Mystery Box product
-              <select style={fieldStyle} value={String(templates.homepageMysteryBoxProduct?.id ?? templates.homepageMysteryBoxProduct ?? '')} onChange={(event) => update('homepageMysteryBoxProduct', event.target.value || '')}>
-                <option value="">Hide this homepage feature</option>
-                {seo.products.filter((product) => product.status === 'published' && product.category === 'mystery-box').map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.title || product.name || product.id)}</option>)}
-              </select>
+              <AdminSearchableSelect ariaLabel="Published Mystery Box product" options={seo.products.filter((product) => product.status === 'published' && product.category === 'mystery-box').map((product) => ({ value: String(product.id), label: String(product.title || product.name || product.id), imageUrl: productImageUrl(product) }))} value={String(templates.homepageMysteryBoxProduct?.id ?? templates.homepageMysteryBoxProduct ?? '')} onChange={(value) => update('homepageMysteryBoxProduct', value)} placeholder="Hide this homepage feature" searchPlaceholder="Search product name…" emptyMessage="No Mystery Box products match that name." style={fieldStyle} />
             </label>
             <label style={labelStyle}>Optional banner image
               <AdminSearchableSelect ariaLabel="Optional banner image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id), imageUrl: String(media.url || '') }))} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(value) => update('homepageMysteryBoxImage', value)} placeholder="Use the product image" style={fieldStyle} />

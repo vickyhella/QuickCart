@@ -75,7 +75,7 @@ const marketingSettingsByRequest = new WeakMap<object, Promise<Record<string, un
 function getMarketingSettingsForRequest(req: any) {
   let settings = marketingSettingsByRequest.get(req)
   if (!settings) {
-    settings = req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
+    settings = req.payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true })
       .then((value: Record<string, unknown>) => value)
       .catch(() => ({}))
     marketingSettingsByRequest.set(req, settings)

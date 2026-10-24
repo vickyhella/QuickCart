@@ -16,6 +16,8 @@ export function AdminSearchableSelect({
   className,
   wrapperClassName,
   disabled,
+  searchPlaceholder = 'Search by image name…',
+  emptyMessage = 'No images match that name.',
 }: {
   ariaLabel: string
   options: SearchOption[]
@@ -26,6 +28,8 @@ export function AdminSearchableSelect({
   className?: string
   wrapperClassName?: string
   disabled?: boolean
+  searchPlaceholder?: string
+  emptyMessage?: string
 }) {
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
@@ -81,7 +85,7 @@ export function AdminSearchableSelect({
           type="search"
           aria-label={`Search ${ariaLabel} by name`}
           className="admin-searchable-select-search"
-          placeholder="Search by image name…"
+          placeholder={searchPlaceholder}
           value={query}
           autoFocus={open}
           onChange={(event) => setQuery(event.target.value)}
@@ -92,7 +96,7 @@ export function AdminSearchableSelect({
             {option.imageUrl ? <span className="admin-searchable-select-thumbnail"><Image src={option.imageUrl} alt="" fill unoptimized sizes="42px" /></span> : <span className="admin-searchable-select-thumbnail-placeholder" aria-hidden="true" />}
             <span>{option.label}</span>
           </button>)}
-          {matching.length === 0 && <p role="status">No images match that name.</p>}
+          {matching.length === 0 && <p role="status">{emptyMessage}</p>}
         </div>
       </div>}
     </details>

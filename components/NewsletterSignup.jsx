@@ -48,7 +48,7 @@ export default function NewsletterSignup() {
             </div>
             <label className="flex items-start gap-2 text-xs leading-5 text-[#615364]">
               <input type="checkbox" required checked={consent} onChange={(event) => setConsent(event.target.checked)} className="mt-1 accent-[#704576]" />
-              <span>I agree to receive email updates from Ginny Nana. To opt out, email <a className="underline underline-offset-2" href="mailto:ginnynana@hotmail.com?subject=Newsletter%20unsubscribe">ginnynana@hotmail.com</a>.</span>
+              <span>I agree to receive email updates from Ginny Nana.</span>
             </label>
             <label aria-hidden="true" className="hidden">Leave this field empty<input tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)} /></label>
             <p role="status" aria-live="polite" className={`min-h-5 text-sm ${status.kind === 'error' ? 'text-[#9d343b]' : status.kind === 'success' ? 'text-[#306341]' : 'text-[#615364]'}`}>{status.message}</p>

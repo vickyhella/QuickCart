@@ -132,6 +132,7 @@ export default function ProductStudio() {
   const requestID = useRef('')
   const [products, setProducts] = useState<ProductRow[]>([])
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [totalDocs, setTotalDocs] = useState(0)
   const [totalProducts, setTotalProducts] = useState(0)
@@ -181,6 +182,7 @@ export default function ProductStudio() {
   const [priceOverrides, setPriceOverrides] = useState<Record<string, number>>({})
   const [salePriceOverrides, setSalePriceOverrides] = useState<Record<string, number>>({})
   const [imageOverrides, setImageOverrides] = useState<Record<string, string>>({})
+  const [variantImageSearch, setVariantImageSearch] = useState('')
   const [stockOverrides, setStockOverrides] = useState<Record<string, number>>({})
   const [variantSupplierSKUs, setVariantSupplierSKUs] = useState<Record<string, string>>({})
   const [variantSupplierIDs, setVariantSupplierIDs] = useState<Record<string, string[]>>({})
@@ -218,6 +220,8 @@ export default function ProductStudio() {
       })
   }, [])
   const variantRows = orderedVariantRows(combinations, orderedSizes)
+  const selectedVariantImageIDs = new Set(Object.values(imageOverrides))
+  const visibleVariantImages = images.filter((image) => image.name.toLowerCase().includes(variantImageSearch.trim().toLowerCase()) || selectedVariantImageIDs.has(String(image.id)))
   const updateVariantAttribute = (variantKey: string, dimension: CustomDimension, value: string) => setVariantAttributes((current) => {
     const attributes = { ...(current[variantKey] || {}) }
     if (!value) delete attributes[dimension.key]
@@ -254,7 +258,7 @@ export default function ProductStudio() {
 
   useEffect(() => {
     let active = true
-    const params = new URLSearchParams({ page: String(page), status, sort })
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize), status, sort })
     if (search.trim()) params.set('search', search.trim())
     setLoading(true)
     setError('')
@@ -275,7 +279,7 @@ export default function ProductStudio() {
       .catch((cause: Error) => { if (active) notifyStudioError(setError, cause.message) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [page, search, status, sort])
+  }, [page, pageSize, search, status, sort])
 
   useEffect(() => {
     let active = true
@@ -316,13 +320,14 @@ export default function ProductStudio() {
       if (!wasEditing) requestID.current = ''
       setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft')
       setTitle(''); setColor(''); setSupplierSKU(''); setPurchaseURL(''); setImages([]); setPrice(''); setSalePrice(''); setDescription(''); setSeoTitle(''); setSeoDescription('')
+      setVariantImageSearch('')
       setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto'); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({})
       if (wasEditing) { setCombinations([]); setSizes(['xs', 's', 'm', 'l']) }
       const successMessage = action === 'publish' ? 'Product published.' : addAnother ? 'Draft saved. Your next product form is ready.' : wasEditing ? 'Product changes saved.' : 'Draft saved.'
       setNotice(successMessage)
       toast.success(successMessage)
       setPage(1)
-      const params = new URLSearchParams({ page: '1', status, sort })
+      const params = new URLSearchParams({ page: '1', limit: String(pageSize), status, sort })
       if (search.trim()) params.set('search', search.trim())
       const refresh = await fetch(`/api/studio/products?${params}`, { cache: 'no-store' })
       try {
@@ -438,7 +443,7 @@ export default function ProductStudio() {
       setBulkPrice(''); setBulkStock(''); setBulkStatus('')
       setSelectedIDs([])
       setSelectedProducts({})
-      const params = new URLSearchParams({ page: String(page), status, sort })
+      const params = new URLSearchParams({ page: String(page), limit: String(pageSize), status, sort })
       if (search.trim()) params.set('search', search.trim())
       const refresh = await fetch(`/api/studio/products?${params}`, { cache: 'no-store' }); const result = await responseData(refresh)
       setProducts(result.docs)
@@ -461,7 +466,7 @@ export default function ProductStudio() {
     const cleanupFailures = deleted.reduce((sum: number, item: any) => sum + item.cleanupFailures, 0)
     const keptImages = deleted.reduce((sum: number, item: any) => sum + item.keptReferencedMedia, 0)
     setNotice(`Deleted ${deleted.length} product(s), ${deleted.reduce((sum: number, item: any) => sum + item.deletedMedia, 0)} unused image(s), and ${deleted.reduce((sum: number, item: any) => sum + item.deletedOriginals, 0)} original(s).${keptImages ? ` Kept ${keptImages} image(s) still referenced elsewhere.` : ''}${cleanupFailures ? ` Could not clean ${cleanupFailures} media item(s).` : ''}${data.failed?.length ? ` ${data.failed.length} product(s) could not be deleted.` : ''}`)
-    const params = new URLSearchParams({ page: String(page), status, sort })
+    const params = new URLSearchParams({ page: String(page), limit: String(pageSize), status, sort })
     if (search.trim()) params.set('search', search.trim())
     const refresh = await fetch(`/api/studio/products?${params}`, { cache: 'no-store' })
     const result = await responseData(refresh)
@@ -486,7 +491,7 @@ export default function ProductStudio() {
 
   function cancelEditing() {
     requestID.current = ''
-    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setColor(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({}); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
+    setEditingId(null); setEditingUpdatedAt(''); setEditingStatus('draft'); setTitle(''); setChineseName(''); setColor(''); setSupplierSKU(''); setSupplierIDs([]); setPurchaseURL(''); setPrice(''); setSalePrice(''); setImages([]); setCombinations([]); setSizes(['xs', 's', 'm', 'l']); setPriceOverrides({}); setSalePriceOverrides({}); setImageOverrides({}); setStockOverrides({}); setVariantSupplierSKUs({}); setVariantSupplierIDs({}); setVariantPurchaseURLs({}); setVariantEnabled({}); setVariantAttributes({}); setVariantImageSearch(''); setDescription(''); setSeoTitle(''); setSeoDescription(''); setDescriptionMode('auto'); setSeoTitleMode('auto'); setSeoDescriptionMode('auto')
   }
 
   return (
@@ -548,7 +553,7 @@ export default function ProductStudio() {
                 </table>
               </div>
               <div className="flex items-center justify-between border-t border-[#f0e9e5] px-6 py-4 text-sm text-[#897a75]">
-                <span>Page {page} of {totalPages}</span>
+                <div className="flex flex-wrap items-center gap-4"><span>Page {page} of {totalPages} · {totalDocs} matching</span><label className="flex items-center gap-2">Per page<select aria-label="Products per page" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); setSelectedIDs([]); setSelectedProducts({}) }} className="w-24 rounded-xl border border-[#e7ddd8] bg-white px-3 py-2">{[10, 25, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
                 <div className="flex gap-2"><button type="button" className="ui-button ui-button--secondary" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>Previous</button><button type="button" className="ui-button ui-button--secondary" disabled={page >= totalPages || loading} onClick={() => setPage(page + 1)}>Next</button></div>
               </div>
             </section>
@@ -599,7 +604,9 @@ export default function ProductStudio() {
                       setVariantEnabled((current) => ({ ...current, ...Object.fromEntries(combinations.map((combo) => [`${combo.length}|${combo.shape}|${value}`, true])) }))
                     } else setSizes((current) => current.filter((item) => item !== value))
                   }} />{label}</label>)}</div>
-                  {variantRows.length > 0 && <div className="mt-3 space-y-2">{variantRows.map(({ combo, size }) => {
+                  {variantRows.length > 0 && <>
+                    {images.length > 0 && <input type="search" aria-label="Search variant images by name" className={`${inputClass} mb-2 max-w-sm`} placeholder="Filter variant images by name" value={variantImageSearch} onChange={(event) => setVariantImageSearch(event.target.value)} />}
+                    <div className="mt-3 space-y-2">{variantRows.map(({ combo, size }) => {
                     const key = `${combo.length}|${combo.shape}|${size}`
                     return <div key={key} className="rounded-lg border border-[#e7ddd8] p-3">
                       <p className="mb-2 text-sm text-[#766762]">{combo.length || combo.shape ? `${combo.length}/${combo.shape} · ` : ''}{size.toUpperCase()}</p>
@@ -614,7 +621,7 @@ export default function ProductStudio() {
                           <input aria-label={`${combo.length} ${combo.shape} ${size} variant stock`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-2 py-1.5" type="number" min="0" step="1" value={stockOverrides[key] ?? 10} onChange={(event) => setStockOverrides((current) => ({ ...current, [key]: Number(event.target.value) }))} />
                         </label>
                         <label className="text-sm text-[#766762]">Image
-                          <select aria-label={`${combo.length} ${combo.shape} ${size} variant image`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-1.5 py-1.5" value={imageOverrides[key] || ''} onChange={(event) => setImageOverrides((current) => ({ ...current, [key]: event.target.value }))}><option value="">Product image</option>{images.map((image, index) => <option key={image.id} value={String(image.id)}>Image {index + 1}</option>)}</select>
+                          <select aria-label={`${combo.length} ${combo.shape} ${size} variant image`} className="mt-1 w-full rounded-lg border border-[#e7ddd8] px-1.5 py-1.5" value={imageOverrides[key] || ''} onChange={(event) => setImageOverrides((current) => ({ ...current, [key]: event.target.value }))}><option value="">Product image</option>{visibleVariantImages.map((image) => <option key={image.id} value={String(image.id)}>{image.name}</option>)}</select>
                         </label>
                       </div>
                       {customDimensions.length > 0 && <div className="mt-2 grid grid-cols-2 gap-2">{customDimensions.map((dimension) => <label key={dimension.key} className="text-sm text-[#766762]">{dimension.label}
@@ -624,7 +631,8 @@ export default function ProductStudio() {
                       <label className="mt-2 flex items-center gap-1.5 text-sm text-[#968680]"><input type="checkbox" checked={variantEnabled[key] !== false} onChange={(event) => setVariantEnabled((current) => ({ ...current, [key]: event.target.checked }))} />Enabled</label>
                       <details className="mt-1"><summary className="cursor-pointer text-sm text-[#968680]">Variant supplier</summary><div className="mt-2"><SupplierPicker key={`${editingId || 'new'}-${key}`} label={`${combo.length} ${combo.shape} ${size} suppliers`} options={supplierOptions} value={variantSupplierIDs[key] || []} onChange={(value) => setVariantSupplierIDs((current) => ({ ...current, [key]: value }))} /></div></details>
                     </div>
-                  })}</div>}
+                  })}</div>
+                  </>}
                   <p className="mt-2 text-sm text-[#968680]">{combinations.length * sizes.length} variants · stock defaults to 10 · price and image inherit from the product</p>
                 </div>
 

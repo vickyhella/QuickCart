@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useAllFormFields, useField } from '@payloadcms/ui'
+import { AdminSearchableSelect } from './AdminSearchableSelect'
 
 type MediaDoc = {
   id: string | number
@@ -9,6 +10,7 @@ type MediaDoc = {
   mimeType?: string | null
   url?: string | null
   title?: string | null
+  altText?: string | null
 }
 
 type Props = {
@@ -34,6 +36,7 @@ export function ProductMediaField({ path, readOnly, field, label }: Props) {
   const [media, setMedia] = useState<MediaDoc[]>([])
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
+  const [mediaSearch, setMediaSearch] = useState('')
   const currentIDs = useMemo(() => {
     const entries = hasMany ? (Array.isArray(value) ? value : []) : [value]
     return entries.map(relationID).filter(Boolean)
@@ -52,6 +55,7 @@ export function ProductMediaField({ path, readOnly, field, label }: Props) {
   const selectedIDKey = allProductMediaIDs.join(',')
   const productID = typeof window === 'undefined' ? '' : window.location.pathname.match(/\/admin\/collections\/products\/([^/]+)/)?.[1] || ''
   const visibleMedia = useMemo(() => media.filter((item) => item.mimeType === 'image/webp' || currentIDs.includes(String(item.id))), [media, currentIDs])
+  const matchingMedia = useMemo(() => visibleMedia.filter((item) => `${item.filename || ''} ${item.title || ''} ${item.altText || ''}`.toLowerCase().includes(mediaSearch.trim().toLowerCase())), [visibleMedia, mediaSearch])
   const selectedMedia = currentIDs.map((id) => visibleMedia.find((item) => String(item.id) === id)).filter((item): item is MediaDoc => Boolean(item))
 
   useEffect(() => {
@@ -135,9 +139,13 @@ export function ProductMediaField({ path, readOnly, field, label }: Props) {
         Drop image{hasMany ? 's' : ''} here or <label style={{ color: 'var(--brand-accent)', textDecoration: 'underline', cursor: busy ? 'wait' : 'pointer' }}>browse<input type="file" accept="image/*,.heic,.heif" multiple={hasMany} disabled={busy} onChange={(event) => { if (event.currentTarget.files) void uploadFiles(event.currentTarget.files); event.currentTarget.value = '' }} style={{ display: 'none' }} /></label>
         {busy && <span> — converting and uploading…</span>}
       </div>
-      {visibleMedia.length > 0 && (hasMany ? <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, maxHeight: 220, overflow: 'auto' }}>
-        {visibleMedia.map((item) => <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 6, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', cursor: 'pointer' }}><input type="checkbox" checked={currentIDs.includes(String(item.id))} onChange={() => toggle(String(item.id))} /><img src={item.url || '/nail-placeholder.svg'} alt="" style={{ width: 34, height: 40, objectFit: 'cover' }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 'var(--brand-font-size-caption)' }}>{item.filename || item.title || item.id}</span></label>)}
-      </div> : <select aria-label="Choose an existing image" value={currentIDs[0] || ''} onChange={(event) => updateSelection(event.target.value ? [event.target.value] : [])} style={{ maxWidth: '100%', padding: 8 }}><option value="">Choose an existing image…</option>{visibleMedia.map((item) => <option key={item.id} value={String(item.id)}>{item.filename || item.title || item.id}</option>)}</select>)}
+      {visibleMedia.length > 0 && (hasMany ? <>
+        <input type="search" className="admin-image-search" aria-label="Search product images by name" placeholder="Search images by name…" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} />
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8, maxHeight: 220, overflow: 'auto', marginTop: 8 }}>
+          {matchingMedia.map((item) => <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 6, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', cursor: 'pointer' }}><input type="checkbox" checked={currentIDs.includes(String(item.id))} onChange={() => toggle(String(item.id))} /><img src={item.url || '/nail-placeholder.svg'} alt="" style={{ width: 34, height: 40, objectFit: 'cover' }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 'var(--brand-font-size-caption)' }}>{item.filename || item.title || item.id}</span></label>)}
+          {!matchingMedia.length && <p role="status">No images match that name.</p>}
+        </div>
+      </> : <AdminSearchableSelect ariaLabel="Choose an existing image" options={visibleMedia.map((item) => ({ value: String(item.id), label: String(item.filename || item.title || item.id) }))} value={currentIDs[0] || ''} onChange={(value) => updateSelection(value ? [value] : [])} placeholder="Choose an existing image…" style={{ maxWidth: '100%' }} />)}
     </>}
     {message && <p role="status" style={{ margin: '8px 0 0', color: /failed|invalid|could not/i.test(message) ? 'var(--brand-danger)' : 'var(--brand-text-secondary)' }}>{message}</p>}
   </div>

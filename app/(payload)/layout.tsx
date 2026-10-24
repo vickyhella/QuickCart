@@ -12,11 +12,6 @@ import { importMap } from './admin/importMap'
 
 export const metadata = {
   ...payloadMetadata,
-  icons: {
-    icon: [{ url: '/admin/icon.svg', type: 'image/svg+xml' }],
-    shortcut: [{ url: '/admin/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/admin/icon.svg', type: 'image/svg+xml' }],
-  },
 }
 
 const serverFunction: ServerFunctionClient = async (args) => {

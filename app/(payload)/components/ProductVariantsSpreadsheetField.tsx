@@ -86,6 +86,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   const parentPricing: PriceFields = useMemo(() => ({ price: fields.price?.value as number | null, compareAtPrice: fields.compareAtPrice?.value as number | null }), [fields.price?.value, fields.compareAtPrice?.value])
   const rows = storedRows.map(({ compareAtPrice, ...variant }) => ({ ...variant, ...toEditorPriceFields({ ...variant, compareAtPrice }, parentPricing) }))
   const [media, setMedia] = useState<Media[]>([])
+  const [mediaSearch, setMediaSearch] = useState('')
   const [suppliers, setSuppliers] = useState<Array<{ id: string | number; name: string }>>([])
   const [customDimensions, setCustomDimensions] = useState<CustomDimension[]>([])
   const [dimensions, setDimensions] = useState<{ combinations: Array<{ shape: string; length: string }>; size: string[]; newPair: { shape: string; length: string } }>({ combinations: [{ shape: 'almond', length: 'short' }], size: ['xs', 's', 'm'], newPair: { shape: 'almond', length: 'short' } })
@@ -100,8 +101,9 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
   const featuredImage = imageID(fields.featuredImage?.value)
   const mediaOptions = useMemo(() => {
     const selectedIDs = new Set([featuredImage, ...rows.map((variant) => imageID(variant.image))].filter(Boolean))
-    return media.filter((item) => item.filename && (item.mimeType === 'image/webp' || selectedIDs.has(String(item.id))))
-  }, [featuredImage, media, rows])
+    const query = mediaSearch.trim().toLowerCase()
+    return media.filter((item) => item.filename && (item.mimeType === 'image/webp' || selectedIDs.has(String(item.id))) && (!query || String(item.filename).toLowerCase().includes(query) || selectedIDs.has(String(item.id))))
+  }, [featuredImage, media, mediaSearch, rows])
 
   useEffect(() => {
     if (!dimensionsInitialized && rows.length) {
@@ -320,6 +322,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
       <button type="button" disabled={readOnly} onClick={() => updateRows([...rows, { sku: '', shape: dimensions.combinations[0]?.shape || 'almond', length: dimensions.combinations[0]?.length || 'short', size: dimensions.size[0] || 's', price: null, salePrice: null, image: featuredImage || null, stock: 10, trackStock: true, enabled: true }])} style={styles.button}>+ Add one variant</button>
       <span style={{ color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{rows.length} variant(s)</span>
     </div>
+    {media.length > 0 && <input type="search" aria-label="Search variant images by name" className="admin-image-search" placeholder="Search variant images by name…" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} style={{ maxWidth: 420, marginBottom: 10 }} />}
     {message && <p role="status" style={{ color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{message}</p>}
     <div style={{ overflowX: 'auto', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)' }} onPaste={handlePaste} onCopy={handleCopy}>
       <table style={{ width: '100%', minWidth: 1250 + customDimensions.length * 130, borderCollapse: 'collapse' }}>

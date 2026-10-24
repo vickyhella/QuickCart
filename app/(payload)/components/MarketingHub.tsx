@@ -8,6 +8,7 @@ import remarkGfm from 'remark-gfm'
 import { DEFAULT_PRODUCT_SEO_DESCRIPTION, DEFAULT_PRODUCT_SEO_TITLE, resolveProductSeoTemplates } from '../../../lib/product-seo-templates'
 import { uniqueLengthShapePairs } from '../../../lib/product-dimensions'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '../../../lib/studio-description-template'
+import { AdminSearchableSelect } from './AdminSearchableSelect'
 
 type Summary = { feedItems?: number; publishedProducts?: number; skippedPublishedProducts?: Array<{ title: string; reason: string }> }
 type ReprocessableImage = { id: string; filename: string }
@@ -42,7 +43,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
       fetch('/api/merchant/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('GMC preview unavailable'))),
       fetch('/api/pinterest/feed-preview', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : Promise.reject(new Error('Pinterest preview unavailable'))),
       fetch('/api/products?limit=100&depth=1&sort=-updatedAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
-      fetch('/api/media?limit=100&depth=0&sort=-createdAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
+      fetch('/api/media?limit=1000&depth=0&sort=-createdAt', { credentials: 'same-origin' }).then((r) => r.ok ? r.json() : { docs: [] }),
     ]).then(([g, p, products, media]) => {
       if (active) {
         setGmc(g); setPinterest(p); setSeo({ products: products.docs || [], media: media.docs || [] })
@@ -164,10 +165,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           <p style={{ lineHeight: 1.6 }}>Choose an image from the Media library and an optional published product to open when shoppers click the hero. Upload an image in <Link href="/admin/collections/media" style={{ textDecoration: 'underline' }}>Media</Link> first.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
             <label style={labelStyle}>Hero image
-              <select style={fieldStyle} value={String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')} onChange={(event) => update('homepageHeroImage', event.target.value || '')}>
-                <option value="">Use the first product image</option>
-                {seo.media.map((media) => <option key={String(media.id)} value={String(media.id)}>{String(media.filename || media.altText || media.id)}</option>)}
-              </select>
+              <AdminSearchableSelect ariaLabel="Homepage hero image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id) }))} value={String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')} onChange={(value) => update('homepageHeroImage', value)} placeholder="Use the first product image" style={fieldStyle} />
             </label>
             <label style={labelStyle}>Image alt text
               <input style={fieldStyle} value={templates.homepageHeroImageAlt || ''} onChange={(event) => update('homepageHeroImageAlt', event.target.value)} placeholder="Describe the image for screen readers" />
@@ -196,10 +194,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
               </select>
             </label>
             <label style={labelStyle}>Optional banner image
-              <select style={fieldStyle} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(event) => update('homepageMysteryBoxImage', event.target.value || '')}>
-                <option value="">Use the product image</option>
-                {seo.media.map((media) => <option key={String(media.id)} value={String(media.id)}>{String(media.filename || media.altText || media.id)}</option>)}
-              </select>
+              <AdminSearchableSelect ariaLabel="Optional banner image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id) }))} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(value) => update('homepageMysteryBoxImage', value)} placeholder="Use the product image" style={fieldStyle} />
             </label>
             <label style={labelStyle}>Image alt text
               <input style={fieldStyle} value={templates.homepageMysteryBoxImageAlt || ''} onChange={(event) => update('homepageMysteryBoxImageAlt', event.target.value)} placeholder="Describe the banner image" />

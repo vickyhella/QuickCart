@@ -19,7 +19,8 @@ export async function GET(request: Request) {
 
   const params = new URL(request.url).searchParams
   const page = Math.max(1, Number(params.get('page')) || 1)
-  const limit = 10
+  const requestedLimit = Number(params.get('limit'))
+  const limit = [10, 25, 50, 100].includes(requestedLimit) ? requestedLimit : 10
   const search = params.get('search')?.trim()
   const status = params.get('status')
   const requestedSort = params.get('sort')

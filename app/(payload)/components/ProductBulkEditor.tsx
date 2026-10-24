@@ -8,7 +8,7 @@ import { matchesProductBulkFilters } from '@/lib/product-bulk-filters'
 import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 
 type Product = Record<string, unknown> & PriceFields & { id: string | number; variants?: (Omit<ProductVariant, 'salePrice'> & PriceFields)[] }
-type Media = { id: string | number; filename?: string | null; mimeType?: string | null; url?: string | null }
+type Media = { id: string | number; filename?: string | null; title?: string | null; mimeType?: string | null; url?: string | null }
 type SupplierOption = { id: string | number; name: string }
 type ProductVariant = {
   id?: string
@@ -310,6 +310,7 @@ export function ProductBulkEditor() {
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
   const [search, setSearch] = useState('')
+  const [mediaSearch, setMediaSearch] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [variantEditor, setVariantEditor] = useState<{ rowIndex: number; variants: ProductVariant[]; values: { combinations: Array<{ shape: string; length: string }>; size: string[] }; newPair: { shape: string; length: string } } | null>(null)
@@ -374,8 +375,9 @@ export function ProductBulkEditor() {
         })
       } catch { /* Keep malformed JSON editable; save reports the validation error. */ }
     }
-    return media.filter((item) => item.mimeType === 'image/webp' || currentIDs.has(String(item.id)))
-  }, [media, rows])
+    const query = mediaSearch.trim().toLowerCase()
+    return media.filter((item) => (item.mimeType === 'image/webp' || currentIDs.has(String(item.id))) && (!query || String(item.filename || item.title || '').toLowerCase().includes(query) || currentIDs.has(String(item.id))))
+  }, [media, mediaSearch, rows])
 
   const visibleRows = useMemo(() => {
     return rows.filter((row) => matchesProductBulkFilters(row, search, filters))
@@ -619,6 +621,7 @@ export function ProductBulkEditor() {
           {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
         </button>
         <input aria-label="Search products on this page" placeholder="Filter this page by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
+        <input type="search" aria-label="Search images by name" placeholder="Filter image choices by name" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
         {(['status', 'category', 'shape', 'length', 'color', 'brand'] as const).map((key) => {
           const options = [...new Set(rows.flatMap((row) => key === 'shape' || key === 'length' ? row[key].split(',').map((value) => value.trim()).filter(Boolean) : row[key] ? [row[key]] : []))].sort()
           return <select key={key} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: 150 }}><option value="">All {key}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>

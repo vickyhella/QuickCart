@@ -371,6 +371,7 @@ export interface Product {
   mpn?: string | null;
   googleProductCategory?: string | null;
   status: 'draft' | 'published';
+  publishedAt?: string | null;
   isNew?: boolean | null;
   isBestSeller?: boolean | null;
   updatedAt: string;
@@ -855,6 +856,7 @@ export interface ProductsSelect<T extends boolean = true> {
   mpn?: T;
   googleProductCategory?: T;
   status?: T;
+  publishedAt?: T;
   isNew?: T;
   isBestSeller?: T;
   updatedAt?: T;
@@ -1213,6 +1215,7 @@ export interface MarketingSetting {
   homepageMysteryBoxEyebrow?: string | null;
   homepageMysteryBoxTitle?: string | null;
   homepageMysteryBoxDescription?: string | null;
+  newArrivalDays?: number | null;
   /**
    * Product Studio Auto description template. Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {availableLengthShapeCombinations}, {availableSizes}. Custom descriptions are not changed.
    */
@@ -1323,6 +1326,7 @@ export interface StoreSettingsSelect<T extends boolean = true> {
  */
 export interface MarketingSettingsSelect<T extends boolean = true> {
   availableCountries?: T;
+  newArrivalDays?: T;
   homepageHeroImage?: T;
   homepageHeroImageAlt?: T;
   homepageHeroProduct?: T;

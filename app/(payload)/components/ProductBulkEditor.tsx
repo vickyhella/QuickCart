@@ -306,6 +306,7 @@ export function ProductBulkEditor() {
   const [supplierOptions, setSupplierOptions] = useState<SupplierOption[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [deletingID, setDeletingID] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
@@ -418,6 +419,35 @@ export function ProductBulkEditor() {
       setMessage(`Created ${row.title}-duplicate as a draft.`)
     } catch (duplicateError) {
       setError(duplicateError instanceof Error ? duplicateError.message : 'Could not duplicate product.')
+    }
+  }
+
+  const deleteProduct = async (row: GridRow) => {
+    if (!window.confirm(`Delete “${row.title}” and any images used only by this product?`)) return
+    const requestDelete = (force: boolean) => fetch('/api/studio/products/bulk', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', items: [{ id: row.id }], force }),
+    })
+    setDeletingID(row.id)
+    setError('')
+    try {
+      let response = await requestDelete(false)
+      let result = await response.json().catch(() => ({}))
+      if (response.status === 409 && result.requiresForce) {
+        if (!window.confirm('This product is referenced by orders or Pinterest posts. Delete the product anyway? Historical records remain, and shared or referenced images will be kept.')) return
+        response = await requestDelete(true)
+        result = await response.json().catch(() => ({}))
+      }
+      if (!response.ok) throw new Error(result.error || 'Could not delete product.')
+      if (result.failed?.length) throw new Error(result.failed[0].error || 'Could not delete product.')
+      await load()
+      setMessage(`Deleted ${row.title}.`)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not delete product.')
+    } finally {
+      setDeletingID('')
     }
   }
 
@@ -623,14 +653,11 @@ export function ProductBulkEditor() {
         </p>
       </header>
       <ProductWorkspaceTabs />
-      <div style={toolbarStyle}>
+      <div className="product-bulk-controls-panel" style={toolbarStyle}>
         <div className="product-bulk-toolbar-row">
           <div className="product-bulk-toolbar-group">
             <button type="button" onClick={exportTSV} className="ui-button ui-button--secondary" disabled={loading || rows.length === 0}>Export TSV</button>
-            <button type="button" onClick={() => void load()} className="ui-button ui-button--secondary" disabled={loading || saving}>Reload</button>
-            <button type="button" onClick={() => void save()} className="ui-button ui-button--primary" disabled={loading || saving || dirtyIDs.size === 0}>
-              {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
-            </button>
+            <button type="button" onClick={() => void load()} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0}>Reload</button>
           </div>
           <div className="product-bulk-toolbar-group product-bulk-search-group">
             <input aria-label="Search products on this page" placeholder="Filter products by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 240 }} />
@@ -640,7 +667,8 @@ export function ProductBulkEditor() {
         <div className="product-bulk-toolbar-row product-bulk-filters">
         {(['status', 'category', 'shape', 'length', 'color', 'brand'] as const).map((key) => {
           const options = [...new Set(rows.flatMap((row) => key === 'shape' || key === 'length' ? row[key].split(',').map((value) => value.trim()).filter(Boolean) : row[key] ? [row[key]] : []))].sort()
-          return <select key={key} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: 132 }}><option value="">All {key}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          const label = key === 'category' ? 'categories' : key === 'status' ? 'statuses' : `${key}s`
+          return <select key={key} className={`product-bulk-filter-select product-bulk-filter-select--${key}`} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: key === 'category' ? 190 : 132 }}><option value="">All {label}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
         })}
         <button type="button" onClick={toggleVisibleVariants} className="ui-button ui-button--secondary" disabled={visibleVariantRows.length === 0}>
           {allVisibleVariantsExpanded ? 'Collapse all variants' : 'Expand all variants'}
@@ -654,19 +682,22 @@ export function ProductBulkEditor() {
           </label>
           <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
           {loading ? <span>Loading products…</span> : <span>{rows.length} on this page · {dirtyIDs.size} changed</span>}
+          <button type="button" onClick={() => void save()} className="ui-button ui-button--primary product-bulk-save-button" disabled={loading || saving || dirtyIDs.size === 0}>
+            {saving ? 'Saving…' : `Save changes${dirtyIDs.size ? ` (${dirtyIDs.size})` : ''}`}
+          </button>
         </div>
       </div>
       {message && <p role="status" style={{ color: 'var(--brand-text-secondary)' }}>{message}</p>}
       {error && <p role="alert" style={{ color: 'var(--brand-danger)' }}>{error}</p>}
       {loading ? <p>Loading…</p> : rows.length === 0 ? <p>No products found.</p> : (
-        <div onPasteCapture={handlePaste} onCopy={handleCopy} onMouseUp={() => setIsSelecting(false)} style={{ overflow: 'auto', maxHeight: '70vh', border: '1px solid var(--theme-elevation-300)' }}>
+        <div className="product-bulk-table-scroll" onPasteCapture={handlePaste} onCopy={handleCopy} onMouseUp={() => setIsSelecting(false)} style={{ overflow: 'auto', maxHeight: '70vh', border: '1px solid var(--theme-elevation-300)' }}>
           <table className="product-bulk-table" style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%', width: 'max-content', fontSize: 'var(--brand-font-size-caption)' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--theme-elevation-100)' }}>
               <tr>
                 <th className="product-bulk-sticky-image" style={{ padding: '0.65rem', position: 'sticky', left: 0, width: 84, minWidth: 84, background: 'var(--theme-elevation-100)', zIndex: 3 }}>Image</th>
                 <th className="product-bulk-sticky-index" style={{ padding: '0.65rem', position: 'sticky', left: 84, width: 56, minWidth: 56, background: 'var(--theme-elevation-100)', zIndex: 3 }}>#</th>
                 {columns.map((column) => <th key={column.key} style={{ minWidth: column.width, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '1px solid var(--theme-elevation-300)' }}>{column.label}</th>)}
-                <th className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 3, minWidth: 112, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', background: 'var(--theme-elevation-100)' }}>Action</th>
+                <th className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 3, minWidth: 168, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', background: 'var(--theme-elevation-100)' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -749,8 +780,12 @@ export function ProductBulkEditor() {
                         )}
                       </td>
                     ))}
-                    <td className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 1, minWidth: 112, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
-                      <button type="button" onClick={() => void duplicateProduct(rowIndex)} className="ui-button ui-button--secondary product-bulk-action-button">Duplicate</button>
+                    <td className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 1, minWidth: 168, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
+                      <div className="product-bulk-row-actions">
+                        <Link href={`/admin/collections/products/${encodeURIComponent(row.id)}`} className="product-bulk-row-action">Edit</Link>
+                        <button type="button" onClick={() => void duplicateProduct(rowIndex)} className="product-bulk-row-action">Duplicate</button>
+                        <button type="button" onClick={() => void deleteProduct(row)} disabled={deletingID === row.id || loading || saving} className="product-bulk-row-action product-bulk-row-action--danger">{deletingID === row.id ? 'Deleting…' : 'Delete'}</button>
+                      </div>
                     </td>
                   </tr>
                   {expandedVariants.has(row.id) && (() => {

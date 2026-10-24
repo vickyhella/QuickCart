@@ -43,6 +43,7 @@ export const MarketingSettings: GlobalConfig = {
         {
           label: 'Homepage',
           fields: [
+            { name: 'newArrivalDays', type: 'number', min: 0, max: 365, defaultValue: 30, admin: { description: 'Published products show the automatic New badge for this many days. Set to 0 to disable the automatic window; manually marked New products remain included.' } },
             { name: 'homepageHeroImage', type: 'upload', relationTo: 'media', admin: { description: 'Optional large image for the storefront homepage hero. If empty, the first published product image is used.' } },
             { name: 'homepageHeroImageAlt', type: 'text', admin: { description: 'Describe the hero image for screen readers. If empty, the selected product name is used.' } },
             { name: 'homepageHeroProduct', type: 'relationship', relationTo: 'products', admin: { description: 'Published product opened when customers click the hero image.' } },

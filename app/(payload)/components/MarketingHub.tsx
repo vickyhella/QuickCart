@@ -81,6 +81,12 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
     setSaveMessage('')
     try {
       const settingsToSave = { ...templates, ...values }
+      const arrivalDaysInput = settingsToSave.newArrivalDays ?? 30
+      const arrivalDays = Number(arrivalDaysInput)
+      if (arrivalDaysInput === '' || !Number.isInteger(arrivalDays) || arrivalDays < 0 || arrivalDays > 365) {
+        throw new Error('Automatic New badge window must be a whole number from 0 to 365 days.')
+      }
+      settingsToSave.newArrivalDays = arrivalDays
       for (const key of ['homepageHeroImage', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxProduct']) {
         const relation = settingsToSave[key]
         const relationID = relation && typeof relation === 'object' && 'id' in relation ? relation.id : relation
@@ -209,6 +215,14 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
               <textarea rows={3} style={{ ...fieldStyle, resize: 'vertical' }} value={templates.homepageMysteryBoxDescription || ''} onChange={(event) => update('homepageMysteryBoxDescription', event.target.value)} />
             </label>
           </div>
+        </section>
+        <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>New arrivals</h2>
+          <p style={{ lineHeight: 1.6 }}>Published products receive the automatic New badge for the selected window. Products manually marked New remain included after the window ends.</p>
+          <label style={{ ...labelStyle, maxWidth: 360 }}>Automatic New badge window (days)
+            <input style={fieldStyle} type="number" min={0} max={365} step={1} value={templates.newArrivalDays ?? 30} onChange={(event) => update('newArrivalDays', event.target.value === '' ? '' : Number(event.target.value))} />
+          </label>
+          <p style={{ marginBottom: 0, fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-text-secondary)' }}>Use 0 to turn off automatic badges; the product’s manual New checkbox still works.</p>
         </section>
         </>}
         {section === 'seo' && <>

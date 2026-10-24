@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 import { hideSupplierDetails } from '@/lib/product-privacy'
 import { storedProductPublishError } from '@/lib/product-validation'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
+import { DEFAULT_NEW_ARRIVAL_DAYS, isWithinNewArrivalDays } from '@/lib/product-newness'
 
 const lengthCodeMap: Record<string, string> = {
   'x-short': '01',
@@ -69,6 +70,19 @@ function relationID(value: any): string {
   return String(value && typeof value === 'object' ? value.id : (value ?? ''))
 }
 
+const marketingSettingsByRequest = new WeakMap<object, Promise<Record<string, unknown>>>()
+
+function getMarketingSettingsForRequest(req: any) {
+  let settings = marketingSettingsByRequest.get(req)
+  if (!settings) {
+    settings = req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
+      .then((value: Record<string, unknown>) => value)
+      .catch(() => ({}))
+    marketingSettingsByRequest.set(req, settings)
+  }
+  return settings
+}
+
 function webpPickerFilter(values: unknown[]) {
   const existingIDs = [
     ...new Set(
@@ -104,6 +118,13 @@ async function nextProductCode(req: any) {
 export const Products: CollectionConfig = {
   slug: 'products',
   hooks: {
+    beforeChange: [({ data, originalDoc }) => {
+      if (!data) return data
+      if (data.status === 'draft') return { ...data, publishedAt: null }
+      if (originalDoc?.status === 'published') return { ...data, publishedAt: originalDoc.publishedAt || data.publishedAt || null }
+      if ((data.status ?? originalDoc?.status) === 'published') return { ...data, publishedAt: new Date().toISOString() }
+      return data
+    }],
     afterChange: [async ({ doc, previousDoc, req }) => {
       await syncLinkedProductCounts(req, [...(previousDoc?.suppliers || []), ...(doc?.suppliers || [])])
       return doc
@@ -111,12 +132,16 @@ export const Products: CollectionConfig = {
     afterDelete: [async ({ doc, req }) => {
       await syncLinkedProductCounts(req, doc?.suppliers || [])
     }],
-    afterRead: [
-      ({ doc, req }) => {
-        if (!isAdminUser(req.user) && doc) return hideSupplierDetails(doc as any)
-        return doc
-      },
-    ],
+    afterRead: [async ({ doc, req }) => {
+      if (!doc || isAdminUser(req.user)) return doc
+      if (doc.status === 'published') {
+        const marketing = await getMarketingSettingsForRequest(req)
+        const newArrivalDays = marketing.newArrivalDays ?? DEFAULT_NEW_ARRIVAL_DAYS
+        const automaticNew = isWithinNewArrivalDays(doc.publishedAt || doc.createdAt, newArrivalDays)
+        return hideSupplierDetails({ ...doc, isNew: Boolean(doc.isNew) || automaticNew } as any)
+      }
+      return hideSupplierDetails(doc as any)
+    }],
     beforeValidate: [
       async ({ data, originalDoc, req }) => {
         if (!data) return data
@@ -590,6 +615,7 @@ export const Products: CollectionConfig = {
               ],
               admin: { position: 'sidebar' },
             },
+            { name: 'publishedAt', type: 'date', admin: { hidden: true, readOnly: true } },
             { name: 'isNew', type: 'checkbox', defaultValue: false },
             { name: 'isBestSeller', type: 'checkbox', defaultValue: false },
           ],

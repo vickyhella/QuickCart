@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import { isMediaNavigationActive, studioLinks } from '../../../lib/admin-navigation'
 
 export function StudioNavLink() {
-  const pathname = usePathname()
+  const pathname = usePathname().replace(/\/$/, '')
   useEffect(() => {
     const mediaLink = Array.from(document.querySelectorAll<HTMLAnchorElement>('.nav a[href]'))
       .find((link) => new URL(link.href).pathname.replace(/\/$/, '') === '/admin/collections/media')

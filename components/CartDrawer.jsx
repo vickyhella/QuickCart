@@ -88,7 +88,7 @@ export default function CartDrawer({ open, onClose }) {
                     />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{product.name}</p>
+                    <p className="font-serif text-xl">{product.name}</p>
                     <p className="mt-1 text-xs text-[#786963]">
                       {[
                         formatDimension(line.length),
@@ -109,7 +109,7 @@ export default function CartDrawer({ open, onClose }) {
                         onClick={() =>
                           updateCartQuantity(key, line.quantity - 1)
                         }
-                        className="h-7 w-7 rounded-full border border-[#d8c9c1]"
+                        className="ui-quantity-control"
                       >
                         −
                       </button>
@@ -120,14 +120,14 @@ export default function CartDrawer({ open, onClose }) {
                         onClick={() =>
                           updateCartQuantity(key, line.quantity + 1)
                         }
-                        className="h-7 w-7 rounded-full border border-[#d8c9c1]"
+                        className="ui-quantity-control"
                       >
                         +
                       </button>
                       <button
                         type="button"
                         onClick={() => updateCartQuantity(key, 0)}
-                        className="ml-auto text-xs underline underline-offset-2"
+                        className="ui-text-action ui-text-action--danger ml-auto"
                       >
                         Remove
                       </button>
@@ -168,7 +168,7 @@ export default function CartDrawer({ open, onClose }) {
               <Link
                 href="/checkout"
                 onClick={onClose}
-                className="mt-4 block rounded-full bg-[#754b43] py-3 text-center text-sm text-white hover:bg-[#5e3c36]"
+                className="ui-button ui-button--primary mt-4 w-full"
               >
                 Continue to checkout
               </Link>

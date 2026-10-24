@@ -1,0 +1,30 @@
+/* Shared palette: edit these values to update storefront and Admin together. */
+:root {
+  --gn-plum: #704576;
+  --gn-plum-hover: #5c3762;
+  --gn-highlight: #a55a9c;
+  --gn-highlight-hover: #8d4685;
+  --gn-ink: #291b2d;
+  --gn-muted: #615364;
+  --gn-white: #ffffff;
+  --gn-ivory: #fbf8f5;
+  --gn-canvas: #f7f4f8;
+  --gn-lavender: #eee5f2;
+  --gn-lavender-soft: #f1eaf2;
+  --gn-border: #d9cddd;
+  --gn-border-light: #ebe4ee;
+  --gn-control-border: #95809d;
+  --gn-disabled-bg: #eee8f0;
+  --gn-disabled-text: #615364;
+  --gn-success: #306341;
+  --gn-success-soft: #edf5ef;
+  --gn-danger: #9d343b;
+  --gn-danger-soft: #fbefee;
+  --gn-warning: #795527;
+  --gn-warning-soft: #f8f2e8;
+  --gn-control-radius: 12px;
+  --gn-control-height: 44px;
+  --gn-control-font-size: .875rem;
+  --gn-field-font-size: 1rem;
+  --gn-control-space-x: 1rem;
+}

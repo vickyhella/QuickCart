@@ -588,17 +588,6 @@ export function ProductBulkEditor() {
   }
 
   const toolbarStyle: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBlock: '1rem' }
-  // Use explicit foreground/background pairs here: Payload theme variables can
-  // resolve to low-contrast combinations in custom views (for example white
-  // text on a white button in light mode).
-  const buttonStyle: React.CSSProperties = {
-    border: '1px solid var(--brand-border)',
-    borderRadius: 'var(--brand-radius-sm)',
-    padding: '0.7rem 1rem',
-    background: 'var(--brand-soft)',
-    color: 'var(--brand-text-primary)',
-    cursor: 'pointer',
-  }
   const inputStyle: React.CSSProperties = {
     width: '100%',
     minWidth: 90,
@@ -624,9 +613,9 @@ export function ProductBulkEditor() {
         Variants can be edited in a table per product. Separate multiple gallery images with semicolons. See the Media collection for filenames and IDs.
       </p>
       <div style={toolbarStyle}>
-        <button type="button" onClick={exportTSV} style={buttonStyle} disabled={loading || rows.length === 0}>Export TSV</button>
-        <button type="button" onClick={() => void load()} style={buttonStyle} disabled={loading || saving}>Reload</button>
-        <button type="button" onClick={() => void save()} style={{ ...buttonStyle, borderColor: 'var(--brand-accent)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)' }} disabled={loading || saving || dirtyIDs.size === 0}>
+        <button type="button" onClick={exportTSV} className="ui-button ui-button--secondary" disabled={loading || rows.length === 0}>Export TSV</button>
+        <button type="button" onClick={() => void load()} className="ui-button ui-button--secondary" disabled={loading || saving}>Reload</button>
+        <button type="button" onClick={() => void save()} className="ui-button ui-button--primary" disabled={loading || saving || dirtyIDs.size === 0}>
           {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
         </button>
         <input aria-label="Search products on this page" placeholder="Filter this page by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
@@ -637,11 +626,11 @@ export function ProductBulkEditor() {
         <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>Variants default
           <select value={variantDisplay} onChange={(event) => setVariantDefault(event.target.value as 'collapsed' | 'expanded')} style={{ ...inputStyle, width: 130 }}><option value="collapsed">Collapsed</option><option value="expanded">Expanded</option></select>
         </label>
-        <button type="button" onClick={() => setExpandedVariants(new Set(visibleRows.map((row) => row.id)))} style={buttonStyle}>Expand all variants</button>
-        <button type="button" onClick={() => setExpandedVariants(new Set())} style={buttonStyle}>Collapse all variants</button>
-        <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} style={buttonStyle} disabled={loading || saving || dirtyIDs.size > 0 || page <= 1}>Previous</button>
+        <button type="button" onClick={() => setExpandedVariants(new Set(visibleRows.map((row) => row.id)))} className="ui-button ui-button--secondary">Expand all variants</button>
+        <button type="button" onClick={() => setExpandedVariants(new Set())} className="ui-button ui-button--secondary">Collapse all variants</button>
+        <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page <= 1}>Previous</button>
         <span>Page {page} of {totalPages} · {totalProducts} products total</span>
-        <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} style={buttonStyle} disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
+        <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
         {loading ? <span>Loading products…</span> : <span>{rows.length} on this page · {dirtyIDs.size} changed</span>}
       </div>
       {message && <p role="status" style={{ color: 'var(--brand-text-secondary)' }}>{message}</p>}
@@ -683,7 +672,7 @@ export function ProductBulkEditor() {
                           </>
                         ) : column.key === 'variants' ? (
           <div>
-                            <button type="button" onClick={() => openVariantEditor(rowIndex)} style={{ ...buttonStyle, whiteSpace: 'nowrap' }}>
+                            <button type="button" onClick={() => openVariantEditor(rowIndex)} className="ui-button ui-button--secondary" style={{ whiteSpace: 'nowrap' }}>
                               Edit variants ({(() => { try { const v = JSON.parse(row.variants || '[]'); return Array.isArray(v) ? v.length : '?' } catch { return '!' } })()})
                             </button>
                             <div style={{ marginTop: 5, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Structured editor</div>
@@ -741,7 +730,7 @@ export function ProductBulkEditor() {
                     let variants: ProductVariant[] = []
                     try { variants = JSON.parse(row.variants || '[]') } catch { /* invalid JSON is handled by the variant editor */ }
                     return <tr key={`${row.id}-variants`} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-soft)' }}><td colSpan={columns.length + 2} style={{ padding: 12, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><strong>{row.title} · {variants.length} variants</strong><button type="button" onClick={() => openVariantEditor(rowIndex)} style={buttonStyle}>Edit / copy / paste variants</button></div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><strong>{row.title} · {variants.length} variants</strong><button type="button" onClick={() => openVariantEditor(rowIndex)} className="ui-button ui-button--secondary">Edit / copy / paste variants</button></div>
                       <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}><thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Stock', 'Image'].map((label) => <th key={label} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>{label}</th>)}</tr></thead><tbody>{variants.map((variant, index) => { const image = media.find((item) => String(item.id) === mediaID(variant.image) || item.filename === variant.image); return <tr key={variant.id || index} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}>{[variant.sku, variant.length, variant.shape, variant.size?.toUpperCase(), variant.price ?? row.price, variant.stock, image?.filename || 'Product image'].map((value, cell) => <td key={cell} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-surface)', borderBottom: '1px solid var(--brand-border)' }}>{String(value ?? '')}</td>)}</tr> })}</tbody></table></div>
                     </td></tr>
                   })()}
@@ -769,7 +758,7 @@ export function ProductBulkEditor() {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 8, marginBottom: 12 }}>
                   <select aria-label="Length" value={variantEditor.newPair.length} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, length: event.target.value } })}>{['x-short', 'short', 'medium', 'long', 'x-long', ...variantEditor.values.combinations.map((pair) => pair.length)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
                   <select aria-label="Shape" value={variantEditor.newPair.shape} onChange={(event) => setVariantEditor({ ...variantEditor, newPair: { ...variantEditor.newPair, shape: event.target.value } })}>{['square', 'oval', 'almond', 'round', ...variantEditor.values.combinations.map((pair) => pair.shape)].filter((value, index, all) => all.indexOf(value) === index).map((value) => <option key={value}>{value}</option>)}</select>
-                  <button type="button" onClick={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: [...new Map([...variantEditor.values.combinations, variantEditor.newPair].map((pair) => [`${pair.length}|${pair.shape}`, pair])).values()] } })} style={buttonStyle}>Add</button>
+                  <button type="button" onClick={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: [...new Map([...variantEditor.values.combinations, variantEditor.newPair].map((pair) => [`${pair.length}|${pair.shape}`, pair])).values()] } })} className="ui-button ui-button--secondary">Add</button>
                 </div>
                 {variantEditor.values.combinations.map((pair) => <label key={`${pair.length}|${pair.shape}`} style={{ display: 'flex', gap: 8, alignItems: 'center', marginBlock: 6, textTransform: 'capitalize' }}><input type="checkbox" checked onChange={() => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, combinations: variantEditor.values.combinations.filter((item) => item !== pair) } })} />{pair.length.replace('-', ' ')} {pair.shape}</label>)}
               </fieldset>
@@ -778,7 +767,7 @@ export function ProductBulkEditor() {
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>{['xs', 's', 'm', 'l', ...variantEditor.values.size].filter((value, index, all) => all.indexOf(value) === index).map((option) => <label key={option}><input type="checkbox" checked={variantEditor.values.size.includes(option)} onChange={(event) => setVariantEditor({ ...variantEditor, values: { ...variantEditor.values, size: event.target.checked ? [...variantEditor.values.size, option] : variantEditor.values.size.filter((value) => value !== option) } })} /> {option.toUpperCase()}</label>)}</div>
               </fieldset>
             </div>
-            <button type="button" onClick={syncVariantCombinations} style={{ ...buttonStyle, marginBottom: 12 }}>Sync combinations &amp; generate SKUs</button>
+            <button type="button" onClick={syncVariantCombinations} className="ui-button ui-button--secondary" style={{ marginBottom: 12 }}>Sync combinations &amp; generate SKUs</button>
             <div style={{ overflowX: 'auto' }}>
               <div onPaste={handleVariantPaste}>
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1900 }}>
@@ -803,17 +792,17 @@ export function ProductBulkEditor() {
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={12} aria-label={`Variant ${index + 1} product purchase URL`} value={variant.purchaseURL || ''} onChange={(event) => edit('purchaseURL', event.target.value)} style={{ ...cellInput, minWidth: 220 }} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={13} aria-label={`Variant ${index + 1} GTIN`} value={variant.gtin || ''} onChange={(event) => edit('gtin', event.target.value)} style={cellInput} /></td>
                     <td style={{ padding: 5 }}><input data-variant-row={index} data-variant-column={14} aria-label={`Variant ${index + 1} MPN`} value={variant.mpn || ''} onChange={(event) => edit('mpn', event.target.value)} style={cellInput} /></td>
-                    <td style={{ padding: 5 }}><button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: current.variants.filter((_, itemIndex) => itemIndex !== index) } : current)} style={{ ...buttonStyle, color: 'var(--brand-danger)' }}>Remove</button></td>
+                    <td style={{ padding: 5 }}><button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: current.variants.filter((_, itemIndex) => itemIndex !== index) } : current)} className="ui-button ui-button--danger">Remove</button></td>
                   </tr>
                 })}</tbody>
               </table>
               </div>
             </div>
             <div style={{ ...toolbarStyle, justifyContent: 'space-between' }}>
-              <button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: [...current.variants, { sku: '', length: 'short', shape: 'almond', size: 's', price: Number(rows[current.rowIndex]?.price || 0), salePrice: rows[current.rowIndex]?.salePrice ? Number(rows[current.rowIndex].salePrice) : null, image: mediaID(rows[current.rowIndex]?.featuredImage) || null, stock: 10, trackStock: true, enabled: true }] } : current)} style={buttonStyle}>+ Add variant</button>
+              <button type="button" onClick={() => setVariantEditor((current) => current ? { ...current, variants: [...current.variants, { sku: '', length: 'short', shape: 'almond', size: 's', price: Number(rows[current.rowIndex]?.price || 0), salePrice: rows[current.rowIndex]?.salePrice ? Number(rows[current.rowIndex].salePrice) : null, image: mediaID(rows[current.rowIndex]?.featuredImage) || null, stock: 10, trackStock: true, enabled: true }] } : current)} className="ui-button ui-button--secondary">+ Add variant</button>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button type="button" onClick={() => setVariantEditor(null)} style={buttonStyle}>Cancel</button>
-                <button type="button" onClick={applyVariantEditor} style={{ ...buttonStyle, borderColor: 'var(--brand-accent)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)' }}>Apply variants</button>
+                <button type="button" onClick={() => setVariantEditor(null)} className="ui-button ui-button--secondary">Cancel</button>
+                <button type="button" onClick={applyVariantEditor} className="ui-button ui-button--primary">Apply variants</button>
               </div>
             </div>
           </section>

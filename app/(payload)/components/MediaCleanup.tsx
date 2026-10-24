@@ -48,7 +48,7 @@ export function MediaCleanup() {
     }
   }
 
-  return <section style={{ marginBlock: 16, padding: 18, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)' }}>
+  return <section className="ui-panel" style={{ marginBlock: 16, padding: 18 }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <div>
         <h2 style={{ margin: '0 0 6px', fontSize: 'var(--brand-font-size-body)' }}>Unused image cleanup</h2>
@@ -56,11 +56,11 @@ export function MediaCleanup() {
           {analysis ? `${analysis.total} images · ${analysis.unreferenced} unreferenced · ${analysis.referenced} used by products or Pinterest posts` : checking ? 'Checking references…' : 'Refresh analysis to check references.'}
         </p>
       </div>
-      <button type="button" onClick={() => { setChecking(true); void refresh() }} disabled={busy || checking} style={{ padding: '8px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)' }}>Refresh analysis</button>
+      <button type="button" onClick={() => { setChecking(true); void refresh() }} disabled={busy || checking} className="ui-button ui-button--secondary">Refresh analysis</button>
     </div>
     <p style={{ margin: '12px 0 0', fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-text-secondary)' }}>Deletes unused images and their originals permanently. Product and Pinterest images are protected. Originals shared with remaining images are kept.</p>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 14 }}>
-      <button type="button" onClick={() => void remove()} disabled={busy || checking || !analysis?.unreferenced} style={{ padding: '9px 14px', border: 0, borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-danger)', color: 'var(--brand-on-accent)', opacity: busy || checking || !analysis?.unreferenced ? 0.5 : 1 }}>
+      <button type="button" onClick={() => void remove()} disabled={busy || checking || !analysis?.unreferenced} className="ui-button ui-button--danger">
         {busy ? 'Deleting…' : `Delete ${analysis?.unreferenced ?? 0} unreferenced images + originals`}
       </button>
       {message && <p role="status" style={{ margin: 0, fontSize: 'var(--brand-font-size-caption)' }}>{message}</p>}

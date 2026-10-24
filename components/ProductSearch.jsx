@@ -34,7 +34,7 @@ export default function ProductSearch({ query, page }) {
       <form action="/search" role="search" className="mt-6 flex max-w-xl gap-2">
         <label className="sr-only" htmlFor="product-search">Product name</label>
         <input id="product-search" type="search" name="q" defaultValue={query} maxLength={160} placeholder="Search by product name" className="min-w-0 flex-1 rounded-lg border border-[#d8c9c1] bg-white px-4 py-3" />
-        <button className="rounded-lg bg-[#754b43] px-5 py-3 text-white">Search</button>
+        <button className="ui-button ui-button--primary">Search</button>
       </form>
       {!query ? <p className="mt-8 text-sm text-[#786963]">Enter a product name to find your next design.</p> : error ? <p role="alert" className="mt-8 text-red-700">{error}</p> : !result ? <p role="status" className="mt-8 text-sm text-[#786963]">Searching…</p> : <>
         <p role="status" className="mt-8 text-sm text-[#786963]">{result.totalDocs} {result.totalDocs === 1 ? 'product' : 'products'} for “{query}”</p>

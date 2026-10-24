@@ -68,7 +68,7 @@ export function ProductListActions() {
           )
             void remove()
         }}
-        className="rounded-lg border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 disabled:opacity-50"
+        className="ui-button ui-button--danger text-red-700"
       >
         {busy ? 'Deleting…' : `Delete selected (${selectedIDs.length})`}
       </button>

@@ -46,7 +46,7 @@ export default function OrderSummary() {
             <button
                 disabled={!getCartCount()}
                 onClick={() => router.push("/checkout")}
-                className="w-full mt-6 rounded-full bg-[#754b43] text-white py-3 hover:bg-[#5e3c36] disabled:opacity-50"
+                className="ui-button ui-button--primary w-full mt-6"
             >
                 Continue to checkout
             </button>

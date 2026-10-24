@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { useAppContext } from '@/context/AppContext'
 
 export default function Footer() {
@@ -11,7 +12,7 @@ export default function Footer() {
     <footer className="border-t border-[#3d2b36] bg-[#261a22] text-white/65">
       <div className="grid gap-10 md:grid-cols-3 px-5 md:px-12 lg:px-20 py-12">
         <div>
-          <Link href="/" className="font-serif text-2xl text-white">Ginny <span className="italic text-[#e6a6ba]">Nana</span></Link>
+          <Link href="/" aria-label="Ginny Nana home"><Image src="/ginny-nana-logo-light.svg" alt="Ginny Nana" width={190} height={46} className="h-10 w-auto" /></Link>
           <p className="text-sm leading-6 mt-4 max-w-sm">Natural-looking, reusable press-on nails designed for everyday elegance.</p>
         </div>
         <div>

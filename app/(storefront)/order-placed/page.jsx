@@ -24,7 +24,7 @@ export default function OrderPlaced() {
         <h1 className="font-serif text-4xl mt-6">Payment confirmed</h1>
         <p className="text-[#6e5c55] mt-3">Thank you for your order. PayPal confirmed your payment.</p>
         {orderNumber && <p className="mt-4 text-sm">Order number: <strong>{orderNumber}</strong></p>}
-        <Link href="/all-products" className="inline-block mt-8 rounded-full bg-[#754b43] text-white px-7 py-3">Continue shopping</Link>
+        <Link href="/all-products" className="ui-button ui-button--primary mt-8">Continue shopping</Link>
       </section>
       <Footer />
     </main>

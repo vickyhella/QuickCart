@@ -82,10 +82,10 @@ export function MediaReprocessButton() {
       {replacing ? 'Replacing image…' : 'Replace image used everywhere'}
       <input type="file" accept="image/*,.heic,.heif" disabled={replacing} onChange={(event) => { void replace(event.target.files?.[0]); event.currentTarget.value = '' }} style={{ position: 'absolute', width: 1, height: 1, opacity: 0 }} />
     </label>
-    <button type="button" onClick={() => void reprocess()} disabled={busy} style={{ padding: '9px 14px', border: '1px solid var(--brand-accent)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)', cursor: busy ? 'wait' : 'pointer' }}>
+    <button type="button" onClick={() => void reprocess()} disabled={busy} className="ui-button ui-button--primary">
       {busy ? 'Converting to WebP…' : 'Convert / regenerate WebP from original'}
     </button>
-    <button type="button" onClick={() => setShowDeleteOptions(true)} disabled={deleting} style={{ padding: '9px 14px', border: '1px solid var(--brand-danger)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-danger)', cursor: deleting ? 'wait' : 'pointer' }}>
+    <button type="button" onClick={() => setShowDeleteOptions(true)} disabled={deleting} className="ui-button ui-button--danger">
       {deleting ? 'Deleting…' : 'Delete image…'}
     </button>
     {showDeleteOptions && <div role="dialog" aria-modal="true" aria-labelledby="media-delete-title" style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 20, background: 'rgba(0,0,0,.55)' }}>
@@ -93,12 +93,12 @@ export function MediaReprocessButton() {
         <h2 id="media-delete-title" style={{ marginTop: 0 }}>Delete this image?</h2>
         <p>The WebP will be removed from storage and its product references will be cleared.</p>
         {hasOriginal ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" disabled={deleting} onClick={() => void deleteMedia(true)} style={{ padding: '9px 12px', border: 0, borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-danger)', color: 'var(--brand-on-accent)' }}>Delete WebP and original</button>
-          <button type="button" disabled={deleting} onClick={() => void deleteMedia(false)} style={{ padding: '9px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)' }}>Delete WebP only; keep original</button>
-          <button type="button" disabled={deleting} onClick={() => setShowDeleteOptions(false)} style={{ padding: '9px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)' }}>Cancel</button>
+          <button type="button" disabled={deleting} onClick={() => void deleteMedia(true)} className="ui-button ui-button--danger">Delete WebP and original</button>
+          <button type="button" disabled={deleting} onClick={() => void deleteMedia(false)} className="ui-button ui-button--danger">Delete WebP only; keep original</button>
+          <button type="button" disabled={deleting} onClick={() => setShowDeleteOptions(false)} className="ui-button ui-button--secondary">Cancel</button>
         </div> : <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button type="button" disabled={deleting} onClick={() => void deleteMedia(false)} style={{ padding: '9px 12px', border: 0, borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-danger)', color: 'var(--brand-on-accent)' }}>Delete image</button>
-          <button type="button" disabled={deleting} onClick={() => setShowDeleteOptions(false)} style={{ padding: '9px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)' }}>Cancel</button>
+          <button type="button" disabled={deleting} onClick={() => void deleteMedia(false)} className="ui-button ui-button--danger">Delete image</button>
+          <button type="button" disabled={deleting} onClick={() => setShowDeleteOptions(false)} className="ui-button ui-button--secondary">Cancel</button>
         </div>}
       </section>
     </div>}

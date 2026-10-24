@@ -29,5 +29,5 @@ export function ProductDeleteControl() {
     }
   }
 
-  return <button type="button" onClick={() => void remove()} disabled={busy} style={{ marginInlineStart: 8, padding: '8px 12px', border: '1px solid var(--brand-danger)', borderRadius: 'var(--brand-radius-sm)', background: 'transparent', color: 'var(--brand-danger)', cursor: busy ? 'wait' : 'pointer' }}>{busy ? 'Deleting…' : 'Delete product'}</button>
+  return <button type="button" onClick={() => void remove()} disabled={busy} className="ui-button ui-button--danger" style={{ marginInlineStart: 8 }}>{busy ? 'Deleting…' : 'Delete product'}</button>
 }

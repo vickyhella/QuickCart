@@ -14,28 +14,27 @@ const ProductCard = ({ product }) => {
     return (
         <Link
             href={'/product/' + (product.slug || product._id)}
-            className="group flex w-full cursor-pointer flex-col items-start gap-2.5"
+            className="store-product-card group w-full"
         >
-            <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-[#f0e8e5]">
+            <div className="store-product-card__media">
                 <SafeImage
                     unoptimized
-                    src={product.image[0]}
+                    src={product.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'}
                     alt={product.imageAlt?.[0] || product.name}
-                    className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.04]"
+                    className="store-product-card__image"
                     width={720}
                     height={900}
                 />
-                {product.isNew && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1.5 text-[9px] uppercase tracking-[.16em] text-[#392631] backdrop-blur">New</span>}
-                {pricing.onSale && <span className="absolute right-3 top-3 rounded-full bg-[#985c70] px-3 py-1.5 text-[9px] uppercase tracking-[.16em] text-white">Sale</span>}
+                {product.isNew ? <span className="store-product-card__badge">Just dropped</span> : <span className="store-product-card__badge">Handmade set</span>}
+                {pricing.onSale && <span className="store-product-card__badge store-product-card__badge--sale">On sale</span>}
             </div>
 
-            <div className="w-full pt-1">
-                <p className="font-medium text-[#302522] truncate">{product.name}</p>
-                <p className="text-xs text-[#827873] mt-1">{productCardDimensions(product).map(formatDimension).join(' · ') || 'Handmade press-on nails'}</p>
-                <div className="flex items-center gap-2 mt-2 text-sm">
-                    <p className="font-medium">{currency || '$'}{Number(pricing.currentPrice).toFixed(2)}</p>
-                    {pricing.onSale && <p className="text-[#998f89] line-through">{currency || '$'}{Number(pricing.price).toFixed(2)}</p>}
+            <div className="store-product-card__details">
+                <div className="store-product-card__copy">
+                    <h2 className="store-product-card__name">{product.name}</h2>
+                    <p className="store-product-card__meta">{productCardDimensions(product).map(formatDimension).join(' · ') || 'Handmade press-on set'}</p>
                 </div>
+                <div className="store-product-card__price">{currency || '$'}{Number(pricing.currentPrice).toFixed(2)}{pricing.onSale && <s>{currency || '$'}{Number(pricing.price).toFixed(2)}</s>}</div>
             </div>
         </Link>
     )

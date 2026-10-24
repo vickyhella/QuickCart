@@ -11,7 +11,7 @@ import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '..
 
 type Summary = { feedItems?: number; publishedProducts?: number; skippedPublishedProducts?: Array<{ title: string; reason: string }> }
 type ReprocessableImage = { id: string; filename: string }
-type MarketingSection = 'feeds' | 'seo' | 'compression' | 'metadata'
+type MarketingSection = 'homepage' | 'feeds' | 'seo' | 'compression' | 'metadata'
 
 export function MarketingHub({ section }: { section: MarketingSection }) {
   const [gmc, setGmc] = useState<Summary | null>(null)
@@ -79,11 +79,17 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
     setSaving(true)
     setSaveMessage('')
     try {
+      const settingsToSave = { ...templates, ...values }
+      for (const key of ['homepageHeroImage', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxProduct']) {
+        const relation = settingsToSave[key]
+        if (relation && typeof relation === 'object' && 'id' in relation) settingsToSave[key] = relation.id
+        if (settingsToSave[key] === '') settingsToSave[key] = null
+      }
       const response = await fetch('/api/globals/marketing-settings', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...templates, ...values }),
+        body: JSON.stringify(settingsToSave),
       })
       const responseData = await response.json().catch(() => ({}))
       if (!response.ok) throw new Error(responseData.errors?.[0]?.message || responseData.error || 'Could not save Marketing settings. Please check your admin session and try again.')
@@ -150,7 +156,65 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
       </section>)}
     </div>
     </>}
-    {(section === 'seo' || section === 'compression' || section === 'metadata') && (settingsLoading ? <p role="status">Loading saved Marketing settings…</p> : <>
+    {(section === 'homepage' || section === 'seo' || section === 'compression' || section === 'metadata') && (settingsLoading ? <p role="status">Loading saved Marketing settings…</p> : <>
+        {section === 'homepage' && <>
+        <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>Homepage hero</h2>
+          <p style={{ lineHeight: 1.6 }}>Choose an image from the Media library and an optional published product to open when shoppers click the hero. Upload an image in <Link href="/admin/collections/media" style={{ textDecoration: 'underline' }}>Media</Link> first.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
+            <label style={labelStyle}>Hero image
+              <select style={fieldStyle} value={String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')} onChange={(event) => update('homepageHeroImage', event.target.value || '')}>
+                <option value="">Use the first product image</option>
+                {seo.media.map((media) => <option key={String(media.id)} value={String(media.id)}>{String(media.filename || media.altText || media.id)}</option>)}
+              </select>
+            </label>
+            <label style={labelStyle}>Image alt text
+              <input style={fieldStyle} value={templates.homepageHeroImageAlt || ''} onChange={(event) => update('homepageHeroImageAlt', event.target.value)} placeholder="Describe the image for screen readers" />
+            </label>
+            <label style={labelStyle}>Click-through product
+              <select style={fieldStyle} value={String(templates.homepageHeroProduct?.id ?? templates.homepageHeroProduct ?? '')} onChange={(event) => update('homepageHeroProduct', event.target.value || '')}>
+                <option value="">Use the first product</option>
+                {seo.products.filter((product) => product.status === 'published').map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.title || product.name || product.id)}</option>)}
+              </select>
+            </label>
+          </div>
+          {(() => {
+            const imageID = String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')
+            const selectedImage = seo.media.find((media) => String(media.id) === imageID)
+            return selectedImage?.url ? <img src={String(selectedImage.url)} alt="Selected homepage hero preview" style={{ display: 'block', width: 'min(100%, 720px)', maxHeight: 360, marginTop: 20, borderRadius: 'var(--brand-radius-sm)', objectFit: 'cover', objectPosition: 'center 28%' }} /> : null
+          })()}
+        </section>
+        <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>Mystery Box feature</h2>
+          <p style={{ lineHeight: 1.6 }}>Choose a published Mystery Box product to show a clickable feature on the homepage. Its product image is used unless you select a separate banner image.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
+            <label style={labelStyle}>Published Mystery Box product
+              <select style={fieldStyle} value={String(templates.homepageMysteryBoxProduct?.id ?? templates.homepageMysteryBoxProduct ?? '')} onChange={(event) => update('homepageMysteryBoxProduct', event.target.value || '')}>
+                <option value="">Hide this homepage feature</option>
+                {seo.products.filter((product) => product.status === 'published').map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.title || product.name || product.id)}</option>)}
+              </select>
+            </label>
+            <label style={labelStyle}>Optional banner image
+              <select style={fieldStyle} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(event) => update('homepageMysteryBoxImage', event.target.value || '')}>
+                <option value="">Use the product image</option>
+                {seo.media.map((media) => <option key={String(media.id)} value={String(media.id)}>{String(media.filename || media.altText || media.id)}</option>)}
+              </select>
+            </label>
+            <label style={labelStyle}>Image alt text
+              <input style={fieldStyle} value={templates.homepageMysteryBoxImageAlt || ''} onChange={(event) => update('homepageMysteryBoxImageAlt', event.target.value)} placeholder="Describe the banner image" />
+            </label>
+            <label style={labelStyle}>Eyebrow
+              <input style={fieldStyle} value={templates.homepageMysteryBoxEyebrow || ''} onChange={(event) => update('homepageMysteryBoxEyebrow', event.target.value)} />
+            </label>
+            <label style={labelStyle}>Headline
+              <input style={fieldStyle} value={templates.homepageMysteryBoxTitle || ''} onChange={(event) => update('homepageMysteryBoxTitle', event.target.value)} />
+            </label>
+            <label style={labelStyle}>Description
+              <textarea rows={3} style={{ ...fieldStyle, resize: 'vertical' }} value={templates.homepageMysteryBoxDescription || ''} onChange={(event) => update('homepageMysteryBoxDescription', event.target.value)} />
+            </label>
+          </div>
+        </section>
+        </>}
         {section === 'seo' && <>
         <section style={panelStyle}>
           <h2 style={{ marginTop: 0 }}>Product description template</h2>
@@ -216,12 +280,12 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
             <input style={fieldStyle} type="number" min={1} max={100} step={1} value={templates.webpQuality ?? 82} onChange={(event) => update('webpQuality', event.target.value === '' ? '' : Number(event.target.value))} />
           </label>
           <p style={{ margin: '14px 0 8px', color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>{reprocessLoading ? 'Checking existing media…' : `${reprocessImages.length} existing image${reprocessImages.length === 1 ? '' : 's'} can be rebuilt from preserved originals. The entered quality will be saved when reprocessing starts. Temporary images and GIF/SVG files are excluded.`}</p>
-          <button type="button" disabled={saving || reprocessLoading || Boolean(reprocessProgress) || !reprocessImages.length} onClick={() => void reprocessExistingImages()} style={{ padding: '10px 16px', border: '1px solid var(--brand-accent)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)', color: 'var(--brand-accent)', fontWeight: 600, cursor: 'pointer', opacity: saving || reprocessLoading || reprocessProgress || !reprocessImages.length ? 0.55 : 1 }}>{reprocessProgress ? `Recompressing ${reprocessProgress.done} / ${reprocessProgress.total}…` : `Recompress ${reprocessImages.length} existing images`}</button>
+          <button type="button" disabled={saving || reprocessLoading || Boolean(reprocessProgress) || !reprocessImages.length} onClick={() => void reprocessExistingImages()} className="ui-button ui-button--secondary">{reprocessProgress ? `Recompressing ${reprocessProgress.done} / ${reprocessProgress.total}…` : `Recompress ${reprocessImages.length} existing images`}</button>
           {!!reprocessFailures.length && <div role="alert" style={{ marginTop: 12, color: 'var(--brand-danger)', fontSize: 'var(--brand-font-size-caption)' }}><strong>{reprocessFailures.length} image(s) failed:</strong><ul>{reprocessFailures.map((failure) => <li key={failure.id}>{failure.filename}: {failure.error}</li>)}</ul></div>}
         </section>
         </>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-          <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} style={{ padding: '12px 18px', border: 0, borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-accent)', color: 'var(--brand-on-accent)', fontWeight: 600, cursor: saving ? 'wait' : 'pointer' }}>{saving ? 'Saving…' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : 'Save compression settings'}</button>
+        <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} className="ui-button ui-button--primary">{saving ? 'Saving…' : section === 'homepage' ? 'Save homepage settings' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : 'Save compression settings'}</button>
           {saveMessage && <span role="status">{saveMessage}</span>}
         </div>
         {section === 'seo' && <section style={{ marginTop: 22, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-md)', overflowX: 'auto' }}>

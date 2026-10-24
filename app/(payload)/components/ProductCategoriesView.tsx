@@ -191,7 +191,7 @@ export function ProductCategoriesView() {
             <option value="text">Text</option><option value="integer">Integer</option>
           </select>
         </label>
-        <button type="submit" disabled={busy || !newDimension.trim()} className="rounded-xl bg-[#8b5d53] px-4 py-3 text-sm font-medium text-white disabled:opacity-50">
+        <button type="submit" disabled={busy || !newDimension.trim()} className="ui-button ui-button--primary">
           Add dimension
         </button>
       </form>
@@ -286,7 +286,7 @@ export function ProductCategoriesView() {
           <button
             type="submit"
             disabled={busy || !label.trim()}
-            className="rounded-xl bg-[#8b5d53] px-4 py-3 text-sm font-medium text-white disabled:opacity-50"
+            className="ui-button ui-button--primary"
           >
             Add category
           </button>
@@ -313,7 +313,7 @@ export function ProductCategoriesView() {
                         onClick={() =>
                           void save('rename', String(option.value), label.trim())
                         }
-                        className="rounded-lg bg-[#8b5d53] px-3 py-2 text-sm text-white disabled:opacity-50"
+                        className="ui-button ui-button--primary"
                       >
                         Save name
                       </button>}
@@ -324,7 +324,7 @@ export function ProductCategoriesView() {
                           setEditingValue('')
                           setLabel('')
                         }}
-                        className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm"
+                        className="ui-button ui-button--secondary"
                       >
                         Cancel
                       </button>}
@@ -353,7 +353,7 @@ export function ProductCategoriesView() {
                           setEditingValue(String(option.value))
                           setLabel(option.label)
                         }}
-                        className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm"
+                        className="ui-button ui-button--secondary"
                       >
                         Edit name
                       </button>
@@ -373,7 +373,7 @@ export function ProductCategoriesView() {
                           )
                             void save('delete', String(option.value))
                         }}
-                        className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm text-[#8b5d53] disabled:cursor-not-allowed disabled:opacity-40"
+                        className="ui-button ui-button--secondary"
                       >
                         Delete
                       </button>
@@ -384,7 +384,7 @@ export function ProductCategoriesView() {
                             expandedValue === String(option.value) ? '' : String(option.value),
                           )
                         }
-                        className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm"
+                        className="ui-button ui-button--secondary"
                       >
                         {expandedValue === String(option.value)
                           ? 'Hide products'

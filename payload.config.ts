@@ -11,6 +11,7 @@ import { Media } from './collections/Media'
 import { MediaOriginals } from './collections/MediaOriginals'
 import { MarketingWorkspace } from './collections/MarketingWorkspace'
 import { ContactMessages } from './collections/ContactMessages'
+import { NewsletterSubscribers } from './collections/NewsletterSubscribers'
 import { Discounts } from './collections/Discounts'
 import { Orders } from './collections/Orders'
 import { Pages } from './collections/Pages'
@@ -64,7 +65,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Customers, ContactMessages, Products, Suppliers, Media, MediaOriginals, MarketingWorkspace, Pages, Orders, Discounts, PinterestPosts],
+  collections: [Users, Customers, ContactMessages, NewsletterSubscribers, Products, Suppliers, Media, MediaOriginals, MarketingWorkspace, Pages, Orders, Discounts, PinterestPosts],
   globals: [StoreSettings, MarketingSettings, ProductDimensions],
   plugins: [
     s3Storage({

@@ -41,6 +41,20 @@ export const MarketingSettings: GlobalConfig = {
       type: 'tabs',
       tabs: [
         {
+          label: 'Homepage',
+          fields: [
+            { name: 'homepageHeroImage', type: 'upload', relationTo: 'media', admin: { description: 'Optional large image for the storefront homepage hero. If empty, the first published product image is used.' } },
+            { name: 'homepageHeroImageAlt', type: 'text', admin: { description: 'Describe the hero image for screen readers. If empty, the selected product name is used.' } },
+            { name: 'homepageHeroProduct', type: 'relationship', relationTo: 'products', admin: { description: 'Published product opened when customers click the hero image.' } },
+            { name: 'homepageMysteryBoxImage', type: 'upload', relationTo: 'media', admin: { description: 'Optional Mystery Box banner image. If empty, the selected product image is used.' } },
+            { name: 'homepageMysteryBoxImageAlt', type: 'text' },
+            { name: 'homepageMysteryBoxProduct', type: 'relationship', relationTo: 'products', admin: { description: 'Published Mystery Box product opened when customers click the banner.' } },
+            { name: 'homepageMysteryBoxEyebrow', type: 'text', defaultValue: 'A little surprise, just for you' },
+            { name: 'homepageMysteryBoxTitle', type: 'text', defaultValue: 'Meet your mystery box.' },
+            { name: 'homepageMysteryBoxDescription', type: 'textarea', defaultValue: 'A curated set, a little unexpected, and always made to feel like you.' },
+          ],
+        },
+        {
           label: 'SEO & Media',
           fields: [
             { name: 'studioDescriptionTemplate', type: 'textarea', defaultValue: '**{productName}**\n\nDiscover {productName} by {brand}, a press-on nail style for your everyday look.\n\nAvailable Length & Shape combinations: {availableLengthShapeCombinations}\n\nAvailable sizes: {availableSizes}\n\nChoose your preferred style and size before adding the product to your cart.', admin: { description: 'Product Studio Auto description template. Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {availableLengthShapeCombinations}, {availableSizes}. Custom descriptions are not changed.' } },

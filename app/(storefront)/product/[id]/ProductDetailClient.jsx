@@ -118,8 +118,8 @@ export default function ProductPage() {
               })}
             </div>}
             <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full">
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="w-full sm:flex-1 py-3.5 border border-[#754b43] text-[#754b43] rounded-full hover:bg-[#f8f3ef] disabled:opacity-50">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/cart') }} className="w-full sm:flex-1 py-3.5 bg-[#754b43] text-white rounded-full hover:bg-[#5e3c36] disabled:opacity-50">Buy now</button>
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="ui-button ui-button--secondary w-full sm:flex-1">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/cart') }} className="ui-button ui-button--primary w-full sm:flex-1">Buy now</button>
             </div>
             <PaymentMethods className="mt-3" />
             <div className="product-markdown text-[#6e5c55] leading-7 mt-7">

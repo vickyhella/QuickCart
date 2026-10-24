@@ -189,7 +189,7 @@ export default function CheckoutPage() {
             </div>
             <div className="flex gap-2 mt-6">
               <input value={promoInput} onChange={(event) => setPromoInput(event.target.value)} placeholder="Discount code" className="min-w-0 flex-1 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2.5 text-sm" />
-              <button type="button" onClick={applyPromo} className="rounded-lg border border-[#754b43] px-4 text-sm text-[#754b43]">Apply</button>
+              <button type="button" onClick={applyPromo} className="ui-button ui-button--secondary">Apply</button>
             </div>
             {promoCode && quote?.discountTotal > 0 && <p className="text-xs text-green-800 mt-2">Code {promoCode} applied.</p>}
             {quoteError && <p role="alert" className="text-xs text-red-700 mt-2">{quoteError}</p>}
@@ -202,7 +202,7 @@ export default function CheckoutPage() {
               <div className="flex justify-between border-t border-[#d8c9c1] pt-4 text-base font-medium"><span>Total</span><span>{quote ? `${symbol}${quote.total.toFixed(2)}` : 'Calculating…'}</span></div>
             </div>
             {error && <p role="alert" className="text-sm text-red-700 mt-4">{error}</p>}
-            <button type="submit" disabled={busy || !quote || Boolean(quoteError)} className="w-full mt-6 rounded-full bg-[#754b43] text-white py-3 hover:bg-[#5e3c36] disabled:opacity-50">
+            <button type="submit" disabled={busy || !quote || Boolean(quoteError)} className="ui-button ui-button--primary w-full mt-6">
               {busy ? 'Connecting to PayPal…' : 'Pay with PayPal'}
             </button>
             <p className="text-xs text-center text-[#827873] mt-3">You will be redirected to PayPal to approve payment.</p>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 390 92" role="img" aria-labelledby="title">
+  <title id="title">Ginny Nana</title>
+  <g fill="none" stroke="#d9c9e5" stroke-width="3">
+    <circle cx="46" cy="46" r="40" fill="#38293d"/>
+    <path d="M24 59c5-8 11-12 18-12s13 4 18 12" stroke-linecap="round"/>
+    <path d="M31 43c0-11 6-19 14-19s14 8 14 19c0 7-4 11-8 11s-6-4-6-8c0 4-2 8-6 8s-8-4-8-11Z" fill="#a55a9c" stroke="#d9c9e5"/>
+    <path d="M45 29v15" stroke="#fbf8f5" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  <text x="102" y="60" fill="#fbf8f5" font-family="Georgia, 'Times New Roman', serif" font-size="45" letter-spacing="1">Ginny Nana</text>
+  <circle cx="370" cy="54" r="4" fill="#d9c9e5"/>
+</svg>

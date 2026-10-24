@@ -47,7 +47,7 @@ export default function OrderLookupPage() {
             <input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="block w-full mt-2 rounded-lg border border-[#d8c9c1] px-3 py-3" />
           </label>
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-          <button disabled={busy} className="rounded-full bg-[#754b43] text-white py-3 disabled:opacity-50">{busy ? 'Looking up…' : 'Find order'}</button>
+          <button disabled={busy} className="ui-button ui-button--primary">{busy ? 'Looking up…' : 'Find order'}</button>
         </form>
         {order && <section className="mt-9 rounded-xl border border-[#e8ded8] p-5">
           <h2 className="font-serif text-2xl">Order {order.orderNumber}</h2>

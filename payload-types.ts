@@ -71,6 +71,7 @@ export interface Config {
     users: User;
     customers: Customer;
     'contact-messages': ContactMessage;
+    'newsletter-subscribers': NewsletterSubscriber;
     products: Product;
     suppliers: Supplier;
     media: Media;
@@ -90,6 +91,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     customers: CustomersSelect<false> | CustomersSelect<true>;
     'contact-messages': ContactMessagesSelect<false> | ContactMessagesSelect<true>;
+    'newsletter-subscribers': NewsletterSubscribersSelect<false> | NewsletterSubscribersSelect<true>;
     products: ProductsSelect<false> | ProductsSelect<true>;
     suppliers: SuppliersSelect<false> | SuppliersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
@@ -233,6 +235,21 @@ export interface ContactMessage {
   subject: string;
   message: string;
   status: 'new' | 'in-progress' | 'replied';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Email addresses that opted in to Ginny Nana updates.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers".
+ */
+export interface NewsletterSubscriber {
+  id: number;
+  email: string;
+  status: 'active' | 'unsubscribed';
+  consentAt: string;
+  source?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -612,6 +629,10 @@ export interface PayloadLockedDocument {
         value: number | ContactMessage;
       } | null)
     | ({
+        relationTo: 'newsletter-subscribers';
+        value: number | NewsletterSubscriber;
+      } | null)
+    | ({
         relationTo: 'products';
         value: number | Product;
       } | null)
@@ -757,6 +778,18 @@ export interface ContactMessagesSelect<T extends boolean = true> {
   subject?: T;
   message?: T;
   status?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "newsletter-subscribers_select".
+ */
+export interface NewsletterSubscribersSelect<T extends boolean = true> {
+  email?: T;
+  status?: T;
+  consentAt?: T;
+  source?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1157,6 +1190,30 @@ export interface MarketingSetting {
       )[]
     | null;
   /**
+   * Optional large image for the storefront homepage hero. If empty, the first published product image is used.
+   */
+  homepageHeroImage?: (number | null) | Media;
+  /**
+   * Describe the hero image for screen readers. If empty, the selected product name is used.
+   */
+  homepageHeroImageAlt?: string | null;
+  /**
+   * Published product opened when customers click the hero image.
+   */
+  homepageHeroProduct?: (number | null) | Product;
+  /**
+   * Optional Mystery Box banner image. If empty, the selected product image is used.
+   */
+  homepageMysteryBoxImage?: (number | null) | Media;
+  homepageMysteryBoxImageAlt?: string | null;
+  /**
+   * Published Mystery Box product opened when customers click the banner.
+   */
+  homepageMysteryBoxProduct?: (number | null) | Product;
+  homepageMysteryBoxEyebrow?: string | null;
+  homepageMysteryBoxTitle?: string | null;
+  homepageMysteryBoxDescription?: string | null;
+  /**
    * Product Studio Auto description template. Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {availableLengthShapeCombinations}, {availableSizes}. Custom descriptions are not changed.
    */
   studioDescriptionTemplate?: string | null;
@@ -1266,6 +1323,15 @@ export interface StoreSettingsSelect<T extends boolean = true> {
  */
 export interface MarketingSettingsSelect<T extends boolean = true> {
   availableCountries?: T;
+  homepageHeroImage?: T;
+  homepageHeroImageAlt?: T;
+  homepageHeroProduct?: T;
+  homepageMysteryBoxImage?: T;
+  homepageMysteryBoxImageAlt?: T;
+  homepageMysteryBoxProduct?: T;
+  homepageMysteryBoxEyebrow?: T;
+  homepageMysteryBoxTitle?: T;
+  homepageMysteryBoxDescription?: T;
   studioDescriptionTemplate?: T;
   productTitleTemplate?: T;
   productDescriptionTemplate?: T;

@@ -131,7 +131,7 @@ export default function PayPalCardButton({ clientId, currency, disabled, createO
           <div aria-label={label} className="h-12 rounded-lg border border-[#d8c9c1] bg-white" />
         </div>)}
       </div>
-      <button type="button" onClick={submit} disabled={disabled || status !== 'ready'} className="w-full rounded-full bg-[#302522] py-3 text-white disabled:opacity-50">Pay by card</button>
+      <button type="button" onClick={submit} disabled={disabled || status !== 'ready'} className="ui-button ui-button--primary w-full">Pay by card</button>
       <p className="text-xs text-[#827873]">By paying with your card, you acknowledge that your data will be processed by PayPal subject to the <a href="https://www.paypal.com/privacy-full" target="_blank" rel="noopener noreferrer" className="underline">PayPal Privacy Statement</a>.</p>
     </fieldset>
   </section>

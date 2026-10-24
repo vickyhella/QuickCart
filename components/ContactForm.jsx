@@ -41,7 +41,7 @@ export default function ContactForm() {
       <label className="text-sm font-medium text-[#554944] sm:col-span-2">Message<textarea className={`${inputClass} min-h-36 resize-y`} name="message" maxLength={8000} required /></label>
       <label aria-hidden="true" className="absolute -left-[10000px] top-auto h-px w-px overflow-hidden">Website<input tabIndex={-1} autoComplete="off" name="website" /></label>
       <div className="sm:col-span-2 flex flex-wrap items-center gap-4">
-        <button type="submit" disabled={submitting} className="rounded-full bg-[#754b43] px-7 py-3 text-sm font-medium text-white transition hover:bg-[#5e3c36] disabled:cursor-wait disabled:opacity-60">{submitting ? 'Sending…' : 'Send message'}</button>
+        <button type="submit" disabled={submitting} className="ui-button ui-button--primary">{submitting ? 'Sending…' : 'Send message'}</button>
         {status && <p role="status" className="text-sm text-[#554944]">{status}</p>}
       </div>
     </form>

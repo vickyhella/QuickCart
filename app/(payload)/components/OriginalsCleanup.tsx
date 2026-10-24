@@ -54,7 +54,7 @@ export function OriginalsCleanup() {
     }
   }
 
-  return <section style={{ marginBlock: 16, padding: 18, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)' }}>
+  return <section className="ui-panel" style={{ marginBlock: 16, padding: 18 }}>
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
       <div>
         <h2 style={{ margin: '0 0 6px', fontSize: 'var(--brand-font-size-body)' }}>Original image cleanup</h2>
@@ -62,7 +62,7 @@ export function OriginalsCleanup() {
           {analysis ? `${analysis.total} originals · ${analysis.unreferenced} safe to delete · ${analysis.referenced.length} used by product or Pinterest WebP images` : 'Checking references…'}
         </p>
       </div>
-      <button type="button" onClick={() => void refresh()} disabled={busy} style={{ padding: '8px 12px', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-surface)' }}>Refresh analysis</button>
+      <button type="button" onClick={() => void refresh()} disabled={busy} className="ui-button ui-button--secondary">Refresh analysis</button>
     </div>
     {!!analysis?.referenced.length && <div style={{ marginTop: 12, fontSize: 'var(--brand-font-size-caption)' }}>
       <p style={{ margin: '0 0 6px' }}>Referenced originals are protected by default. Their WebP images will remain available if the original is deleted, but future re-compression from it will no longer be possible.</p>
@@ -76,7 +76,7 @@ export function OriginalsCleanup() {
       </label>
     </div>}
     <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginTop: 14 }}>
-      <button type="button" onClick={() => void remove()} disabled={busy || !analysis || (!analysis.unreferenced && !includeReferenced)} style={{ padding: '9px 14px', border: 0, borderRadius: 'var(--brand-radius-sm)', background: 'var(--brand-danger)', color: 'var(--brand-on-accent)', opacity: busy || !analysis || (!analysis.unreferenced && !includeReferenced) ? 0.5 : 1 }}>
+      <button type="button" onClick={() => void remove()} disabled={busy || !analysis || (!analysis.unreferenced && !includeReferenced)} className="ui-button ui-button--danger">
         {busy ? 'Deleting…' : includeReferenced ? `Delete all ${analysis?.total ?? 0} originals` : `Delete ${analysis?.unreferenced ?? 0} unreferenced originals`}
       </button>
       {message && <p role="status" style={{ margin: 0, fontSize: 'var(--brand-font-size-caption)' }}>{message}</p>}

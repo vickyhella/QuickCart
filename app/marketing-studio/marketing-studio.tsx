@@ -6,6 +6,7 @@ import { PinterestPublishing } from '../(payload)/components/PinterestPublishing
 import { MarketingHub } from '../(payload)/components/MarketingHub'
 
 export const marketingStudioTabs = [
+  { id: 'homepage', label: 'Homepage' },
   { id: 'pinterest', label: 'Pinterest' },
   { id: 'seo', label: 'SEO' },
   { id: 'feeds', label: 'Feeds' },
@@ -37,7 +38,8 @@ const cardStyle = { border: '1px solid var(--brand-border)', borderRadius: 'var(
 export default function MarketingStudio() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [tab, setTab] = useState<MarketingTab>('pinterest')
+  const requestedTab = searchParams.get('tab')
+  const tab: MarketingTab = marketingStudioTabs.some(({ id }) => id === requestedTab) ? requestedTab as MarketingTab : 'pinterest'
   const [posts, setPosts] = useState<PublishingPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -59,15 +61,9 @@ export default function MarketingStudio() {
     }
   }, [])
 
-  useEffect(() => {
-    const requested = searchParams.get('tab')
-    if (marketingStudioTabs.some(({ id }) => id === requested)) setTab(requested as MarketingTab)
-  }, [searchParams])
-
   useEffect(() => { if (tab === 'pinterest') void refresh() }, [refresh, tab])
 
   const selectTab = (next: MarketingTab) => {
-    setTab(next)
     router.replace(`/admin/collections/marketing/studio?tab=${next}`, { scroll: false })
   }
 
@@ -101,13 +97,15 @@ export default function MarketingStudio() {
     <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-3xl font-semibold tracking-tight">Marketing Studio</h1>
-        <p className="mt-2 text-sm text-[#766966]">Schedule Pinterest posts and track publishing status.</p>
+        <p className="mt-2 text-sm text-[#766966]">Manage homepage merchandising, product content, and Pinterest publishing.</p>
       </div>
     </header>
 
     <div role="tablist" aria-label="Marketing Studio sections" className="mb-8 flex gap-2 border-b border-[#e7ddd8]">
       {marketingStudioTabs.map((item) => <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} onClick={() => selectTab(item.id)} className="border-0 border-b-2 bg-transparent px-4 py-3 text-sm" style={{ borderBottomColor: tab === item.id ? 'var(--accent)' : 'transparent', color: tab === item.id ? 'var(--brand-text-primary)' : 'var(--brand-text-secondary)', fontWeight: tab === item.id ? 600 : 400 }}>{item.label}</button>)}
     </div>
+
+    {tab === 'homepage' && <MarketingHub section="homepage" />}
 
     {tab === 'pinterest' && <>
     <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">
@@ -123,7 +121,7 @@ export default function MarketingStudio() {
     <section className="overflow-hidden" style={cardStyle}>
       <div className="flex items-center justify-between border-b border-[#eee6e2] px-5 py-4">
         <div><h2 className="font-semibold">Publishing queue</h2><p className="mt-1 text-sm text-[#766966]">Latest 100 posts across drafts, scheduled items, and history.</p></div>
-        <button type="button" onClick={() => void refresh()} disabled={loading} className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm disabled:opacity-50">Refresh</button>
+        <button type="button" onClick={() => void refresh()} disabled={loading} className="ui-button ui-button--secondary">Refresh</button>
       </div>
       {error && <p role="alert" className="m-4 rounded-lg bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       {notice && <p role="status" className="m-4 rounded-lg bg-green-50 p-3 text-sm text-green-900">{notice}</p>}
@@ -137,8 +135,8 @@ export default function MarketingStudio() {
             {post.pinId && <div className="mt-1 text-sm text-[#766966]">Pinterest ID: {post.pinId}</div>}
           </div>
           <span className={`rounded-full px-3 py-1 text-sm ${post.status === 'failed' ? 'bg-red-50 text-red-800' : post.status === 'published' ? 'bg-green-50 text-green-800' : 'bg-[#f5efec] text-[#604a45]'}`}>{statusLabels[post.status]}</span>
-          {post.status === 'failed' && <button type="button" disabled={busyID === post.id} onClick={() => void updatePost(post, 'retry')} className="rounded-lg bg-[#604a45] px-3 py-2 text-sm text-white disabled:opacity-50">{busyID === post.id ? 'Retrying…' : 'Queue retry'}</button>}
-          {post.status === 'scheduled' && <button type="button" disabled={busyID === post.id} onClick={() => void updatePost(post, 'cancel')} className="rounded-lg border border-[#e7ddd8] px-3 py-2 text-sm disabled:opacity-50">Cancel</button>}
+          {post.status === 'failed' && <button type="button" disabled={busyID === post.id} onClick={() => void updatePost(post, 'retry')} className="ui-button ui-button--primary">{busyID === post.id ? 'Retrying…' : 'Queue retry'}</button>}
+          {post.status === 'scheduled' && <button type="button" disabled={busyID === post.id} onClick={() => void updatePost(post, 'cancel')} className="ui-button ui-button--secondary">Cancel</button>}
         </article>)}
       </div> : <p className="p-5 text-sm text-[#766966]">No publishing posts yet.</p>}
     </section>

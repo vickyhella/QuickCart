@@ -64,11 +64,15 @@ URL 当前仍使用 `?variant=ID`；改用可读规格参数及保留旧链接�
 ## 顾客登录与迁移
 ## Storefront 页面与分类
 
-首页采用明亮的美甲画廊视觉：以钴蓝、柠檬黄和番茄红突出产品摄影，展示新品、按形状 / 长度选购及手工、复用等卖点；首页入口在 `app/(storefront)/page.jsx`，沿用现有商品数据、导航、商品卡和页脚，无需新增环境变量或 migration。
+Storefront 使用共享 CSS 变量管理瓷白、莓紫、薰衣草色、正文色、边框、商品卡片圆角和阴影；入口在 `app/theme-tokens.css` 与 `app/brand-theme.css`，全站商品列表卡片与首页精选区复用同一套文字和卡片样式。首页包含按颜色筛选的入口、横向精选商品展示、分别使用深莓紫与亮莓紫的形状 / 长度入口、Mystery Box 横幅、订阅表单及手工与复用卖点；首页代码在 `app/(storefront)/page.jsx`。Admin → Marketing Studio → Homepage 可设置主视觉和 Mystery Box 图片、文案及已发布商品跳转目标；图片先上传到 Media。Newsletter 订阅会保存邮箱、同意时间和来源到 Newsletter subscribers 列表，当前尚未连接群发服务。品牌字标位于 `public/ginny-nana-logo.svg`，页脚反白字标为 `public/ginny-nana-logo-light.svg`，浏览器图标为 `app/icon.svg`。导航持续标出当前页面，移动端导航保持单行横向滚动。新增首页配置使用 migration `20261023_235200_add_homepage_hero`，订阅名单使用 `20261024_000100_add_newsletter_subscribers`；部署前须按[数据库迁移说明](./docs/database-migrations.md)应用 migration。
+
+主视觉图片和 Mystery Box 的后台配置、点击目标、Newsletter 订阅记录与首页代码备用图说明见[首页主视觉与订阅说明](./docs/storefront-homepage.md)。Newsletter 表单由 `components/NewsletterSignup.jsx` 提交到 `app/api/newsletter/subscribe/route.js`，名单由 `collections/NewsletterSubscribers.ts` 管理。
+
+前后台基础色板统一在 `app/theme-tokens.css`，`app/brand-theme.css` 分别映射 Admin 与 storefront 的用途变量；后台使用白色操作面板、莓紫按钮与清晰的禁用态。主要、次要和危险操作分别复用 `ui-button--primary`、`ui-button--secondary`、`ui-button--danger`，共用尺寸、圆角与交互状态；筛选控件和操作面板使用 `ui-filter`、`ui-panel`。改色入口、组件约定和对比度检查见[主题维护说明](./docs/visual-theme.md)，不需要新增环境变量或 migration。
 
 导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。
 
-`/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；预览图在后台 Product Studio → Categories 设置。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏，切回 storefront 时会刷新导航。新页面需将 Status 设为 Published 才会公开显示。Pages 新增展示位置字段，部署前需按[数据库迁移说明](./docs/database-migrations.md)应用 `20261023_190000_add_page_placement`。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出；Google 各展示位置对格式的保留情况可能不同。Product Studio 批量删除会对关联记录提示二次确认。
+`/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；预览图在后台 Product Studio → Categories 设置。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏，切回 storefront 时会刷新导航。新页面需将 Status 设为 Published 才会公开显示。Pages 新增展示位置字段，部署前需按[数据库迁移说明](./docs/database-migrations.md)应用 `20261023_190000_add_page_placement`。本地缺少默认内容时可运行 `npm run seed:pages`；该脚本只补建不存在的 Pages，不覆盖已编辑内容。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出；Google 各展示位置对格式的保留情况可能不同。Product Studio 批量删除会对关联记录提示二次确认。
 
 
 导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。

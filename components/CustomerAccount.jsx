@@ -107,7 +107,7 @@ export default function CustomerAccount() {
       {loading ? <p role="status" className="mt-6 text-sm text-[#786963]">Loading your account…</p> : customer ? <>
         <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
           <div><p>{customer.fullName ? `Welcome, ${customer.fullName}` : 'Welcome back'}</p><p className="mt-1 break-all text-sm text-[#786963]">{customer.email}</p></div>
-          <button type="button" disabled={busy} onClick={signOut} className="rounded-full border border-[#d8c9c1] px-5 py-2 text-sm disabled:opacity-50">{busy ? 'Signing out…' : 'Sign out'}</button>
+          <button type="button" disabled={busy} onClick={signOut} className="ui-button ui-button--secondary">{busy ? 'Signing out…' : 'Sign out'}</button>
         </div>
         {error && <p role="alert" className="mt-4 text-sm text-red-700">{error}</p>}
         <CustomerOrders key={`${customer.id}:${page}`} page={page} onPageChange={setPage} />
@@ -117,7 +117,7 @@ export default function CustomerAccount() {
           <label className="text-sm">Email address<input name="email" type="email" autoComplete="username" required maxLength={254} value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 block w-full rounded-lg border border-[#d8c9c1] bg-white px-4 py-3" /></label>
           <label className="text-sm">Password<input name="password" type="password" autoComplete="current-password" required maxLength={4096} value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 block w-full rounded-lg border border-[#d8c9c1] bg-white px-4 py-3" /></label>
           {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
-          <button disabled={busy} className="rounded-full bg-[#754b43] py-3 text-white disabled:opacity-50">{busy ? 'Signing in…' : 'Sign in'}</button>
+          <button disabled={busy} className="ui-button ui-button--primary">{busy ? 'Signing in…' : 'Sign in'}</button>
         </form>
         <p className="mt-5 text-sm text-[#786963]">Need help signing in? <Link href="/contact-us" className="underline">Contact us</Link>.</p>
         <Link href="/my-orders" className="mt-6 inline-block text-sm underline">Track an order without signing in</Link>

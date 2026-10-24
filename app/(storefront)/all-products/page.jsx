@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useMemo, useState } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
@@ -9,29 +10,30 @@ import { getPriceDetails } from '@/lib/product-pricing'
 import { getProductColor, matchesProductColor } from '@/lib/product-color'
 
 export default function AllProducts() {
-  const { products, productsStatus, fetchProductData } = useAppContext()
-  const [filters, setFilters] = useState({ length: '', shape: '', color: '', sale: false, isNew: false })
+  return <Suspense fallback={<main className="min-h-screen bg-[#fffdfa]" role="status">Loading designs…</main>}><AllProductsContent /></Suspense>
+}
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    setFilters({
-      length: params.get('length') || '',
-      shape: params.get('shape') || '',
-      color: params.get('color') || '',
-      sale: params.get('sale') === 'true',
-      isNew: params.get('isNew') === 'true',
-    })
-  }, [])
+function AllProductsContent() {
+  const { products, productsStatus, fetchProductData } = useAppContext()
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const [filters, setFilters] = useState(() => ({
+    length: searchParams.get('length') || '',
+    shape: searchParams.get('shape') || '',
+    color: searchParams.get('color') || '',
+  }))
+  const sale = searchParams.get('sale') === 'true'
+  const isNew = searchParams.get('isNew') === 'true'
 
   const visibleProducts = useMemo(() => products.filter((product) => {
     const enabledVariants = (product.variants || []).filter((variant) => variant.enabled !== false)
     if (filters.length && !String(product.length || '').split(',').map((item) => item.trim()).includes(filters.length) && !enabledVariants.some((variant) => variant.length === filters.length)) return false
     if (filters.shape && !String(product.shape || '').split(',').map((item) => item.trim()).includes(filters.shape) && !enabledVariants.some((variant) => variant.shape === filters.shape)) return false
     if (!matchesProductColor(product, filters.color)) return false
-    if (filters.sale && !getPriceDetails(product).onSale) return false
-    if (filters.isNew && !product.isNew) return false
+    if (sale && !getPriceDetails(product).onSale) return false
+    if (isNew && !product.isNew) return false
     return true
-  }), [products, filters])
+  }), [products, filters, sale, isNew])
   const colorOptions = useMemo(() => [...new Set(products.map(getProductColor).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [products])
 
   return (
@@ -52,8 +54,19 @@ export default function AllProducts() {
           <select aria-label="Filter by color" value={filters.color} onChange={(event) => setFilters({ ...filters, color: event.target.value })} className="rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white">
             <option value="">All colors</option>{colorOptions.map((color) => <option key={color} value={color}>{color}</option>)}
           </select>
-          <label className="flex items-center gap-2 rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white"><input type="checkbox" checked={filters.sale} onChange={(event) => setFilters({ ...filters, sale: event.target.checked })} /> On sale</label>
-          <label className="flex items-center gap-2 rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white"><input type="checkbox" checked={filters.isNew} onChange={(event) => setFilters({ ...filters, isNew: event.target.checked })} /> New arrivals</label>
+          <label className="ui-filter"><input type="checkbox" checked={sale} onChange={(event) => {
+            const nextSale = event.target.checked
+            const params = new URLSearchParams(window.location.search)
+            if (nextSale) params.set('sale', 'true')
+            else params.delete('sale')
+            router.replace(`/all-products${params.size ? `?${params}` : ''}`, { scroll: false })
+          }} /> On sale</label>
+          <label className="ui-filter"><input type="checkbox" checked={isNew} onChange={(event) => {
+            const params = new URLSearchParams(window.location.search)
+            if (event.target.checked) params.set('isNew', 'true')
+            else params.delete('isNew')
+            router.replace(`/all-products${params.size ? `?${params}` : ''}`, { scroll: false })
+          }} /> New arrivals</label>
         </div>
         {visibleProducts.length ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-7 mt-9">

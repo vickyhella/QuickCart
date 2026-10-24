@@ -33,7 +33,7 @@ export function MediaBulkUpload() {
     if (count) router.refresh()
   }
 
-  return <section style={{ marginBlock: 16, padding: 18, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)' }}>
+  return <section className="ui-panel" style={{ marginBlock: 16, padding: 18 }}>
     <h2 style={{ margin: '0 0 6px', fontSize: 'var(--brand-font-size-body)' }}>Upload multiple images</h2>
     <p style={{ margin: '0 0 12px', fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-text-secondary)' }}>Drop several images here or browse. Image title and alt text start from each filename and can be edited after upload.</p>
     <div onDragOver={(event) => { event.preventDefault(); setDragging(true) }} onDragLeave={() => setDragging(false)} onDrop={(event) => { event.preventDefault(); setDragging(false); void upload(event.dataTransfer.files) }} style={{ padding: 20, textAlign: 'center', border: `1px dashed ${dragging ? 'var(--brand-highlight)' : 'var(--brand-border)'}`, borderRadius: 'var(--brand-radius-sm)', background: dragging ? 'rgba(155,92,114,.08)' : 'transparent' }}>

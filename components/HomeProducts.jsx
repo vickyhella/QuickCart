@@ -14,7 +14,7 @@ const HomeProducts = () => {
         {productsStatus === 'error' ? <div className="col-span-full py-10 text-center text-sm text-[#786963]" role="alert"><p>We couldn’t load the collection.</p><button type="button" onClick={fetchProductData} className="mt-3 underline">Try again</button></div> : null}
         {products.map((product) => <ProductCard key={product._id} product={product} />)}
       </div>
-      <button onClick={() => { router.push('/all-products') }} className="px-12 py-2.5 border rounded text-gray-500/70 hover:bg-slate-50/90 transition">
+      <button onClick={() => { router.push('/all-products') }} className="ui-button ui-button--secondary text-gray-500/70">
         See more
       </button>
     </div>

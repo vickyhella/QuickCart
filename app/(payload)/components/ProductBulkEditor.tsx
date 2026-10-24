@@ -104,7 +104,7 @@ const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?:
   { key: 'isNew', label: 'New (true/false)', width: 130 },
   { key: 'isBestSeller', label: 'Best seller (true/false)', width: 160 },
 ]
-const PAGE_SIZE = 100
+const PAGE_SIZES = [10, 25, 50, 100]
 
 const cellValue = (value: unknown): string => {
   if (value === null || value === undefined) return ''
@@ -307,6 +307,7 @@ export function ProductBulkEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
   const [totalProducts, setTotalProducts] = useState(0)
   const [search, setSearch] = useState('')
@@ -331,7 +332,7 @@ export function ProductBulkEditor() {
     try {
       const productOnly = new URLSearchParams(window.location.search).get('product')
       const [productsResponse, mediaResponse, suppliersResponse] = await Promise.all([
-        fetch(productOnly ? `/api/products/${encodeURIComponent(productOnly)}?depth=1` : `/api/products?limit=${PAGE_SIZE}&page=${page}&depth=1&sort=title`, { credentials: 'same-origin' }),
+        fetch(productOnly ? `/api/products/${encodeURIComponent(productOnly)}?depth=1` : `/api/products?limit=${pageSize}&page=${page}&depth=1&sort=title`, { credentials: 'same-origin' }),
         fetch('/api/media?limit=1000&depth=0&sort=filename', { credentials: 'same-origin' }),
         fetch('/api/studio/suppliers', { credentials: 'same-origin' }),
       ])
@@ -353,7 +354,7 @@ export function ProductBulkEditor() {
     } finally {
       setLoading(false)
     }
-  }, [page])
+  }, [page, pageSize])
 
   useEffect(() => { void load() }, [load])
 
@@ -383,10 +384,21 @@ export function ProductBulkEditor() {
     return rows.filter((row) => matchesProductBulkFilters(row, search, filters))
   }, [rows, search, filters])
 
-  const setVariantDefault = (value: 'collapsed' | 'expanded') => {
-    setVariantDisplay(value)
-    window.localStorage.setItem('quickcart-variant-display', value)
-    setExpandedVariants(value === 'expanded' ? new Set(rows.filter((row) => { try { return JSON.parse(row.variants || '[]').length > 0 } catch { return false } }).map((row) => row.id)) : new Set())
+  const visibleVariantRows = visibleRows.filter((row) => {
+    try { return JSON.parse(row.variants || '[]').length > 0 } catch { return false }
+  })
+  const allVisibleVariantsExpanded = visibleVariantRows.length > 0 && visibleVariantRows.every((row) => expandedVariants.has(row.id))
+
+  const toggleVisibleVariants = () => {
+    const nextDisplay = allVisibleVariantsExpanded ? 'collapsed' : 'expanded'
+    setVariantDisplay(nextDisplay)
+    window.localStorage.setItem('quickcart-variant-display', nextDisplay)
+    const visibleIDs = new Set(visibleVariantRows.map((row) => row.id))
+    setExpandedVariants((current) => {
+      const next = new Set([...current].filter((id) => !visibleIDs.has(id)))
+      if (nextDisplay === 'expanded') visibleIDs.forEach((id) => next.add(id))
+      return next
+    })
   }
 
   useEffect(() => {
@@ -589,63 +601,72 @@ export function ProductBulkEditor() {
     URL.revokeObjectURL(url)
   }
 
-  const toolbarStyle: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center', marginBlock: '1rem' }
+  const toolbarStyle: React.CSSProperties = { display: 'grid', gap: '0.65rem', marginBlock: '1rem' }
   const inputStyle: React.CSSProperties = {
     width: '100%',
     minWidth: 90,
-    minHeight: 38,
-    padding: '0.45rem 0.55rem',
+    minHeight: 34,
+    padding: '0.4rem 0.55rem',
     border: '1px solid var(--brand-border)',
     borderRadius: 'var(--brand-radius-sm)',
     background: 'var(--brand-surface)',
     color: 'var(--brand-text-primary)',
-    font: 'inherit',
+    fontSize: 'var(--brand-font-size-caption)',
   }
 
   return (
-    <main className="product-studio min-h-screen bg-[#f7f3f0] px-5 py-10 font-sans text-base antialiased text-[#302522] md:px-8 lg:px-10">
-      <header className="mb-8">
+    <main className="product-studio min-h-screen bg-[#f7f3f0] px-5 py-6 font-sans text-base antialiased text-[#302522] md:px-8 lg:px-10">
+      <header className="mb-5">
         <h1 className="text-3xl font-semibold tracking-tight">Spreadsheet</h1>
         <p className="mt-2 max-w-[1000px] text-sm text-[#766966]">
         Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename.
         </p>
       </header>
       <ProductWorkspaceTabs />
-      <p style={{ maxWidth: 1100, lineHeight: 1.6, opacity: 0.8 }}>
-        Variants can be edited in a table per product. Separate multiple gallery images with semicolons. See the Media collection for filenames and IDs.
-      </p>
       <div style={toolbarStyle}>
-        <button type="button" onClick={exportTSV} className="ui-button ui-button--secondary" disabled={loading || rows.length === 0}>Export TSV</button>
-        <button type="button" onClick={() => void load()} className="ui-button ui-button--secondary" disabled={loading || saving}>Reload</button>
-        <button type="button" onClick={() => void save()} className="ui-button ui-button--primary" disabled={loading || saving || dirtyIDs.size === 0}>
-          {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
-        </button>
-        <input aria-label="Search products on this page" placeholder="Filter this page by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
-        <input type="search" aria-label="Search images by name" placeholder="Filter image choices by name" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} style={{ ...inputStyle, width: 250 }} />
+        <div className="product-bulk-toolbar-row">
+          <div className="product-bulk-toolbar-group">
+            <button type="button" onClick={exportTSV} className="ui-button ui-button--secondary" disabled={loading || rows.length === 0}>Export TSV</button>
+            <button type="button" onClick={() => void load()} className="ui-button ui-button--secondary" disabled={loading || saving}>Reload</button>
+            <button type="button" onClick={() => void save()} className="ui-button ui-button--primary" disabled={loading || saving || dirtyIDs.size === 0}>
+              {saving ? 'Saving…' : `Save ${dirtyIDs.size ? `${dirtyIDs.size} changed` : 'changes'}`}
+            </button>
+          </div>
+          <div className="product-bulk-toolbar-group product-bulk-search-group">
+            <input aria-label="Search products on this page" placeholder="Filter products by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 240 }} />
+            <input type="search" aria-label="Search images by name" placeholder="Filter image choices by name" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} style={{ ...inputStyle, width: 240 }} />
+          </div>
+        </div>
+        <div className="product-bulk-toolbar-row product-bulk-filters">
         {(['status', 'category', 'shape', 'length', 'color', 'brand'] as const).map((key) => {
           const options = [...new Set(rows.flatMap((row) => key === 'shape' || key === 'length' ? row[key].split(',').map((value) => value.trim()).filter(Boolean) : row[key] ? [row[key]] : []))].sort()
-          return <select key={key} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: 150 }}><option value="">All {key}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          return <select key={key} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: 132 }}><option value="">All {key}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
         })}
-        <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>Variants default
-          <select value={variantDisplay} onChange={(event) => setVariantDefault(event.target.value as 'collapsed' | 'expanded')} style={{ ...inputStyle, width: 130 }}><option value="collapsed">Collapsed</option><option value="expanded">Expanded</option></select>
-        </label>
-        <button type="button" onClick={() => setExpandedVariants(new Set(visibleRows.map((row) => row.id)))} className="ui-button ui-button--secondary">Expand all variants</button>
-        <button type="button" onClick={() => setExpandedVariants(new Set())} className="ui-button ui-button--secondary">Collapse all variants</button>
-        <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page <= 1}>Previous</button>
-        <span>Page {page} of {totalPages} · {totalProducts} products total</span>
-        <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
-        {loading ? <span>Loading products…</span> : <span>{rows.length} on this page · {dirtyIDs.size} changed</span>}
+        <button type="button" onClick={toggleVisibleVariants} className="ui-button ui-button--secondary" disabled={visibleVariantRows.length === 0}>
+          {allVisibleVariantsExpanded ? 'Collapse all variants' : 'Expand all variants'}
+        </button>
+        </div>
+        <div className="product-bulk-toolbar-row product-bulk-pagination">
+          <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page <= 1}>Previous</button>
+          <span>Page {page} of {totalPages} · {totalProducts} products total</span>
+          <label className="admin-page-size-control">Per page
+            <select className="admin-page-size-select" aria-label="Spreadsheet products per page" value={pageSize} disabled={loading || saving || dirtyIDs.size > 0 || Boolean(new URLSearchParams(typeof window === 'undefined' ? '' : window.location.search).get('product'))} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1) }}>{PAGE_SIZES.map((size) => <option key={size} value={size}>{size}</option>)}</select>
+          </label>
+          <button type="button" onClick={() => setPage((current) => Math.min(totalPages, current + 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page >= totalPages}>Next</button>
+          {loading ? <span>Loading products…</span> : <span>{rows.length} on this page · {dirtyIDs.size} changed</span>}
+        </div>
       </div>
       {message && <p role="status" style={{ color: 'var(--brand-text-secondary)' }}>{message}</p>}
       {error && <p role="alert" style={{ color: 'var(--brand-danger)' }}>{error}</p>}
       {loading ? <p>Loading…</p> : rows.length === 0 ? <p>No products found.</p> : (
         <div onPasteCapture={handlePaste} onCopy={handleCopy} onMouseUp={() => setIsSelecting(false)} style={{ overflow: 'auto', maxHeight: '70vh', border: '1px solid var(--theme-elevation-300)' }}>
-          <table style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%', width: 'max-content', fontSize: 'var(--brand-font-size-caption)' }}>
+          <table className="product-bulk-table" style={{ borderCollapse: 'separate', borderSpacing: 0, minWidth: '100%', width: 'max-content', fontSize: 'var(--brand-font-size-caption)' }}>
             <thead style={{ position: 'sticky', top: 0, zIndex: 2, background: 'var(--theme-elevation-100)' }}>
               <tr>
-                <th style={{ padding: '0.65rem', position: 'sticky', left: 0, minWidth: 64, background: 'var(--theme-elevation-100)', zIndex: 3 }}>Image</th>
-                <th style={{ padding: '0.65rem', position: 'sticky', left: 64, background: 'var(--theme-elevation-100)', zIndex: 3 }}>#</th>
+                <th className="product-bulk-sticky-image" style={{ padding: '0.65rem', position: 'sticky', left: 0, width: 84, minWidth: 84, background: 'var(--theme-elevation-100)', zIndex: 3 }}>Image</th>
+                <th className="product-bulk-sticky-index" style={{ padding: '0.65rem', position: 'sticky', left: 84, width: 56, minWidth: 56, background: 'var(--theme-elevation-100)', zIndex: 3 }}>#</th>
                 {columns.map((column) => <th key={column.key} style={{ minWidth: column.width, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '1px solid var(--theme-elevation-300)' }}>{column.label}</th>)}
+                <th className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 3, minWidth: 112, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', background: 'var(--theme-elevation-100)' }}>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -654,11 +675,11 @@ export function ProductBulkEditor() {
                 const dirty = dirtyIDs.has(row.id)
                 return (
                   <React.Fragment key={row.id}><tr style={{ background: dirty ? 'var(--theme-elevation-50, rgba(40,120,80,.08))' : undefined }}>
-                    <td style={{ position: 'sticky', left: 0, zIndex: 1, width: 64, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
-                      <img src={getFeaturedImageURL(row, media) || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 'var(--brand-radius-sm)' }} />
+                    <td className="product-bulk-sticky-image" style={{ position: 'sticky', left: 0, zIndex: 1, width: 84, padding: 8, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
+                      <img src={getFeaturedImageURL(row, media) || '/nail-placeholder.svg'} onError={(event) => { event.currentTarget.src = '/nail-placeholder.svg' }} alt={row.title} style={{ display: 'block', width: 64, height: 64, objectFit: 'cover', borderRadius: 'var(--brand-radius-sm)' }} />
                     </td>
-                    <th style={{ position: 'sticky', left: 64, zIndex: 1, minWidth: 110, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
-                      {dirty ? '● ' : ''}{rowIndex + 1}<button type="button" onClick={() => void duplicateProduct(rowIndex)} style={{ appearance: 'none', display: 'block', marginTop: 4, border: 0, borderRadius: 0, padding: 0, background: 'transparent', color: 'var(--brand-accent)', cursor: 'pointer', fontSize: 'var(--brand-font-size-caption)', textDecoration: 'underline' }}>Duplicate</button>
+                    <th className="product-bulk-sticky-index" style={{ position: 'sticky', left: 84, zIndex: 1, width: 56, minWidth: 56, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
+                      {dirty && <span aria-label="Unsaved changes" title="Unsaved changes" style={{ color: 'var(--brand-accent)' }}>● </span>}{rowIndex + 1}
                     </th>
                     {columns.map((column, columnIndex) => (
                       <td key={column.key}
@@ -728,11 +749,14 @@ export function ProductBulkEditor() {
                         )}
                       </td>
                     ))}
+                    <td className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 1, minWidth: 112, padding: 6, borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }}>
+                      <button type="button" onClick={() => void duplicateProduct(rowIndex)} className="ui-button ui-button--secondary product-bulk-action-button">Duplicate</button>
+                    </td>
                   </tr>
                   {expandedVariants.has(row.id) && (() => {
                     let variants: ProductVariant[] = []
                     try { variants = JSON.parse(row.variants || '[]') } catch { /* invalid JSON is handled by the variant editor */ }
-                    return <tr key={`${row.id}-variants`} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-soft)' }}><td colSpan={columns.length + 2} style={{ padding: 12, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>
+                    return <tr key={`${row.id}-variants`} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-soft)' }}><td colSpan={columns.length + 3} style={{ padding: 12, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><strong>{row.title} · {variants.length} variants</strong><button type="button" onClick={() => openVariantEditor(rowIndex)} className="ui-button ui-button--secondary">Edit / copy / paste variants</button></div>
                       <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}><thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Stock', 'Image'].map((label) => <th key={label} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>{label}</th>)}</tr></thead><tbody>{variants.map((variant, index) => { const image = media.find((item) => String(item.id) === mediaID(variant.image) || item.filename === variant.image); return <tr key={variant.id || index} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}>{[variant.sku, variant.length, variant.shape, variant.size?.toUpperCase(), variant.price ?? row.price, variant.stock, image?.filename || 'Product image'].map((value, cell) => <td key={cell} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-surface)', borderBottom: '1px solid var(--brand-border)' }}>{String(value ?? '')}</td>)}</tr> })}</tbody></table></div>
                     </td></tr>

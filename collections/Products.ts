@@ -227,6 +227,7 @@ export const Products: CollectionConfig = {
   admin: {
     group: false,
     useAsTitle: 'title',
+    pagination: { defaultLimit: 10, limits: [10, 25, 50, 100] },
     defaultColumns: ['featuredImage', 'title', 'sku', 'price', 'purchaseURL', 'status', 'updatedAt', 'actions'],
     description: 'Manage press-on nail designs, images, prices, and publishing status.',
     components: {

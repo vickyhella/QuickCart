@@ -553,7 +553,7 @@ export default function ProductStudio() {
                 </table>
               </div>
               <div className="flex items-center justify-between border-t border-[#f0e9e5] px-6 py-4 text-sm text-[#897a75]">
-                <div className="flex flex-wrap items-center gap-4"><span>Page {page} of {totalPages} · {totalDocs} matching</span><label className="flex items-center gap-2">Per page<select aria-label="Products per page" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); setSelectedIDs([]); setSelectedProducts({}) }} className="w-24 rounded-xl border border-[#e7ddd8] bg-white px-3 py-2">{[10, 25, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
+                <div className="flex flex-wrap items-center gap-4"><span>Page {page} of {totalPages} · {totalDocs} matching</span><label className="admin-page-size-control">Per page<select aria-label="Products per page" value={pageSize} onChange={(event) => { setPageSize(Number(event.target.value)); setPage(1); setSelectedIDs([]); setSelectedProducts({}) }} className="admin-page-size-select">{[10, 25, 50, 100].map((size) => <option key={size} value={size}>{size}</option>)}</select></label></div>
                 <div className="flex gap-2"><button type="button" className="ui-button ui-button--secondary" disabled={page <= 1 || loading} onClick={() => setPage(page - 1)}>Previous</button><button type="button" className="ui-button ui-button--secondary" disabled={page >= totalPages || loading} onClick={() => setPage(page + 1)}>Next</button></div>
               </div>
             </section>

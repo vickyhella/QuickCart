@@ -12,6 +12,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
+import StorefrontSelect from '@/components/StorefrontSelect'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { sortProductSizes } from '@/lib/product-size-order'
 import { productVariantAttributeKeys } from '@/lib/product-color'
@@ -93,27 +94,19 @@ export default function ProductPage() {
             <h1 className="font-serif text-3xl md:text-4xl mt-3">{product.name}</h1>
             <div className="flex items-baseline gap-3 mt-5"><span className="text-xl">{money(pricing.currentPrice)}</span>{pricing.onSale && <span className="text-[#998f89] line-through">{money(pricing.price)}</span>}</div>
             {variants.length > 0 && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
-              {availableShapes.length > 0 && <label className="text-sm text-[#6e5c55]">Shape
-                <select className="storefront-filter-select mt-2 block w-full capitalize" value={selectedShape} onChange={(event) => chooseVariant('shape', event.target.value)}>
-                  {availableShapes.map((shape) => <option key={shape} value={shape}>{formatDimension(shape)}</option>)}
-                </select>
+              {availableShapes.length > 0 && <label className="storefront-variant-field">Shape
+                <StorefrontSelect ariaLabel="Choose shape" className="storefront-variant-select mt-2" value={selectedShape} onChange={(value) => chooseVariant('shape', value)} options={availableShapes.map((shape) => ({ value: shape, label: formatDimension(shape) }))} />
               </label>}
-              {availableLengths.length > 0 && <label className="text-sm text-[#6e5c55]">Length
-                <select className="storefront-filter-select mt-2 block w-full capitalize" value={selectedLength} onChange={(event) => chooseVariant('length', event.target.value)}>
-                  {availableLengths.map((length) => <option key={length} value={length}>{formatDimension(length)}</option>)}
-                </select>
+              {availableLengths.length > 0 && <label className="storefront-variant-field">Length
+                <StorefrontSelect ariaLabel="Choose length" className="storefront-variant-select mt-2" value={selectedLength} onChange={(value) => chooseVariant('length', value)} options={availableLengths.map((length) => ({ value: length, label: formatDimension(length) }))} />
               </label>}
-              <label className="text-sm text-[#6e5c55]">Size
-                <select className="storefront-filter-select mt-2 block w-full uppercase" value={selectedSize} onChange={(event) => chooseVariant('size', event.target.value)}>
-                  {availableSizes.map((size) => <option key={size} value={size}>{size.toUpperCase()}</option>)}
-                </select>
+              <label className="storefront-variant-field">Size
+                <StorefrontSelect ariaLabel="Choose size" className="storefront-variant-select mt-2" value={selectedSize} onChange={(value) => chooseVariant('size', value)} options={availableSizes.map((size) => ({ value: size, label: size.toUpperCase() }))} />
               </label>
               {attributeKeys.map((key) => {
                 const values = [...new Set(variants.map((variant) => variant.attributes?.[key]).filter((value) => value !== undefined && value !== null))]
-                return <label key={key} className="text-sm text-[#6e5c55]">{formatDimension(key)}
-                  <select className="storefront-filter-select mt-2 block w-full" value={String(selectedAttributes[key] ?? '')} onChange={(event) => chooseVariant(`attribute:${key}`, event.target.value)}>
-                    {values.map((value) => <option key={String(value)} value={String(value)}>{String(value)}</option>)}
-                  </select>
+                return <label key={key} className="storefront-variant-field">{formatDimension(key)}
+                  <StorefrontSelect ariaLabel={`Choose ${formatDimension(key)}`} className="storefront-variant-select mt-2" value={String(selectedAttributes[key] ?? '')} onChange={(value) => chooseVariant(`attribute:${key}`, value)} options={values.map((value) => ({ value: String(value), label: String(value) }))} />
                 </label>
               })}
             </div>}

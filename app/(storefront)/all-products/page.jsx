@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
+import StorefrontSelect from '@/components/StorefrontSelect'
 import { useAppContext } from '@/context/AppContext'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { getProductColor, matchesProductColor } from '@/lib/product-color'
@@ -35,6 +36,7 @@ function AllProductsContent() {
     return true
   }), [products, filters, sale, isNew])
   const colorOptions = useMemo(() => [...new Set(products.map(getProductColor).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [products])
+  const updateFilter = (key, value) => setFilters((current) => ({ ...current, [key]: value }))
 
   return (
     <main className="bg-[#fffdfa] min-h-screen text-[#302522]">
@@ -43,17 +45,18 @@ function AllProductsContent() {
         <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">Ginny Nana</p>
         <h1 className="font-serif text-4xl mt-2">All products</h1>
         <div className="storefront-filters">
-          <select aria-label="Filter by length" value={filters.length} onChange={(event) => setFilters({ ...filters, length: event.target.value })} className="storefront-filter-select">
-            <option value="">All lengths</option>
-            <option value="x-short">X-Short</option><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option><option value="x-long">X-Long</option>
-          </select>
-          <select aria-label="Filter by shape" value={filters.shape} onChange={(event) => setFilters({ ...filters, shape: event.target.value })} className="storefront-filter-select capitalize">
-            <option value="">All shapes</option>
-            <option value="square">Square</option><option value="oval">Oval</option><option value="almond">Almond</option><option value="round">Round</option>
-          </select>
-          <select aria-label="Filter by color" value={filters.color} onChange={(event) => setFilters({ ...filters, color: event.target.value })} className="storefront-filter-select">
-            <option value="">All colors</option>{colorOptions.map((color) => <option key={color} value={color}>{color}</option>)}
-          </select>
+          <StorefrontSelect ariaLabel="Filter by length" value={filters.length} onChange={(value) => updateFilter('length', value)} active={Boolean(filters.length)} options={[
+            { value: '', label: 'All lengths' },
+            { value: 'x-short', label: 'X-Short' }, { value: 'short', label: 'Short' }, { value: 'medium', label: 'Medium' }, { value: 'long', label: 'Long' }, { value: 'x-long', label: 'X-Long' },
+          ]} />
+          <StorefrontSelect ariaLabel="Filter by shape" value={filters.shape} onChange={(value) => updateFilter('shape', value)} active={Boolean(filters.shape)} options={[
+            { value: '', label: 'All shapes' },
+            ...['square', 'oval', 'almond', 'round'].map((value) => ({ value, label: value[0].toUpperCase() + value.slice(1) })),
+          ]} />
+          <StorefrontSelect ariaLabel="Filter by color" value={filters.color} onChange={(value) => updateFilter('color', value)} active={Boolean(filters.color)} options={[
+            { value: '', label: 'All colors' },
+            ...colorOptions.map((color) => ({ value: color, label: color })),
+          ]} />
           <label className="ui-filter"><input type="checkbox" checked={sale} onChange={(event) => {
             const nextSale = event.target.checked
             const params = new URLSearchParams(window.location.search)

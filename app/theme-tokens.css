@@ -1,5 +1,23 @@
 /* Shared palette: edit these values to update storefront and Admin together. */
 :root {
+  /* Shared type pairing: editorial display headings + clean interface text. */
+  --gn-font-ui: 'Avenir Next', Avenir, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --gn-font-display: 'Iowan Old Style', Baskerville, 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+  --gn-type-caption: .75rem;
+  --gn-type-control: .875rem;
+  --gn-type-body: 1rem;
+  --gn-type-lg: 1.125rem;
+  --gn-type-xl: 1.25rem;
+  --gn-type-2xl: 1.5rem;
+  --gn-type-3xl: 1.875rem;
+  --gn-type-4xl: 2.25rem;
+  --gn-type-nav: clamp(.8125rem, .9vw, .875rem);
+  --gn-type-footer: .875rem;
+  --gn-type-card-title: 1.25rem;
+  --gn-type-page-title: clamp(1.875rem, 3vw, 2.25rem);
+  --gn-type-weight-body: 400;
+  --gn-type-weight-label: 500;
+  --gn-type-weight-emphasis: 600;
   --gn-plum: #704576;
   --gn-plum-hover: #5c3762;
   --gn-highlight: #a55a9c;

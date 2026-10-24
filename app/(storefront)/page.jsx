@@ -8,6 +8,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { useAppContext } from '@/context/AppContext'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { isStorefrontNew } from '@/lib/product-newness'
 import { getProductColor } from '@/lib/product-color'
 import { useEffect, useState } from 'react'
 
@@ -21,7 +22,7 @@ const values = [
 export default function Home() {
   const { products, productsStatus, fetchProductData, currency } = useAppContext()
   const [homepageSettings, setHomepageSettings] = useState(null)
-  const newProducts = products.filter((product) => product.isNew)
+  const newProducts = products.filter(isStorefrontNew)
   const visibleProducts = newProducts.length ? newProducts : products
   const heroProduct = products[0]
   const colorOptions = Array.from(products.reduce((counts, product) => {
@@ -114,7 +115,7 @@ export default function Home() {
                 return <Link key={product._id} href={'/product/' + (product.slug || product._id)} className="store-product-card group relative w-[78vw] max-w-[360px] shrink-0 snap-start sm:w-[43vw] lg:w-[calc((100%-3rem)/3)]">
                   <div className="store-product-card__media">
                     <SafeImage unoptimized src={product.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'} alt={product.imageAlt?.[0] || product.name} fill sizes="(max-width: 640px) 78vw, (max-width: 1024px) 43vw, 30vw" className="store-product-card__image" />
-                    <span className="store-product-card__badge">{product.isNew ? 'Just dropped' : `Set Nº 0${index + 1}`}</span>
+                    <span className="store-product-card__badge">{isStorefrontNew(product) ? 'New' : `Set Nº 0${index + 1}`}</span>
                     {price.onSale && <span className="store-product-card__badge store-product-card__badge--sale">On sale</span>}
                     <span aria-hidden="true" className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full bg-[#fbf8f5] text-xl text-[#704576] transition-transform group-hover:translate-x-1">↗</span>
                   </div>

@@ -54,6 +54,7 @@ export async function GET(request: Request) {
         sku: product.sku,
         ...toEditorPriceFields(product),
         status: product.status,
+        createdAt: product.createdAt,
         updatedAt: product.updatedAt,
         variantCount: product.variants?.length || 0,
         image: image?.url || null,

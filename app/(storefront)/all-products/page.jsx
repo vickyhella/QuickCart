@@ -9,6 +9,7 @@ import StorefrontSelect from '@/components/StorefrontSelect'
 import { useAppContext } from '@/context/AppContext'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { getProductColor, matchesProductColor } from '@/lib/product-color'
+import { isStorefrontNew } from '@/lib/product-newness'
 
 export default function AllProducts() {
   return <Suspense fallback={<main className="min-h-screen bg-[#fffdfa]" role="status">Loading designs…</main>}><AllProductsContent /></Suspense>
@@ -32,7 +33,7 @@ function AllProductsContent() {
     if (filters.shape && !String(product.shape || '').split(',').map((item) => item.trim()).includes(filters.shape) && !enabledVariants.some((variant) => variant.shape === filters.shape)) return false
     if (!matchesProductColor(product, filters.color)) return false
     if (sale && !getPriceDetails(product).onSale) return false
-    if (isNew && !product.isNew) return false
+    if (isNew && !isStorefrontNew(product)) return false
     return true
   }), [products, filters, sale, isNew])
   const colorOptions = useMemo(() => [...new Set(products.map(getProductColor).filter(Boolean))].sort((a, b) => a.localeCompare(b)), [products])

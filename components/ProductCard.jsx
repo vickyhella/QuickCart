@@ -5,6 +5,7 @@ import { useAppContext } from '@/context/AppContext';
 import { formatDimension } from '@/lib/format-dimension'
 import { productCardDimensions } from '@/lib/product-dimensions'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { isStorefrontNew } from '@/lib/product-newness'
 
 const ProductCard = ({ product }) => {
 
@@ -26,7 +27,7 @@ const ProductCard = ({ product }) => {
                     height={900}
                 />
                 <div className="store-product-card__badge-stack">
-                    {product.isNew && <span className="store-product-card__badge">New</span>}
+                    {isStorefrontNew(product) && <span className="store-product-card__badge">New</span>}
                 </div>
                 {pricing.onSale && <span className="store-product-card__badge store-product-card__badge--sale">On sale</span>}
             </div>

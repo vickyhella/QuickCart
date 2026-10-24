@@ -1192,6 +1192,10 @@ export interface MarketingSetting {
       )[]
     | null;
   /**
+   * Published products show the automatic New badge for this many days. Set to 0 to disable the automatic window; manually marked New products remain included.
+   */
+  newArrivalDays?: number | null;
+  /**
    * Optional large image for the storefront homepage hero. If empty, the first published product image is used.
    */
   homepageHeroImage?: (number | null) | Media;
@@ -1215,7 +1219,6 @@ export interface MarketingSetting {
   homepageMysteryBoxEyebrow?: string | null;
   homepageMysteryBoxTitle?: string | null;
   homepageMysteryBoxDescription?: string | null;
-  newArrivalDays?: number | null;
   /**
    * Product Studio Auto description template. Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {availableLengthShapeCombinations}, {availableSizes}. Custom descriptions are not changed.
    */

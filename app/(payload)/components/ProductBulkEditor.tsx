@@ -58,6 +58,9 @@ type ColumnKey =
   | 'googleProductCategory'
   | 'status'
   | 'isNew'
+  | 'newBadgeStatus'
+  | 'createdAt'
+  | 'publishedAt'
   | 'isBestSeller'
   | 'seoTitle'
   | 'seoDescription'
@@ -67,7 +70,7 @@ type ColumnKey =
 
 type GridRow = Record<ColumnKey, string> & { id: string; featuredImageURL: string; resolvedFeaturedImageID: string; originalPricing?: PriceFields & { variants?: Product['variants'] } }
 
-const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?: boolean }> = [
+const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?: boolean; readOnly?: boolean }> = [
   { key: 'title', label: 'Title', width: 190 },
   { key: 'chineseName', label: 'Chinese Name (internal)', width: 190 },
   { key: 'slug', label: 'Slug', width: 180 },
@@ -102,9 +105,14 @@ const columns: Array<{ key: ColumnKey; label: string; width: number; multiline?:
   { key: 'shippingWeight', label: 'Shipping weight (kg)', width: 160 },
   { key: 'status', label: 'Status (draft/published)', width: 170 },
   { key: 'isNew', label: 'New (true/false)', width: 130 },
+  { key: 'newBadgeStatus', label: 'Storefront New status', width: 190, readOnly: true },
+  { key: 'createdAt', label: 'Created date', width: 185, readOnly: true },
+  { key: 'publishedAt', label: 'Published date', width: 185, readOnly: true },
   { key: 'isBestSeller', label: 'Best seller (true/false)', width: 160 },
 ]
 const PAGE_SIZES = [10, 25, 50, 100]
+const COLUMN_PREFERENCE_VERSION = 'published-date-columns-v4'
+const NEWNESS_DIAGNOSTIC_COLUMNS: ColumnKey[] = ['newBadgeStatus', 'createdAt', 'publishedAt']
 
 const cellValue = (value: unknown): string => {
   if (value === null || value === undefined) return ''
@@ -117,12 +125,25 @@ function mediaID(value: unknown): string {
   return cellValue(value)
 }
 
+function formatSpreadsheetDate(value: unknown): string {
+  if (typeof value !== 'string' || !value) return '—'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? '—' : date.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
+
 function toGridRow(product: Product): GridRow {
   const row = {} as GridRow
   const pricing = toEditorPriceFields(product)
   for (const column of columns) {
     const value = column.key === 'price' || column.key === 'salePrice' ? pricing[column.key] : product[column.key]
-    if (column.key === 'featuredImage') row[column.key] = mediaID(value)
+    if (column.key === 'newBadgeStatus') {
+      row[column.key] = product.status !== 'published'
+        ? 'Not published'
+        : typeof product.storefrontNewStatus === 'string'
+          ? product.storefrontNewStatus
+          : product.isNew ? 'Manual' : 'Unknown'
+    } else if (column.key === 'createdAt' || column.key === 'publishedAt') row[column.key] = formatSpreadsheetDate(value)
+    else if (column.key === 'featuredImage') row[column.key] = mediaID(value)
     else if (column.key === 'gallery' || column.key === 'suppliers') {
       row[column.key] = Array.isArray(value) ? value.map(mediaID).join('; ') : ''
     } else if (column.key === 'variants') {
@@ -313,6 +334,7 @@ export function ProductBulkEditor() {
   const [totalProducts, setTotalProducts] = useState(0)
   const [search, setSearch] = useState('')
   const [mediaSearch, setMediaSearch] = useState('')
+  const [columnSearch, setColumnSearch] = useState('')
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [variantEditor, setVariantEditor] = useState<{ rowIndex: number; variants: ProductVariant[]; values: { combinations: Array<{ shape: string; length: string }>; size: string[] }; newPair: { shape: string; length: string } } | null>(null)
@@ -329,8 +351,14 @@ export function ProductBulkEditor() {
     try {
       const saved = JSON.parse(window.localStorage.getItem('quickcart-spreadsheet-columns') || 'null')
       if (Array.isArray(saved)) {
-        const valid = saved.filter((key): key is ColumnKey => columns.some((column) => column.key === key))
-        if (valid.length) setVisibleColumnKeys(valid)
+        const valid = new Set(saved.filter((key): key is ColumnKey => columns.some((column) => column.key === key)))
+        if (window.localStorage.getItem('quickcart-spreadsheet-columns-version') !== COLUMN_PREFERENCE_VERSION) {
+          NEWNESS_DIAGNOSTIC_COLUMNS.forEach((key) => valid.add(key))
+          window.localStorage.setItem('quickcart-spreadsheet-columns-version', COLUMN_PREFERENCE_VERSION)
+        }
+        if (valid.size) setVisibleColumnKeys(columns.filter(({ key }) => valid.has(key)).map(({ key }) => key))
+      } else {
+        window.localStorage.setItem('quickcart-spreadsheet-columns-version', COLUMN_PREFERENCE_VERSION)
       }
     } catch { /* Keep all columns visible when saved preferences are unavailable. */ }
     setColumnPreferencesLoaded(true)
@@ -342,6 +370,10 @@ export function ProductBulkEditor() {
   }, [columnPreferencesLoaded, visibleColumnKeys])
 
   const visibleColumns = useMemo(() => columns.filter(({ key }) => visibleColumnKeys.includes(key)), [visibleColumnKeys])
+  const matchingColumns = useMemo(() => {
+    const query = columnSearch.trim().toLocaleLowerCase()
+    return columns.filter(({ key, label }) => !query || `${label} ${key}`.toLocaleLowerCase().includes(query))
+  }, [columnSearch])
 
   useEffect(() => {
     const saved = window.localStorage.getItem('quickcart-variant-display')
@@ -473,8 +505,9 @@ export function ProductBulkEditor() {
   }
 
   const updateCell = (rowIndex: number, columnIndex: number, value: string) => {
-    const key = visibleColumns[columnIndex]?.key
-    if (!key) return
+    const column = visibleColumns[columnIndex]
+    if (!column || column.readOnly) return
+    const { key } = column
     setRows((current) => current.map((row, index) => index === rowIndex ? { ...row, [key]: value } : row))
     setMessage('')
   }
@@ -588,7 +621,8 @@ export function ProductBulkEditor() {
       let nextRow = row
       pastedRow.forEach((value, offset) => {
         const targetColumn = columnIndex + offset
-        if (targetColumn < visibleColumns.length) nextRow = { ...nextRow, [visibleColumns[targetColumn].key]: value }
+        const column = visibleColumns[targetColumn]
+        if (column && !column.readOnly) nextRow = { ...nextRow, [column.key]: value }
       })
       return nextRow
     }))
@@ -671,7 +705,7 @@ export function ProductBulkEditor() {
       <header className="mb-5">
         <h1 className="text-3xl font-semibold tracking-tight">Spreadsheet</h1>
         <p className="mt-2 max-w-[1000px] text-sm text-[#766966]">
-        Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename.
+        Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename. Created date, Published date, and Storefront New status are read-only diagnostic columns.
         </p>
       </header>
       <ProductWorkspaceTabs />
@@ -699,7 +733,15 @@ export function ProductBulkEditor() {
           <summary className="ui-button ui-button--secondary" aria-label="Choose visible spreadsheet columns">Columns <span>{visibleColumns.length}/{columns.length}</span></summary>
           <div className="product-bulk-column-picker-menu" aria-label="Spreadsheet columns">
             <div className="product-bulk-column-picker-heading">Visible columns</div>
-            {columns.map(({ key, label }) => {
+            <input
+              type="search"
+              aria-label="Search spreadsheet columns"
+              className="admin-searchable-select-search product-bulk-column-search"
+              placeholder="Search by column name…"
+              value={columnSearch}
+              onChange={(event) => setColumnSearch(event.target.value)}
+            />
+            {matchingColumns.length ? matchingColumns.map(({ key, label }) => {
               const checked = visibleColumnKeys.includes(key)
               return <label key={key} className="product-bulk-column-option">
                 <input type="checkbox" checked={checked} disabled={checked && visibleColumnKeys.length === 1} onChange={() => {
@@ -708,8 +750,8 @@ export function ProductBulkEditor() {
                 }} />
                 <span>{label}</span>
               </label>
-            })}
-            <button type="button" className="product-bulk-column-reset" onClick={() => { setSelectedRange(null); setVisibleColumnKeys(columns.map(({ key }) => key)) }}>Show all columns</button>
+            }) : <p className="product-bulk-column-empty" role="status">No columns match “{columnSearch}”.</p>}
+            <button type="button" className="product-bulk-column-reset" onClick={() => { setSelectedRange(null); setColumnSearch(''); setVisibleColumnKeys(columns.map(({ key }) => key)) }}>Show all columns</button>
           </div>
         </details>
         </div>
@@ -756,7 +798,9 @@ export function ProductBulkEditor() {
                         onMouseDown={(event) => { if ((event.target as HTMLElement).closest('button, input[type=file]')) return; setSelectedRange((current) => event.shiftKey && current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : { startRow: rowIndex, startColumn: columnIndex, endRow: rowIndex, endColumn: columnIndex }); setIsSelecting(true) }}
                         onMouseEnter={() => { if (isSelecting) setSelectedRange((current) => current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : current) }}
                         style={{ minWidth: column.width, padding: '0.3rem', borderBottom: '1px solid var(--theme-elevation-150)', verticalAlign: 'top', color: 'var(--brand-text-primary)', background: selectedRange && rowIndex >= Math.min(selectedRange.startRow, selectedRange.endRow) && rowIndex <= Math.max(selectedRange.startRow, selectedRange.endRow) && columnIndex >= Math.min(selectedRange.startColumn, selectedRange.endColumn) && columnIndex <= Math.max(selectedRange.startColumn, selectedRange.endColumn) ? 'var(--brand-soft-strong)' : undefined }}>
-                        {column.key === 'gallery' ? (
+                        {column.readOnly ? (
+                          <span className={`product-bulk-readonly-cell${column.key === 'newBadgeStatus' ? ' product-bulk-readonly-cell--status' : ''}`} data-row={rowIndex} data-column={columnIndex}>{row[column.key]}</span>
+                        ) : column.key === 'gallery' ? (
                           <>
                             <select data-row={rowIndex} data-column={columnIndex} multiple aria-label={`Gallery images for ${row.title}`} value={row.gallery.split(';').map((value) => value.trim()).filter(Boolean).map((value) => media.find((item) => String(item.id) === value || item.filename === value)?.id.toString() || value)} onChange={(event) => updateCell(rowIndex, columnIndex, [...event.currentTarget.selectedOptions].map((option) => option.value).join('; '))} style={{ ...inputStyle, minHeight: 96, color: 'var(--brand-text-primary)' }}>
                               {pickerMedia.map((item) => <option key={item.id} value={String(item.id)}>{item.filename || `Media ${item.id}`}</option>)}

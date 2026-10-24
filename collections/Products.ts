@@ -133,14 +133,23 @@ export const Products: CollectionConfig = {
       await syncLinkedProductCounts(req, doc?.suppliers || [])
     }],
     afterRead: [async ({ doc, req }) => {
-      if (!doc || isAdminUser(req.user)) return doc
+      if (!doc) return doc
       if (doc.status === 'published') {
         const marketing = await getMarketingSettingsForRequest(req)
         const newArrivalDays = marketing.newArrivalDays ?? DEFAULT_NEW_ARRIVAL_DAYS
         const automaticNew = isWithinNewArrivalDays(doc.publishedAt || doc.createdAt, newArrivalDays)
-        return hideSupplierDetails({ ...doc, isNew: Boolean(doc.isNew) || automaticNew } as any)
+        const manualNew = Boolean(doc.isNew)
+        const storefrontIsNew = manualNew || automaticNew
+        if (isAdminUser(req.user)) {
+          return {
+            ...doc,
+            storefrontIsNew,
+            storefrontNewStatus: manualNew && automaticNew ? 'Manual + automatic' : manualNew ? 'Manual' : automaticNew ? 'Automatic' : 'Not new',
+          } as any
+        }
+        return hideSupplierDetails({ ...doc, isNew: storefrontIsNew } as any)
       }
-      return hideSupplierDetails(doc as any)
+      return isAdminUser(req.user) ? doc : hideSupplierDetails(doc as any)
     }],
     beforeValidate: [
       async ({ data, originalDoc, req }) => {
@@ -253,7 +262,7 @@ export const Products: CollectionConfig = {
     group: false,
     useAsTitle: 'title',
     pagination: { defaultLimit: 10, limits: [10, 25, 50, 100] },
-    defaultColumns: ['featuredImage', 'title', 'sku', 'price', 'purchaseURL', 'status', 'updatedAt', 'actions'],
+    defaultColumns: ['featuredImage', 'title', 'sku', 'price', 'purchaseURL', 'status', 'createdAt', 'updatedAt', 'actions'],
     description: 'Manage press-on nail designs, images, prices, and publishing status.',
     components: {
       beforeList: ['/components/ProductWorkspaceTabs#ProductWorkspaceTabs', '/components/ProductListActions#ProductListActions', '/components/ProductBulkEditor#ProductMediaAudit'],

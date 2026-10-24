@@ -1,9 +1,10 @@
 'use client'
 
-import { useId, useState } from 'react'
-import type { CSSProperties } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import Image from 'next/image'
+import type { CSSProperties, KeyboardEvent } from 'react'
 
-export type SearchOption = { value: string; label: string }
+export type SearchOption = { value: string; label: string; imageUrl?: string | null }
 
 export function AdminSearchableSelect({
   ariaLabel,
@@ -27,33 +28,73 @@ export function AdminSearchableSelect({
   disabled?: boolean
 }) {
   const [query, setQuery] = useState('')
+  const [open, setOpen] = useState(false)
   const inputID = useId()
+  const detailsRef = useRef<HTMLDetailsElement>(null)
   const matching = options.filter((option) => option.label.toLowerCase().includes(query.trim().toLowerCase()))
   const selected = options.find((option) => option.value === value)
-  const visible = selected && !matching.some((option) => option.value === selected.value) ? [selected, ...matching] : matching
+
+  useEffect(() => {
+    if (!open) return
+    const closeOutside = (event: PointerEvent) => {
+      if (!detailsRef.current?.contains(event.target as Node)) {
+        detailsRef.current?.removeAttribute('open')
+        setOpen(false)
+        setQuery('')
+      }
+    }
+    window.addEventListener('pointerdown', closeOutside)
+    return () => window.removeEventListener('pointerdown', closeOutside)
+  }, [open])
+
+  const close = () => {
+    detailsRef.current?.removeAttribute('open')
+    setOpen(false)
+    setQuery('')
+  }
+
+  const choose = (nextValue: string) => {
+    onChange(nextValue)
+    close()
+  }
+
+  const onKeyDown = (event: KeyboardEvent<HTMLDetailsElement>) => {
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      close()
+    }
+  }
 
   return <div className={`admin-searchable-select ${wrapperClassName || ''}`}>
-    <input
-      id={inputID}
-      type="search"
-      aria-label={`Search ${ariaLabel} by name`}
-      className="admin-image-search"
-      placeholder="Search by image name…"
-      value={query}
-      disabled={disabled}
-      onChange={(event) => setQuery(event.target.value)}
-    />
-    <select
-      aria-label={ariaLabel}
-      className={className}
-      style={style}
-      value={value}
-      disabled={disabled}
-      onChange={(event) => { onChange(event.target.value); setQuery('') }}
+    <details
+      ref={detailsRef}
+      className={`admin-searchable-select-menu ${className || ''}`}
+      onToggle={(event) => { setOpen(event.currentTarget.open); if (!event.currentTarget.open) setQuery('') }}
+      onKeyDown={onKeyDown}
     >
-      <option value="">{placeholder}</option>
-      {visible.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-    </select>
-    {query && matching.length === 0 && <small role="status">No images match that name.</small>}
+      <summary aria-label={ariaLabel} aria-haspopup="listbox" aria-expanded={open} aria-disabled={disabled} onClick={(event) => { if (disabled) event.preventDefault() }} style={style}>
+        <span>{selected?.label || placeholder}</span>
+      </summary>
+      {!disabled && <div className="admin-searchable-select-popover">
+        <input
+          id={inputID}
+          type="search"
+          aria-label={`Search ${ariaLabel} by name`}
+          className="admin-searchable-select-search"
+          placeholder="Search by image name…"
+          value={query}
+          autoFocus={open}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+        <div className="admin-searchable-select-options" role="listbox" aria-label={ariaLabel}>
+          <button type="button" role="option" aria-selected={!value} onClick={() => choose('')}>{placeholder}</button>
+          {matching.map((option) => <button type="button" role="option" aria-selected={option.value === value} key={option.value} onClick={() => choose(option.value)}>
+            {option.imageUrl ? <span className="admin-searchable-select-thumbnail"><Image src={option.imageUrl} alt="" fill unoptimized sizes="42px" /></span> : <span className="admin-searchable-select-thumbnail-placeholder" aria-hidden="true" />}
+            <span>{option.label}</span>
+          </button>)}
+          {matching.length === 0 && <p role="status">No images match that name.</p>}
+        </div>
+      </div>}
+    </details>
   </div>
 }

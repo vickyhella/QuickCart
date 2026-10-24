@@ -171,7 +171,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           <p style={{ lineHeight: 1.6 }}>Choose an image from the Media library and an optional published product to open when shoppers click the hero. Upload an image in <Link href="/admin/collections/media" style={{ textDecoration: 'underline' }}>Media</Link> first.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
             <label style={labelStyle}>Hero image
-              <AdminSearchableSelect ariaLabel="Homepage hero image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id) }))} value={String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')} onChange={(value) => update('homepageHeroImage', value)} placeholder="Use the first product image" style={fieldStyle} />
+              <AdminSearchableSelect ariaLabel="Homepage hero image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id), imageUrl: String(media.url || '') }))} value={String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')} onChange={(value) => update('homepageHeroImage', value)} placeholder="Use the first product image" style={fieldStyle} />
             </label>
             <label style={labelStyle}>Image alt text
               <input style={fieldStyle} value={templates.homepageHeroImageAlt || ''} onChange={(event) => update('homepageHeroImageAlt', event.target.value)} placeholder="Describe the image for screen readers" />
@@ -200,7 +200,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
               </select>
             </label>
             <label style={labelStyle}>Optional banner image
-              <AdminSearchableSelect ariaLabel="Optional banner image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id) }))} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(value) => update('homepageMysteryBoxImage', value)} placeholder="Use the product image" style={fieldStyle} />
+              <AdminSearchableSelect ariaLabel="Optional banner image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id), imageUrl: String(media.url || '') }))} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(value) => update('homepageMysteryBoxImage', value)} placeholder="Use the product image" style={fieldStyle} />
             </label>
             <label style={labelStyle}>Image alt text
               <input style={fieldStyle} value={templates.homepageMysteryBoxImageAlt || ''} onChange={(event) => update('homepageMysteryBoxImageAlt', event.target.value)} placeholder="Describe the banner image" />

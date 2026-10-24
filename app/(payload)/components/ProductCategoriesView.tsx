@@ -337,7 +337,7 @@ export function ProductCategoriesView() {
                       </strong>
                       {typeof option.image === 'object' && option.image?.url && <img src={option.image.url} alt="" className="h-10 w-10 rounded-md object-cover" />}
                       {(dimension === 'lengths' || dimension === 'shapes') && <label className="text-sm text-[#766966]">Preview image
-                        <AdminSearchableSelect ariaLabel={`Preview image for ${option.label}`} wrapperClassName="ml-2 max-w-56" className="w-full" disabled={busy} options={(media || []).map((item) => ({ value: String(item.id), label: item.filename }))} value={String(typeof option.image === 'object' ? option.image?.id || '' : option.image || '')} onChange={(value) => void saveImage(String(option.value), value)} placeholder="No image" />
+                        <AdminSearchableSelect ariaLabel={`Preview image for ${option.label}`} wrapperClassName="ml-2 max-w-56" className="w-full" disabled={busy} options={(media || []).map((item) => ({ value: String(item.id), label: item.filename, imageUrl: item.url }))} value={String(typeof option.image === 'object' ? option.image?.id || '' : option.image || '')} onChange={(value) => void saveImage(String(option.value), value)} placeholder="No image" />
                       </label>}
                       <code className="rounded-md bg-[#f7f3f0] px-2 py-1 text-sm text-[#766966]">
                         {option.value}

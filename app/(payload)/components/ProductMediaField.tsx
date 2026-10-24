@@ -145,7 +145,7 @@ export function ProductMediaField({ path, readOnly, field, label }: Props) {
           {matchingMedia.map((item) => <label key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: 6, border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', cursor: 'pointer' }}><input type="checkbox" checked={currentIDs.includes(String(item.id))} onChange={() => toggle(String(item.id))} /><img src={item.url || '/nail-placeholder.svg'} alt="" style={{ width: 34, height: 40, objectFit: 'cover' }} /><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 'var(--brand-font-size-caption)' }}>{item.filename || item.title || item.id}</span></label>)}
           {!matchingMedia.length && <p role="status">No images match that name.</p>}
         </div>
-      </> : <AdminSearchableSelect ariaLabel="Choose an existing image" options={visibleMedia.map((item) => ({ value: String(item.id), label: String(item.filename || item.title || item.id) }))} value={currentIDs[0] || ''} onChange={(value) => updateSelection(value ? [value] : [])} placeholder="Choose an existing image…" style={{ maxWidth: '100%' }} />)}
+      </> : <AdminSearchableSelect ariaLabel="Choose an existing image" options={visibleMedia.map((item) => ({ value: String(item.id), label: String(item.filename || item.title || item.id), imageUrl: item.url }))} value={currentIDs[0] || ''} onChange={(value) => updateSelection(value ? [value] : [])} placeholder="Choose an existing image…" style={{ maxWidth: '100%' }} />)}
     </>}
     {message && <p role="status" style={{ margin: '8px 0 0', color: /failed|invalid|could not/i.test(message) ? 'var(--brand-danger)' : 'var(--brand-text-secondary)' }}>{message}</p>}
   </div>

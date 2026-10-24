@@ -94,24 +94,24 @@ export default function ProductPage() {
             <div className="flex items-baseline gap-3 mt-5"><span className="text-xl">{money(pricing.currentPrice)}</span>{pricing.onSale && <span className="text-[#998f89] line-through">{money(pricing.price)}</span>}</div>
             {variants.length > 0 && <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-7">
               {availableShapes.length > 0 && <label className="text-sm text-[#6e5c55]">Shape
-                <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2 capitalize" value={selectedShape} onChange={(event) => chooseVariant('shape', event.target.value)}>
+                <select className="storefront-filter-select mt-2 block w-full capitalize" value={selectedShape} onChange={(event) => chooseVariant('shape', event.target.value)}>
                   {availableShapes.map((shape) => <option key={shape} value={shape}>{formatDimension(shape)}</option>)}
                 </select>
               </label>}
               {availableLengths.length > 0 && <label className="text-sm text-[#6e5c55]">Length
-                <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2 capitalize" value={selectedLength} onChange={(event) => chooseVariant('length', event.target.value)}>
+                <select className="storefront-filter-select mt-2 block w-full capitalize" value={selectedLength} onChange={(event) => chooseVariant('length', event.target.value)}>
                   {availableLengths.map((length) => <option key={length} value={length}>{formatDimension(length)}</option>)}
                 </select>
               </label>}
               <label className="text-sm text-[#6e5c55]">Size
-                <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2 uppercase" value={selectedSize} onChange={(event) => chooseVariant('size', event.target.value)}>
+                <select className="storefront-filter-select mt-2 block w-full uppercase" value={selectedSize} onChange={(event) => chooseVariant('size', event.target.value)}>
                   {availableSizes.map((size) => <option key={size} value={size}>{size.toUpperCase()}</option>)}
                 </select>
               </label>
               {attributeKeys.map((key) => {
                 const values = [...new Set(variants.map((variant) => variant.attributes?.[key]).filter((value) => value !== undefined && value !== null))]
                 return <label key={key} className="text-sm text-[#6e5c55]">{formatDimension(key)}
-                  <select className="block w-full mt-2 rounded-lg border border-[#d8c9c1] bg-white px-3 py-2" value={String(selectedAttributes[key] ?? '')} onChange={(event) => chooseVariant(`attribute:${key}`, event.target.value)}>
+                  <select className="storefront-filter-select mt-2 block w-full" value={String(selectedAttributes[key] ?? '')} onChange={(event) => chooseVariant(`attribute:${key}`, event.target.value)}>
                     {values.map((value) => <option key={String(value)} value={String(value)}>{String(value)}</option>)}
                   </select>
                 </label>

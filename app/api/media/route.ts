@@ -9,7 +9,10 @@ import { uniqueOriginalFilename } from '@/lib/media-filenames'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export const GET = REST_GET(config)
+const payloadMediaGet = REST_GET(config)
+export const GET = (request: Request) => payloadMediaGet(request, {
+  params: Promise.resolve({ slug: ['media'] }),
+})
 
 const applyTemplate = (template: string, values: Record<string, string>) =>
   template.replace(/\{(brand|productType|productName|length|shape|size)\}/g, (_, token: string) => values[token] || '').replace(/\s+/g, ' ').trim()

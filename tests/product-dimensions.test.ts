@@ -44,11 +44,11 @@ test('category values remain protected while any variant or legacy product field
   assert.deepEqual(defaultProductDimensionOptions.lengths.map(({ value }) => value), ['x-short', 'short', 'medium', 'long', 'x-long'])
 })
 
-test('shows unique enabled variant shapes on product cards', () => {
+test('shows unique enabled variant shapes and lengths on product cards', () => {
   assert.deepEqual(productCardDimensions({
     length: 'long', shape: 'coffin',
-    variants: [{ shape: 'square' }, { shape: 'square' }, { shape: 'almond' }, { shape: 'coffin', enabled: false }],
-  }), ['square', 'almond'])
+    variants: [{ shape: 'square', length: 'short' }, { shape: 'square', length: 'short' }, { shape: 'almond', length: 'medium' }, { shape: 'coffin', length: 'long', enabled: false }],
+  }), ['square', 'almond', 'short', 'medium'])
   assert.deepEqual(productCardDimensions({ variants: [{ length: 'short', enabled: false }] }), [])
 })
 

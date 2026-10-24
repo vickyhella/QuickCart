@@ -82,7 +82,8 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
       const settingsToSave = { ...templates, ...values }
       for (const key of ['homepageHeroImage', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxProduct']) {
         const relation = settingsToSave[key]
-        if (relation && typeof relation === 'object' && 'id' in relation) settingsToSave[key] = relation.id
+        const relationID = relation && typeof relation === 'object' && 'id' in relation ? relation.id : relation
+        settingsToSave[key] = typeof relationID === 'string' && /^\d+$/.test(relationID) ? Number(relationID) : relationID
         if (settingsToSave[key] === '') settingsToSave[key] = null
       }
       const response = await fetch('/api/globals/marketing-settings', {
@@ -191,7 +192,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
             <label style={labelStyle}>Published Mystery Box product
               <select style={fieldStyle} value={String(templates.homepageMysteryBoxProduct?.id ?? templates.homepageMysteryBoxProduct ?? '')} onChange={(event) => update('homepageMysteryBoxProduct', event.target.value || '')}>
                 <option value="">Hide this homepage feature</option>
-                {seo.products.filter((product) => product.status === 'published').map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.title || product.name || product.id)}</option>)}
+                {seo.products.filter((product) => product.status === 'published' && product.category === 'mystery-box').map((product) => <option key={String(product.id)} value={String(product.id)}>{String(product.title || product.name || product.id)}</option>)}
               </select>
             </label>
             <label style={labelStyle}>Optional banner image

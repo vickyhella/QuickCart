@@ -247,6 +247,29 @@ html[data-theme] .list-controls .pill--has-action {
   color: var(--gn-ink);
   font-size: var(--gn-field-font-size);
 }
+.storefront-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .625rem;
+  margin-top: 1.5rem;
+}
+.storefront-filter-select {
+  min-height: var(--gn-control-height);
+  padding: .625rem 2.75rem .625rem var(--gn-control-space-x);
+  border: 1px solid var(--gn-control-border);
+  border-radius: var(--gn-control-radius);
+  appearance: none;
+  background-color: var(--gn-white);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath d='m4 6 4 4 4-4' fill='none' stroke='%23704576' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.7'/%3E%3C/svg%3E");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  background-size: 1rem;
+  color: var(--gn-ink);
+  font-family: var(--font-body);
+  font-size: var(--gn-control-font-size);
+}
+.storefront-filter-select:hover { border-color: var(--gn-plum); }
 
 /* Map the older storefront utility colors to the shared theme while pages migrate to tokens. */
 .storefront-theme [class~='bg-[#fffdfa]'],
@@ -350,10 +373,17 @@ html[data-theme] .list-controls .pill--has-action {
   outline: 2px solid var(--store-highlight);
   outline-offset: 3px;
 }
-.store-product-card__badge {
+.store-product-card__badge-stack {
   position: absolute;
   top: 1rem;
   left: 1rem;
+  display: flex;
+  max-width: calc(100% - 2rem);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .375rem;
+}
+.store-product-card__badge {
   max-width: calc(100% - 2rem);
   overflow: hidden;
   border-radius: 999px;
@@ -368,6 +398,7 @@ html[data-theme] .list-controls .pill--has-action {
   white-space: nowrap;
   backdrop-filter: blur(8px);
 }
+.store-product-card__badge-stack .store-product-card__badge { max-width: 100%; }
 .store-product-card__badge--sale {
   right: 1rem;
   left: auto;

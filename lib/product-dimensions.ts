@@ -44,7 +44,8 @@ export function productCardDimensions(product: DimensionProduct) {
   if (variants.length) {
     const enabled = variants.filter((variant) => variant.enabled !== false)
     const shapes = [...new Set(enabled.map((variant) => variant.shape).filter(Boolean))]
-    return shapes.length ? shapes : [...new Set(enabled.map((variant) => variant.length).filter(Boolean))]
+    const lengths = [...new Set(enabled.map((variant) => variant.length).filter(Boolean))]
+    return [...shapes, ...lengths]
   }
   return [product.length, product.shape].filter(Boolean)
 }

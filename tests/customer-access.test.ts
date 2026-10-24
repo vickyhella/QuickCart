@@ -71,7 +71,7 @@ test('every protected custom admin handler rejects a real customer identity befo
       if (name === '@/lib/product-dimensions') return productDimensionOptions
       if (name === 'payload') return { getPayload: async () => payload }
       if (name === 'next/server') return { NextResponse: { json: Response.json.bind(Response) } }
-      if (name === '@payloadcms/next/routes') return { REST_GET: () => undefined }
+      if (name === '@payloadcms/next/routes') return { REST_GET: () => async () => new Response(null, { status: 401 }) }
       if (name === '@payload-config' || name === '@/payload.config') return { default: {} }
       return unusedDependency
     } }, { filename: path })

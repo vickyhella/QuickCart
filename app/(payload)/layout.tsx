@@ -13,9 +13,9 @@ import { importMap } from './admin/importMap'
 export const metadata = {
   ...payloadMetadata,
   icons: {
-    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    shortcut: [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    icon: [{ url: '/admin/icon.svg', type: 'image/svg+xml' }],
+    shortcut: [{ url: '/admin/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/admin/icon.svg', type: 'image/svg+xml' }],
   },
 }
 

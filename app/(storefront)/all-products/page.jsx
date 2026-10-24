@@ -39,19 +39,19 @@ function AllProductsContent() {
   return (
     <main className="bg-[#fffdfa] min-h-screen text-[#302522]">
       <Navbar />
-      <section className="px-5 md:px-12 lg:px-20 py-12 md:py-16">
+      <section className="storefront-container py-12 md:py-16">
         <p className="text-xs uppercase tracking-[0.25em] text-[#9a756d]">Ginny Nana</p>
         <h1 className="font-serif text-4xl mt-2">All products</h1>
-        <div className="flex flex-wrap gap-2 mt-6">
-          <select aria-label="Filter by length" value={filters.length} onChange={(event) => setFilters({ ...filters, length: event.target.value })} className="rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white">
+        <div className="storefront-filters">
+          <select aria-label="Filter by length" value={filters.length} onChange={(event) => setFilters({ ...filters, length: event.target.value })} className="storefront-filter-select">
             <option value="">All lengths</option>
             <option value="x-short">X-Short</option><option value="short">Short</option><option value="medium">Medium</option><option value="long">Long</option><option value="x-long">X-Long</option>
           </select>
-          <select aria-label="Filter by shape" value={filters.shape} onChange={(event) => setFilters({ ...filters, shape: event.target.value })} className="rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white capitalize">
+          <select aria-label="Filter by shape" value={filters.shape} onChange={(event) => setFilters({ ...filters, shape: event.target.value })} className="storefront-filter-select capitalize">
             <option value="">All shapes</option>
             <option value="square">Square</option><option value="oval">Oval</option><option value="almond">Almond</option><option value="round">Round</option>
           </select>
-          <select aria-label="Filter by color" value={filters.color} onChange={(event) => setFilters({ ...filters, color: event.target.value })} className="rounded-full border border-[#d8c9c1] px-4 py-2 text-sm bg-white">
+          <select aria-label="Filter by color" value={filters.color} onChange={(event) => setFilters({ ...filters, color: event.target.value })} className="storefront-filter-select">
             <option value="">All colors</option>{colorOptions.map((color) => <option key={color} value={color}>{color}</option>)}
           </select>
           <label className="ui-filter"><input type="checkbox" checked={sale} onChange={(event) => {

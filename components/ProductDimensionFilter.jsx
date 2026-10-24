@@ -36,8 +36,8 @@ export default function ProductDimensionFilter({ dimension }) {
       <h1 className="font-serif text-4xl mt-2">By {label}</h1>
       {selected && <Link href={`/${dimension === 'length' ? 'by-length' : 'by-shape'}`} onClick={() => setSelected('')} className="inline-block mt-4 text-sm text-[#8b5e70] hover:underline">← All {dimension === 'length' ? 'lengths' : 'shapes'}</Link>}
       {!selected && <div className="mt-8 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-5">
-        {options.map((option) => <Link key={option.value} href={`/${dimension === 'length' ? 'by-length' : 'by-shape'}?${dimension}=${encodeURIComponent(option.value)}`} onClick={() => setSelected(option.value)} className="store-category-option">
-          {option.image?.url ? <img src={option.image.url} alt="" className="store-category-option__image" /> : <div className="store-category-option__image store-category-option__image--empty" />}
+        {options.map((option, index) => <Link key={option.value} href={`/${dimension === 'length' ? 'by-length' : 'by-shape'}?${dimension}=${encodeURIComponent(option.value)}`} onClick={() => setSelected(option.value)} className="store-category-option">
+          {option.image?.url ? <img src={option.image.url} alt="" loading={index === 0 ? 'eager' : 'lazy'} className="store-category-option__image" /> : <div className="store-category-option__image store-category-option__image--empty" />}
           <span className="store-category-option__name">{option.label || formatDimension(option.value)}</span>
         </Link>)}
       </div>}

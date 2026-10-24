@@ -60,7 +60,7 @@ const Navbar = () => {
             <header className="relative z-40 flex flex-wrap items-center gap-x-3 border-b border-[#eadfdb] bg-[#fffdfa]/95 px-4 py-3 text-[#302522] shadow-[0_5px_30px_rgba(48,27,38,.04)] backdrop-blur sm:px-5 md:px-12 lg:flex-nowrap lg:gap-x-3 lg:px-8 xl:px-12">
                 <div className="order-1 flex w-full items-center justify-between gap-3 lg:contents">
                     <Link href="/" aria-label="Ginny Nana home" className="shrink-0 lg:order-1">
-                        <Image src="/ginny-nana-logo.svg" alt="Ginny Nana" width={190} height={46} priority className="h-auto w-[130px] min-[360px]:w-[142px] sm:w-[165px] lg:w-[175px] xl:w-[190px]" />
+                        <Image src="/ginny-nana-logo.svg" alt="Ginny Nana" width={190} height={46} priority style={{ height: 'auto' }} className="h-auto w-[130px] min-[360px]:w-[142px] sm:w-[165px] lg:w-[175px] xl:w-[190px]" />
                     </Link>
                     <div className="ml-auto flex shrink-0 items-center gap-1 text-sm sm:gap-2 lg:order-3">
                         <Link href="/account" aria-label="Customer account" title="Your account" className="rounded-full p-2 hover:text-[#704576]">

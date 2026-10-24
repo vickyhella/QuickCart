@@ -14,7 +14,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-      <html lang="en">
+      <html lang="en" data-scroll-behavior="smooth">
         <body className="storefront-theme font-sans antialiased">
           <Toaster position="bottom-right" toastOptions={{ duration: 3600 }} />
           <AppContextProvider>

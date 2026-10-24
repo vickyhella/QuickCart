@@ -64,7 +64,7 @@ URL 当前仍使用 `?variant=ID`；改用可读规格参数及保留旧链接�
 ## 顾客登录与迁移
 ## Storefront 页面与分类
 
-Storefront 与 Admin 的界面字族、标题字族、字号层级和字重集中在 `app/theme-tokens.css`，用途映射在 `app/brand-theme.css`：标题、商品名及分类名使用编辑感衬线字，导航、footer、按钮、下拉框、正文和 Admin 操作界面使用清晰的无衬线字。商品列表筛选和商品详情规格共用 `components/StorefrontSelect.jsx` 自定义下拉菜单，控件字号、圆角、高度及颜色由主题变量管理；By Shape / By Length 分类标题复用商品名称的衬线字体和字号。窄屏筛选自动改为两列、极窄屏改为单列。商品卡片副标题展示启用 Variant 的 Shape 与 Length；New 仅在新品上显示于图片左上角，On sale 固定显示在图片右上角。
+Storefront 与 Admin 的界面字族、标题字族、字号层级和字重集中在 `app/theme-tokens.css`，用途映射在 `app/brand-theme.css`：标题、商品名及分类名使用编辑感衬线字，导航、footer、按钮、下拉框、正文和 Admin 操作界面使用清晰的无衬线字。商品列表筛选和商品详情规格共用 `components/StorefrontSelect.jsx` 自定义下拉菜单，控件字号、圆角、高度及颜色由主题变量管理；By Shape / By Length 分类标题复用商品名称的衬线字体和字号。窄屏筛选自动改为两列、极窄屏改为单列。商品卡片副标题展示启用 Variant 的 Shape 与 Length；New 仅在新品上显示于图片左上角，On sale 固定显示在图片右上角。Navbar 品牌图标保持响应式宽度时显式锁定高度比例；By Shape / By Length 首张分类图片优先加载，其余图片延迟加载。Storefront 全局平滑滚动限定在 html，并通过 `data-scroll-behavior="smooth"` 声明与 Next.js 路由滚动兼容。
 
 Admin 的 `app/(payload)/admin/icon.svg` 使用 Next.js 文件图标约定生成后台图标 URL，根 `app/favicon.ico` 与之使用同一品牌图标。Admin 单选下拉框由 `app/brand-theme.css` 统一高度、边框和箭头；商品、首页营销、分类图片等选择器使用带名称搜索和缩略图的弹出菜单。Products、Product Studio 和 Spreadsheet 商品列表统一提供每页 10、25、50 或 100 条选项；Products 与 Product Studio 列表显示创建日期；Spreadsheet 的可见列偏好按浏览器保存，Visible columns 可按列名即时搜索，并提供只读的创建日期、发布日期及店铺 New 状态；Featured image 可在带名称搜索的缩略图选择器中挑选，筛选和工具栏控件会随窄屏换行并保持完整标签。工具栏、缩略图/序号固定列和行操作列由 `app/(payload)/components/ProductBulkEditor.tsx` 实现。Marketing Studio 的 Homepage 设置可配置自动 New 标记期限；商品店铺 New 状态以首次发布时间为准（缺失时回退创建时间），也可由手动 New 标记启用；管理员会话下店铺预览使用相同规则。实际发布时间由 `collections/Products.ts` 记录，新增 migration `20261024_001000_add_new_arrival_window` 为已发布商品回填发布时间，部署前按[数据库迁移说明](./docs/database-migrations.md)执行。
 

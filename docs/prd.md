@@ -116,7 +116,7 @@
 - 商品发布
 - Product Studio 商品标题链接到 Storefront 商品详情页；列表 Action 内提供 Edit / Duplicate / Delete 和多选批量删除。Products Payload 列表使用独立 Action 列提供相同操作，标题不承载隐藏的后台编辑入口；单商品编辑页也提供删除操作。
 - 删除商品时，只有确认的关联记录后才执行删除；订单、Pinterest post 等历史记录保留。仅当图片不再被其他商品、Variant、Pinterest post 或媒体商品归属引用时，才同步删除 WebP；其原图仅在没有其他 WebP 引用时一并删除。
-- Product Studio 工作区包含 `Product Studio`、`Products`、`Categories`、`Spreadsheet` 四个标签；Spreadsheet 支持分页、筛选、TSV 粘贴与批量字段编辑，并包含后台供应商信息，入口为 `/admin/collections/products/spreadsheet`
+- Product Studio 工作区包含 `Product Studio`、`Products`、`Categories`、`Spreadsheet` 四个标签；Spreadsheet 支持分页、筛选、可持久化列显示设置、带名称搜索的商品图片选择、TSV 粘贴与批量字段编辑，并包含后台供应商信息，入口为 `/admin/collections/products/spreadsheet`
 - Supplier 列表的 Action 提供 Manage Products，可搜索商品并批量绑定或解除商品级 Supplier 关联；Variant 级关联仍在 Product Studio 中单独管理。
 - Categories 标签统一维护 Length 和 Shape 选项，显示每个选项关联的商品；支持新增选项和修改显示名称，删除仍被任意商品 Variant（含停用 Variant）使用的选项时必须阻止并说明关联商品。
 - Length + Shape 规格按明确选择的配对生成，避免自动产生未选择的组合

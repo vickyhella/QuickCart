@@ -321,6 +321,27 @@ export function ProductBulkEditor() {
   const [variantDisplay, setVariantDisplay] = useState<'collapsed' | 'expanded'>('collapsed')
   const [expandedVariants, setExpandedVariants] = useState<Set<string>>(() => new Set())
   const [filters, setFilters] = useState({ status: '', category: '', shape: '', length: '', color: '', brand: '' })
+  const [visibleColumnKeys, setVisibleColumnKeys] = useState<ColumnKey[]>(() => columns.map(({ key }) => key))
+  const [columnPreferencesLoaded, setColumnPreferencesLoaded] = useState(false)
+  const [imagePickerRow, setImagePickerRow] = useState<number | null>(null)
+
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem('quickcart-spreadsheet-columns') || 'null')
+      if (Array.isArray(saved)) {
+        const valid = saved.filter((key): key is ColumnKey => columns.some((column) => column.key === key))
+        if (valid.length) setVisibleColumnKeys(valid)
+      }
+    } catch { /* Keep all columns visible when saved preferences are unavailable. */ }
+    setColumnPreferencesLoaded(true)
+  }, [])
+
+  useEffect(() => {
+    if (!columnPreferencesLoaded) return
+    try { window.localStorage.setItem('quickcart-spreadsheet-columns', JSON.stringify(visibleColumnKeys)) } catch { /* Column preferences are optional. */ }
+  }, [columnPreferencesLoaded, visibleColumnKeys])
+
+  const visibleColumns = useMemo(() => columns.filter(({ key }) => visibleColumnKeys.includes(key)), [visibleColumnKeys])
 
   useEffect(() => {
     const saved = window.localStorage.getItem('quickcart-variant-display')
@@ -378,7 +399,7 @@ export function ProductBulkEditor() {
       } catch { /* Keep malformed JSON editable; save reports the validation error. */ }
     }
     const query = mediaSearch.trim().toLowerCase()
-    return media.filter((item) => (item.mimeType === 'image/webp' || currentIDs.has(String(item.id))) && (!query || String(item.filename || item.title || '').toLowerCase().includes(query) || currentIDs.has(String(item.id))))
+    return media.filter((item) => (item.mimeType === 'image/webp' || currentIDs.has(String(item.id))) && (!query || String(item.filename || item.title || '').toLowerCase().includes(query)))
   }, [media, mediaSearch, rows])
 
   const visibleRows = useMemo(() => {
@@ -452,7 +473,8 @@ export function ProductBulkEditor() {
   }
 
   const updateCell = (rowIndex: number, columnIndex: number, value: string) => {
-    const key = columns[columnIndex].key
+    const key = visibleColumns[columnIndex]?.key
+    if (!key) return
     setRows((current) => current.map((row, index) => index === rowIndex ? { ...row, [key]: value } : row))
     setMessage('')
   }
@@ -566,7 +588,7 @@ export function ProductBulkEditor() {
       let nextRow = row
       pastedRow.forEach((value, offset) => {
         const targetColumn = columnIndex + offset
-        if (targetColumn < columns.length) nextRow = { ...nextRow, [columns[targetColumn].key]: value }
+        if (targetColumn < visibleColumns.length) nextRow = { ...nextRow, [visibleColumns[targetColumn].key]: value }
       })
       return nextRow
     }))
@@ -582,7 +604,7 @@ export function ProductBulkEditor() {
     const left = Math.min(selectedRange.startColumn, selectedRange.endColumn)
     const right = Math.max(selectedRange.startColumn, selectedRange.endColumn)
     const quote = (value: string) => /[\t\r\n"]/.test(value) ? `"${value.replaceAll('"', '""')}"` : value
-    const tsv = rows.slice(top, bottom + 1).map((row) => columns.slice(left, right + 1).map(({ key }) => quote(row[key])).join('\t')).join('\n')
+    const tsv = rows.slice(top, bottom + 1).map((row) => visibleColumns.slice(left, right + 1).map(({ key }) => quote(row[key])).join('\t')).join('\n')
     event.preventDefault()
     event.clipboardData.setData('text/plain', tsv)
   }
@@ -660,8 +682,7 @@ export function ProductBulkEditor() {
             <button type="button" onClick={() => void load()} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0}>Reload</button>
           </div>
           <div className="product-bulk-toolbar-group product-bulk-search-group">
-            <input aria-label="Search products on this page" placeholder="Filter products by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 240 }} />
-            <input type="search" aria-label="Search images by name" placeholder="Filter image choices by name" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} style={{ ...inputStyle, width: 240 }} />
+            <input className="product-bulk-product-search" aria-label="Search products on this page" placeholder="Filter products by title or SKU" value={search} onChange={(event) => setSearch(event.target.value)} style={{ ...inputStyle, width: 240 }} />
           </div>
         </div>
         <div className="product-bulk-toolbar-row product-bulk-filters">
@@ -673,6 +694,23 @@ export function ProductBulkEditor() {
         <button type="button" onClick={toggleVisibleVariants} className="ui-button ui-button--secondary" disabled={visibleVariantRows.length === 0}>
           {allVisibleVariantsExpanded ? 'Collapse all variants' : 'Expand all variants'}
         </button>
+        <details className="product-bulk-column-picker">
+          <summary className="ui-button ui-button--secondary" aria-label="Choose visible spreadsheet columns">Columns <span>{visibleColumns.length}/{columns.length}</span></summary>
+          <div className="product-bulk-column-picker-menu" aria-label="Spreadsheet columns">
+            <div className="product-bulk-column-picker-heading">Visible columns</div>
+            {columns.map(({ key, label }) => {
+              const checked = visibleColumnKeys.includes(key)
+              return <label key={key} className="product-bulk-column-option">
+                <input type="checkbox" checked={checked} disabled={checked && visibleColumnKeys.length === 1} onChange={() => {
+                  setSelectedRange(null)
+                  setVisibleColumnKeys((current) => checked ? current.filter((item) => item !== key) : columns.filter((column) => current.includes(column.key) || column.key === key).map((column) => column.key))
+                }} />
+                <span>{label}</span>
+              </label>
+            })}
+            <button type="button" className="product-bulk-column-reset" onClick={() => { setSelectedRange(null); setVisibleColumnKeys(columns.map(({ key }) => key)) }}>Show all columns</button>
+          </div>
+        </details>
         </div>
         <div className="product-bulk-toolbar-row product-bulk-pagination">
           <button type="button" onClick={() => setPage((current) => Math.max(1, current - 1))} className="ui-button ui-button--secondary" disabled={loading || saving || dirtyIDs.size > 0 || page <= 1}>Previous</button>
@@ -696,7 +734,7 @@ export function ProductBulkEditor() {
               <tr>
                 <th className="product-bulk-sticky-image" style={{ padding: '0.65rem', position: 'sticky', left: 0, width: 84, minWidth: 84, background: 'var(--theme-elevation-100)', zIndex: 3 }}>Image</th>
                 <th className="product-bulk-sticky-index" style={{ padding: '0.65rem', position: 'sticky', left: 84, width: 56, minWidth: 56, background: 'var(--theme-elevation-100)', zIndex: 3 }}>#</th>
-                {columns.map((column) => <th key={column.key} style={{ minWidth: column.width, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '1px solid var(--theme-elevation-300)' }}>{column.label}</th>)}
+                {visibleColumns.map((column) => <th key={column.key} style={{ minWidth: column.width, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', borderBottom: '1px solid var(--theme-elevation-300)' }}>{column.label}</th>)}
                 <th className="product-bulk-sticky-action" style={{ position: 'sticky', right: 0, zIndex: 3, minWidth: 168, padding: '0.65rem', textAlign: 'left', whiteSpace: 'nowrap', background: 'var(--theme-elevation-100)' }}>Action</th>
               </tr>
             </thead>
@@ -712,7 +750,7 @@ export function ProductBulkEditor() {
                     <th className="product-bulk-sticky-index" style={{ position: 'sticky', left: 84, zIndex: 1, width: 56, minWidth: 56, padding: '0.5rem', borderBottom: '1px solid var(--theme-elevation-150)', background: 'var(--theme-bg)' }} title={`Product ID ${row.id}`}>
                       {dirty && <span aria-label="Unsaved changes" title="Unsaved changes" style={{ color: 'var(--brand-accent)' }}>● </span>}{rowIndex + 1}
                     </th>
-                    {columns.map((column, columnIndex) => (
+                    {visibleColumns.map((column, columnIndex) => (
                       <td key={column.key}
                         onMouseDown={(event) => { if ((event.target as HTMLElement).closest('button, input[type=file]')) return; setSelectedRange((current) => event.shiftKey && current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : { startRow: rowIndex, startColumn: columnIndex, endRow: rowIndex, endColumn: columnIndex }); setIsSelecting(true) }}
                         onMouseEnter={() => { if (isSelecting) setSelectedRange((current) => current ? { ...current, endRow: rowIndex, endColumn: columnIndex } : current) }}
@@ -766,6 +804,7 @@ export function ProductBulkEditor() {
                               onChange={(event) => updateCell(rowIndex, columnIndex, event.target.value)}
                               style={inputStyle}
                             />
+                            {column.key === 'featuredImage' && <button type="button" className="ui-button ui-button--secondary product-bulk-choose-image" onClick={() => { setMediaSearch(''); setImagePickerRow(rowIndex) }}>Choose image</button>}
                             {column.key === 'purchaseURL' && /^https?:\/\//i.test(row.purchaseURL.trim()) && <a href={row.purchaseURL.trim()} target="_blank" rel="noopener noreferrer" style={{ display: 'block', marginTop: 4, fontSize: 'var(--brand-font-size-caption)' }}>Open product URL ↗</a>}
                             {column.key === 'featuredImage' && (() => {
                               const imageURL = getFeaturedImageURL(row, media)
@@ -791,7 +830,7 @@ export function ProductBulkEditor() {
                   {expandedVariants.has(row.id) && (() => {
                     let variants: ProductVariant[] = []
                     try { variants = JSON.parse(row.variants || '[]') } catch { /* invalid JSON is handled by the variant editor */ }
-                    return <tr key={`${row.id}-variants`} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-soft)' }}><td colSpan={columns.length + 3} style={{ padding: 12, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>
+                    return <tr key={`${row.id}-variants`} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-soft)' }}><td colSpan={visibleColumns.length + 3} style={{ padding: 12, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}><strong>{row.title} · {variants.length} variants</strong><button type="button" onClick={() => openVariantEditor(rowIndex)} className="ui-button ui-button--secondary">Edit / copy / paste variants</button></div>
                       <div style={{ overflowX: 'auto', marginTop: 8 }}><table style={{ borderCollapse: 'collapse', width: '100%', textAlign: 'left', color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}><thead><tr>{['SKU', 'Length', 'Shape', 'Size', 'Price', 'Stock', 'Image'].map((label) => <th key={label} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-soft)', borderBottom: '1px solid var(--brand-border)' }}>{label}</th>)}</tr></thead><tbody>{variants.map((variant, index) => { const image = media.find((item) => String(item.id) === mediaID(variant.image) || item.filename === variant.image); return <tr key={variant.id || index} style={{ color: 'var(--brand-text-primary)', background: 'var(--brand-surface)' }}>{[variant.sku, variant.length, variant.shape, variant.size?.toUpperCase(), variant.price ?? row.price, variant.stock, image?.filename || 'Product image'].map((value, cell) => <td key={cell} style={{ padding: 6, color: 'var(--brand-text-primary)', background: 'var(--brand-surface)', borderBottom: '1px solid var(--brand-border)' }}>{String(value ?? '')}</td>)}</tr> })}</tbody></table></div>
                     </td></tr>
@@ -809,6 +848,26 @@ export function ProductBulkEditor() {
           </datalist>
         </div>
       )}
+      {imagePickerRow !== null && rows[imagePickerRow] && <div className="product-bulk-image-picker-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setImagePickerRow(null) }}>
+        <section className="product-bulk-image-picker" role="dialog" aria-modal="true" aria-labelledby="product-bulk-image-picker-title" onKeyDown={(event) => { if (event.key === 'Escape') setImagePickerRow(null) }}>
+          <div className="product-bulk-image-picker-header">
+            <div><h2 id="product-bulk-image-picker-title">Choose featured image</h2><p>{rows[imagePickerRow].title}</p></div>
+            <button type="button" className="ui-button ui-button--secondary" onClick={() => setImagePickerRow(null)}>Close</button>
+          </div>
+          <input autoFocus type="search" aria-label="Search images by name" placeholder="Search images by name" value={mediaSearch} onChange={(event) => setMediaSearch(event.target.value)} style={inputStyle} />
+          <div className="product-bulk-image-picker-grid">
+            {pickerMedia.map((item) => <button type="button" key={item.id} className="product-bulk-image-option" onClick={() => {
+              const columnIndex = visibleColumns.findIndex(({ key }) => key === 'featuredImage')
+              if (columnIndex >= 0) updateCell(imagePickerRow, columnIndex, String(item.id))
+              setImagePickerRow(null)
+            }}>
+              <img src={item.url || '/nail-placeholder.svg'} alt="" />
+              <span>{item.filename || item.title || `Media ${item.id}`}</span>
+            </button>)}
+            {pickerMedia.length === 0 && <p className="product-bulk-image-picker-empty">No images match this name.</p>}
+          </div>
+        </section>
+      </div>}
       {variantEditor && (
         <div role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setVariantEditor(null) }} style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'grid', placeItems: 'center', padding: 20, background: 'rgba(15, 23, 42, 0.58)' }}>
           <section role="dialog" aria-modal="true" aria-labelledby="variant-editor-title" style={{ width: 'min(1200px, 96vw)', maxHeight: '90vh', overflow: 'auto', background: 'var(--brand-surface)', color: 'var(--brand-text-primary)', borderRadius: 'var(--brand-radius-sm)', padding: 24, boxShadow: '0 20px 60px rgba(0,0,0,.3)' }}>

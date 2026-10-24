@@ -521,6 +521,7 @@ html[data-theme] .list-controls .pill--has-action {
 }
 .store-product-card__badge-stack {
   position: absolute;
+  z-index: 1;
   top: 1rem;
   left: 1rem;
   display: flex;
@@ -546,6 +547,9 @@ html[data-theme] .list-controls .pill--has-action {
 }
 .store-product-card__badge-stack .store-product-card__badge { max-width: 100%; }
 .store-product-card__badge--sale {
+  position: absolute;
+  z-index: 1;
+  top: 1rem;
   right: 1rem;
   left: auto;
   background: var(--store-accent);

@@ -26,8 +26,7 @@ const ProductCard = ({ product }) => {
                     height={900}
                 />
                 <div className="store-product-card__badge-stack">
-                    {product.isNew && <span className="store-product-card__badge">Just dropped</span>}
-                    <span className="store-product-card__badge">Handmade set</span>
+                    {product.isNew && <span className="store-product-card__badge">New</span>}
                 </div>
                 {pricing.onSale && <span className="store-product-card__badge store-product-card__badge--sale">On sale</span>}
             </div>

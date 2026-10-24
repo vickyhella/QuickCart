@@ -8,7 +8,7 @@ export function ProductWorkspaceTabs() {
   const pathname = usePathname().replace(/\/$/, '')
   const activeHref =
     productWorkspaceTabs.find(({ href }) => pathname === href)?.href ||
-    productWorkspaceTabs[1].href
+    productWorkspaceTabs[0].href
 
   return (
     <nav

@@ -64,7 +64,7 @@ URL 当前仍使用 `?variant=ID`；改用可读规格参数及保留旧链接�
 ## 顾客登录与迁移
 ## Storefront 页面与分类
 
-Storefront 使用共享 CSS 变量管理瓷白、莓紫、薰衣草色、正文色、边框、商品卡片圆角和阴影；入口在 `app/theme-tokens.css` 与 `app/brand-theme.css`，全站商品列表卡片与首页精选区复用同一套文字和卡片样式。首页包含按颜色筛选的入口、横向精选商品展示、分别使用深莓紫与亮莓紫的形状 / 长度入口、Mystery Box 横幅、订阅表单及手工与复用卖点；首页代码在 `app/(storefront)/page.jsx`。Admin → Marketing Studio → Homepage 可设置主视觉和 Mystery Box 图片、文案及已发布商品跳转目标；图片先上传到 Media。Newsletter 订阅会保存邮箱、同意时间和来源到 Newsletter subscribers 列表，当前尚未连接群发服务。品牌字标位于 `public/ginny-nana-logo.svg`，页脚反白字标为 `public/ginny-nana-logo-light.svg`，浏览器图标为 `app/icon.svg`。导航持续标出当前页面，移动端导航保持单行横向滚动。新增首页配置使用 migration `20261023_235200_add_homepage_hero`，订阅名单使用 `20261024_000100_add_newsletter_subscribers`；部署前须按[数据库迁移说明](./docs/database-migrations.md)应用 migration。
+Storefront 使用共享 CSS 变量管理颜色、内容最大宽度、页面留白、卡片圆角和阴影；入口在 `app/theme-tokens.css` 与 `app/brand-theme.css`，首页各区块容器和商品卡片复用统一宽度及圆角规范。首页包含按颜色筛选的入口、横向精选商品展示、分别使用深莓紫与亮莓紫的形状 / 长度入口、无渐变遮罩的 Mystery Box 横幅、订阅表单及手工与复用卖点；首页代码在 `app/(storefront)/page.jsx`。Admin → Marketing Studio 默认打开第一个 Homepage 标签，Product Studio 标签页的路径回退也使用首个标签。Marketing Studio 可设置主视觉和 Mystery Box 图片、文案及已发布商品跳转目标；图片先上传到 Media。Newsletter 订阅会保存邮箱、同意时间和来源到 Newsletter subscribers 列表，当前尚未连接群发服务。品牌字标位于 `public/ginny-nana-logo.svg`，页脚反白字标为 `public/ginny-nana-logo-light.svg`，浏览器图标为 `app/icon.svg`，Admin 与 Storefront 共用该图标。导航持续标出当前页面，移动端导航保持单行横向滚动。新增首页配置使用 migration `20261023_235200_add_homepage_hero`，订阅名单使用 `20261024_000100_add_newsletter_subscribers`；部署前须按[数据库迁移说明](./docs/database-migrations.md)应用 migration。
 
 主视觉图片和 Mystery Box 的后台配置、点击目标、Newsletter 订阅记录与首页代码备用图说明见[首页主视觉与订阅说明](./docs/storefront-homepage.md)。Newsletter 表单由 `components/NewsletterSignup.jsx` 提交到 `app/api/newsletter/subscribe/route.js`，名单由 `collections/NewsletterSubscribers.ts` 管理。
 

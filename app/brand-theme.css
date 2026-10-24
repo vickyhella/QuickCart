@@ -102,7 +102,7 @@ html[data-theme] {
   --store-lavender-soft: var(--gn-lavender-soft);
   --store-border: var(--gn-border);
   --store-card-shadow: 0 16px 50px rgb(62 37 65 / 8%);
-  --store-card-radius: 1.4rem;
+  --store-card-radius: var(--gn-card-radius);
   --store-product-title-size: 1.25rem;
   --store-product-meta-size: .625rem;
   --store-card-space-x: 1.25rem;
@@ -309,6 +309,19 @@ html[data-theme] .list-controls .pill--has-action {
 .category-card--length { background: var(--gn-highlight); }
 .category-card--length:hover { background: var(--gn-highlight-hover); }
 .mystery-box-banner { color: var(--gn-ivory); }
+.storefront-container {
+  box-sizing: border-box;
+  width: min(
+    calc(100% - var(--gn-content-gutter) - var(--gn-content-gutter)),
+    var(--gn-content-width)
+  );
+  margin-inline: auto;
+}
+.storefront-card {
+  overflow: hidden;
+  border-radius: var(--gn-card-radius);
+}
+.category-card { border-radius: var(--gn-card-radius); }
 
 .store-product-card {
   display: block;

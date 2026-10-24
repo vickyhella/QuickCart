@@ -39,7 +39,7 @@ export default function MarketingStudio() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const requestedTab = searchParams.get('tab')
-  const tab: MarketingTab = marketingStudioTabs.some(({ id }) => id === requestedTab) ? requestedTab as MarketingTab : 'pinterest'
+  const tab: MarketingTab = marketingStudioTabs.some(({ id }) => id === requestedTab) ? requestedTab as MarketingTab : marketingStudioTabs[0].id
   const [posts, setPosts] = useState<PublishingPost[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')

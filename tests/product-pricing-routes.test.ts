@@ -10,6 +10,7 @@ import * as shipping from '../lib/shipping-tiers.js'
 import * as mergeVariants from '../lib/merge-product-variants.js'
 import * as variantAttributes from '../lib/product-variant-attributes.js'
 import * as productColor from '../lib/product-color.js'
+import * as merchantFeedDescription from '../lib/merchant-feed-description.js'
 import * as adminAccess from '../lib/admin-access'
 
 // Exercise the real route handlers with isolated CMS and payment boundaries.
@@ -28,6 +29,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/merge-product-variants': mergeVariants,
     '@/lib/product-variant-attributes': variantAttributes,
     '@/lib/product-color': productColor,
+    '@/lib/merchant-feed-description': merchantFeedDescription,
     '@/lib/checkout-error': { getCheckoutFailure: (error: Error) => ({ message: error.message, status: 400 }) },
     '@/lib/countries': { shippingCountries: [['US', 'United States']] },
     '@/lib/product-seo-templates': { resolveProductSeoTemplates: () => ({ title: '', description: '' }) },

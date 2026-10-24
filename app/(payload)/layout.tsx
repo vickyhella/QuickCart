@@ -5,12 +5,19 @@ import './brand-theme'
 import config from '@payload-config'
 import {
   handleServerFunctions,
-  metadata,
+  metadata as payloadMetadata,
   RootLayout,
 } from '@payloadcms/next/layouts'
 import { importMap } from './admin/importMap'
 
-export { metadata }
+export const metadata = {
+  ...payloadMetadata,
+  icons: {
+    icon: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    shortcut: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/icon.svg', type: 'image/svg+xml' }],
+  },
+}
 
 const serverFunction: ServerFunctionClient = async (args) => {
   'use server'

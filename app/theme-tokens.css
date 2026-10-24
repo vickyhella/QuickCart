@@ -27,4 +27,7 @@
   --gn-control-font-size: .875rem;
   --gn-field-font-size: 1rem;
   --gn-control-space-x: 1rem;
+  --gn-content-width: 88rem;
+  --gn-content-gutter: clamp(1rem, 4vw, 4rem);
+  --gn-card-radius: 1.5rem;
 }

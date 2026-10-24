@@ -689,7 +689,8 @@ export function ProductBulkEditor() {
         {(['status', 'category', 'shape', 'length', 'color', 'brand'] as const).map((key) => {
           const options = [...new Set(rows.flatMap((row) => key === 'shape' || key === 'length' ? row[key].split(',').map((value) => value.trim()).filter(Boolean) : row[key] ? [row[key]] : []))].sort()
           const label = key === 'category' ? 'categories' : key === 'status' ? 'statuses' : `${key}s`
-          return <select key={key} className={`product-bulk-filter-select product-bulk-filter-select--${key}`} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: key === 'category' ? 190 : 132 }}><option value="">All {label}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
+          const filterWidth = { status: 168, category: 190, shape: 148, length: 148, color: 156, brand: 156 }[key]
+          return <select key={key} className={`product-bulk-filter-select product-bulk-filter-select--${key}`} aria-label={`Filter by ${key}`} value={filters[key]} onChange={(event) => setFilters((current) => ({ ...current, [key]: event.target.value }))} style={{ ...inputStyle, width: filterWidth }}><option value="">All {label}</option>{options.map((option) => <option key={option} value={option}>{option}</option>)}</select>
         })}
         <button type="button" onClick={toggleVisibleVariants} className="ui-button ui-button--secondary" disabled={visibleVariantRows.length === 0}>
           {allVisibleVariantsExpanded ? 'Collapse all variants' : 'Expand all variants'}

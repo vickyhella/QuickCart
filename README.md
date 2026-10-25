@@ -42,6 +42,7 @@
 | `app/(payload)/components/` | Payload 后台自定义界面，包括 Marketing Studio（`MarketingHub.tsx`：按需加载配置、商品和媒体列表），以及 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
 | `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |
 | `app/api/` | Next.js 服务端 API：商品后台、媒体、Checkout / PayPal、Merchant / Pinterest Feed 和定时任务。改 API 时同时检查调用它的页面与测试。 |
+| `app/api/inventory-sync/products/route.ts` | 商品工作台专用分页快照和确认后状态更新接口；令牌配置及部署验收见[连接说明](./docs/inventory-sync.md)。 |
 | `collections/` | Payload 集合的数据结构、字段、权限和 Hook。商品、Variant、Supplier、Media、Order、Discounts 和带展示位置的 Pages schema 在这里。 |
 | `globals/` | Payload 单例配置数据，如配送设置、营销设置和商品规格维度。 |
 | `payload.config.ts` | 注册 Payload collections / globals、数据库、R2 文件存储、Admin 组件和类型输出位置。 |
@@ -56,6 +57,10 @@
 | `assets/`、`public/` | 项目图标、品牌素材和公开静态文件。 |
 | `docs/` | 产品要求、配置说明、上线验收和已知风险；从 [文档索引](./docs/README.md) 开始。 |
 | `AGENTS.md` | 项目开发约定，包括架构边界、测试和文档更新规则。 |
+
+## PayPal 当前状态（2026-10-23）
+
+Sandbox 已完成一笔端到端付款测试，订单显示 Paid；Production Live 环境变量已配置并完成 Netlify 部署，`/api/checkout/paypal-config` 返回 `environment: production`，银行卡字段保持关闭。Live Webhook 尚未用真实付款验证；后续待核对 Live `PAYMENT.CAPTURE.COMPLETED` 投递和订单状态。订单付款、折扣使用次数与库存更新仍存在非原子事务风险。配置和已知风险见[PayPal 专项文档](./docs/paypal-advanced-checkout.md)，待办见[PRD](./docs/prd.md#当前待办与开放讨论)。
 
 ## 商品变体
 

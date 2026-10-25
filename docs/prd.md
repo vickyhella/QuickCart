@@ -38,7 +38,7 @@
 - [ ] 核验 R2 正式、Preview、开发环境隔离；确认本地或 Preview 的上传、替换、删除、重新压缩不会改动生产媒体及引用。
 - [ ] 核验 Google Merchant Center Feed、商品诊断、价格 / 库存、图片、落地页和配送设置。
 - [ ] 核验 Pinterest 实际发布、图片 / 文案 / 落地页、Variant 参数、发布记录和失败重试。
-- [ ] **PayPal 正式收款上线**：配置 Production Live Client ID、Client Secret、Webhook ID 和 `PAYPAL_ENV=live`；确认商户 Live 收款及高级银行卡支付资格，完成 Sandbox 与 Live 支付、取消、失败、Webhook 重试、金额 / 币种及库存验收。修复并验证订单完成、优惠次数和库存更新的非原子事务风险后，才启用真实收款。详见 `docs/paypal-advanced-checkout.md`。
+- [ ] **PayPal Live 交易验收与健壮性**：Sandbox 已完成一笔端到端付款测试并确认订单 Paid；Production Live 凭证、Webhook ID 和部署已完成，配置接口返回 production，Card Fields 保持关闭。Live Webhook 尚未通过真实付款验证；待真实 `PAYMENT.CAPTURE.COMPLETED` 后核对 Webhook 投递和订单 Paid。补测取消、失败、重复通知、金额 / 币种、优惠与库存；修复并验证订单完成、优惠次数和库存更新的非原子事务风险。详见 `docs/paypal-advanced-checkout.md`。
 - [ ] 配置并验收订单邮件：Resend 发件域名及 Netlify 环境变量；验证付款确认、发货通知和物流链接。逻辑已实现，未完成正式环境配置前不会发出邮件。
 - [ ] 完成商城端到端验收：商品页、购物车、结账、运费与免邮、订单创建及订单确认。
 

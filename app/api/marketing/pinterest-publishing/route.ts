@@ -11,7 +11,7 @@ export async function GET(request: Request) {
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   const [products, settings] = await Promise.all([
     payload.find({ collection: 'products', where: { status: { equals: 'published' } }, limit: 500, pagination: false, sort: 'title', depth: 1, overrideAccess: true }),
-    payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }),
+    payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true }),
   ])
   return NextResponse.json({
     products: products.docs.map((product: any) => {

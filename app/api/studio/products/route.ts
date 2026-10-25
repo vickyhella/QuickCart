@@ -37,11 +37,13 @@ export async function GET(request: Request) {
     limit,
     sort,
     depth: 1,
+    select: { title: true, slug: true, sku: true, price: true, compareAtPrice: true, status: true, createdAt: true, updatedAt: true, featuredImage: true, variants: { id: true } },
+    populate: { media: { url: true } },
     overrideAccess: false,
     user,
   })
   const allProducts = await payload.count({ collection: 'products', overrideAccess: false, user })
-  const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: false, user }).catch(() => null)
+  const marketing = await payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: false, user }).catch(() => null)
   const seoTemplates = resolveProductSeoTemplates(marketing)
 
   return Response.json({

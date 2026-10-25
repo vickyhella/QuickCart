@@ -2,24 +2,17 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { shippingCountries } from '@/lib/countries'
-import { resolveProductMedia } from '@/lib/resolve-product-media'
+import { getPublishedCatalog, getStorefrontMarketingSettings } from '@/lib/storefront-catalog'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function GET() {
   const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'products',
-    limit: 10000,
-    pagination: false,
-    depth: 1,
-    overrideAccess: true,
-  })
-  const products = await resolveProductMedia(payload, result.docs)
-  const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
+  const [published, { totalDocs }, marketing] = await Promise.all([
+    getPublishedCatalog(), payload.count({ collection: 'products', overrideAccess: true }), getStorefrontMarketingSettings(),
+  ])
   const allowedCountries = Array.isArray(marketing?.availableCountries) && marketing.availableCountries.length ? marketing.availableCountries : shippingCountries.map(([code]) => code)
-  const published = products.filter((product) => product.status === 'published')
   let itemCount = 0
   const skipped = []
 
@@ -36,9 +29,9 @@ export async function GET() {
   }
 
   return NextResponse.json({
-    totalProducts: products.length,
+    totalProducts: totalDocs,
     publishedProducts: published.length,
-    draftProducts: products.length - published.length,
+    draftProducts: totalDocs - published.length,
     feedItems: itemCount,
     skippedPublishedProducts: skipped,
     availableCountries: shippingCountries.filter(([code]) => allowedCountries.includes(code)).map(([code, name]) => ({ code, name })),

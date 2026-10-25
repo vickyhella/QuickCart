@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     const formValue = (key: string) => form.get(key) || submittedData[key]
 
     stage = 'reading marketing settings'
-    const marketing: any = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
+    const marketing: any = await payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true })
     // Finish CPU-heavy decoding/compression before opening any Payload DB transaction.
     stage = 'converting image'
     const prepared = await prepareMediaUpload(file, Number(marketing?.webpQuality || 82))

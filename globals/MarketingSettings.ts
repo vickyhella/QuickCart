@@ -2,6 +2,8 @@ import { isAdminUser } from '../lib/admin-access'
 import type { GlobalConfig } from 'payload'
 import { shippingCountries } from '../lib/countries'
 import { productTemplateRefreshFields } from '../lib/product-template-sync'
+import { setMarketingSettingsForRequest } from '../lib/marketing-settings-request'
+import { invalidateStorefront, STOREFRONT_PRODUCTS_TAG, STOREFRONT_SETTINGS_TAG } from '../lib/storefront-cache'
 
 export const MarketingSettings: GlobalConfig = {
   slug: 'marketing-settings',
@@ -15,14 +17,25 @@ export const MarketingSettings: GlobalConfig = {
     afterChange: [async ({ doc, previousDoc, req }) => {
       const previous = (previousDoc || {}) as Record<string, any>
       const next = doc as Record<string, any>
+      // Product hooks in this transaction must see the newly saved templates.
+      setMarketingSettingsForRequest(req, next)
+      await invalidateStorefront(STOREFRONT_SETTINGS_TAG)
+      if (previous.newArrivalDays !== next.newArrivalDays) await invalidateStorefront(STOREFRONT_PRODUCTS_TAG)
       const templateKeys = ['studioDescriptionTemplate', 'productTitleTemplate', 'productDescriptionTemplate']
       if (!templateKeys.some((key) => previous[key] !== next[key])) return doc
 
-      const products = await req.payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: true })
+      const products = await req.payload.find({
+        collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: true, req,
+        select: {
+          title: true, brand: true, category: true, description: true, descriptionMode: true,
+          seoTitle: true, seoTitleMode: true, seoDescription: true, seoDescriptionMode: true,
+          variants: { enabled: true, length: true, shape: true, size: true },
+        },
+      })
       for (const product of products.docs as Record<string, any>[]) {
         const data = productTemplateRefreshFields(product, previous, next)
         if (Object.keys(data).length) {
-          await req.payload.update({ collection: 'products', id: product.id, data, depth: 0, overrideAccess: true })
+          await req.payload.update({ collection: 'products', id: product.id, data, depth: 0, overrideAccess: true, req })
         }
       }
       return doc

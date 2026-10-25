@@ -39,7 +39,7 @@ export function hasReprocessableSource(media: any) {
 export async function reprocessMediaFromOriginal(payload: any, id: string) {
   let newlyCreatedOriginalID: string | number | undefined
   try {
-    const media = await payload.findByID({ collection: 'media', id, depth: 1, overrideAccess: true })
+    const media = await payload.findByID({ collection: 'media', id, depth: 0, overrideAccess: true })
     const linkedSource = media.sourceOriginal && typeof media.sourceOriginal === 'object'
       ? media.sourceOriginal
       : media.sourceOriginal ? await payload.findByID({ collection: 'media-originals', id: media.sourceOriginal, depth: 0, overrideAccess: true }) : null
@@ -56,7 +56,7 @@ export async function reprocessMediaFromOriginal(payload: any, id: string) {
     if (!sourceMetadata.width || !sourceMetadata.height) throw new Error('The source image could not be decoded into a visible picture.')
     if ((sourceMetadata.pages || 1) > 1) throw new ReprocessMediaError('Animated images are preserved as uploaded and are not batch-recompressed.')
 
-    const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
+    const marketing = await payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true })
     const quality = Math.max(1, Math.min(100, Number(marketing.webpQuality || 82)))
     const webp = await sharp(webpInput).rotate().webp({ quality }).toBuffer()
     const outputMetadata = await sharp(webp).metadata()

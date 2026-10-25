@@ -60,7 +60,7 @@ export function ProductMediaField({ path, readOnly, field, label }: Props) {
 
   useEffect(() => {
     let active = true
-    fetch('/api/media?limit=1000&depth=0&sort=filename', { credentials: 'same-origin' })
+    fetch('/api/media?limit=1000&depth=0&sort=filename&select[filename]=true&select[mimeType]=true&select[url]=true&select[title]=true&select[altText]=true', { credentials: 'same-origin' })
       .then(async (response) => response.ok ? response.json() : { docs: [] })
       .then((result) => { if (active) setMedia(Array.isArray(result.docs) ? result.docs : []) })
       .catch(() => { if (active) setMedia([]) })

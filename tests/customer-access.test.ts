@@ -49,7 +49,7 @@ test('customer product responses hide supplier information and only allow publis
   const publicDoc = await (Products.hooks!.afterRead![0] as any)({ doc, req: { user: customer } })
   assert.deepEqual(publicDoc, { id: 1, title: 'Public' })
   let query: any
-  const access = await (Media.access!.read as any)({ req: { user: customer, payload: { find: async (args: any) => { query = args; return { docs: [{ featuredImage: 3 }] } } } } })
+  const access = await (Media.access!.read as any)({ req: { user: customer, payload: { findGlobal: async () => ({}), find: async (args: any) => { query = args; return { docs: [{ featuredImage: 3 }] } } } } })
   assert.deepEqual(query.where, { status: { equals: 'published' } })
   assert.deepEqual(access, { id: { in: ['3'] } })
 })

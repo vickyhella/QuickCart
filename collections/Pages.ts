@@ -1,5 +1,6 @@
 import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
+import { invalidateStorefront, STOREFRONT_NAVIGATION_TAG, STOREFRONT_PAGES_TAG } from '../lib/storefront-cache'
 
 function slugify(value: string) {
   return value
@@ -13,6 +14,13 @@ function slugify(value: string) {
 export const Pages: CollectionConfig = {
   slug: 'pages',
   hooks: {
+    afterChange: [async ({ doc, previousDoc }) => {
+      if (doc.status === 'published' || previousDoc?.status === 'published') await invalidateStorefront(STOREFRONT_NAVIGATION_TAG, STOREFRONT_PAGES_TAG)
+      return doc
+    }],
+    afterDelete: [async ({ doc }) => {
+      if (doc.status === 'published') await invalidateStorefront(STOREFRONT_NAVIGATION_TAG, STOREFRONT_PAGES_TAG)
+    }],
     beforeValidate: [
       async ({ data, originalDoc, req }) => {
         if (!data) return data

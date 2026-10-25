@@ -38,6 +38,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/environment-config': { getEnvironmentVariable: () => '' },
     '@/lib/admin-access': adminAccess,
     '@/lib/resolve-product-media': { resolveProductMedia: async (_payload: unknown, products: unknown[]) => products },
+    '@/lib/storefront-catalog': { getPublishedCatalog: async () => (await payload.find({ collection: 'products', where: { status: { equals: 'published' } } })).docs },
     ...extra,
   }
   const exports: any = {}

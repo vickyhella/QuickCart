@@ -1,6 +1,8 @@
 import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
-import { getPublishedProductMediaIDs } from '@/lib/public-product-media'
+import { getPublicMediaIDsForRequest } from '@/lib/public-product-media'
+import { getMarketingSettingsForRequest } from '@/lib/marketing-settings-request'
+import { invalidateStorefront, STOREFRONT_PRODUCTS_TAG, STOREFRONT_NAVIGATION_TAG, STOREFRONT_SETTINGS_TAG } from '@/lib/storefront-cache'
 
 export const Media: CollectionConfig = {
   slug: 'media',
@@ -9,20 +11,19 @@ export const Media: CollectionConfig = {
     update: ({ req }) => isAdminUser(req.user),
     read: async ({ req }) => {
       if (isAdminUser(req.user)) return true
-      const { docs } = await req.payload.find({
-        collection: 'products',
-        where: { status: { equals: 'published' } },
-        limit: 10000,
-        pagination: false,
-        depth: 0,
-        overrideAccess: true,
-      })
-      const ids = getPublishedProductMediaIDs(docs)
+      const ids = await getPublicMediaIDsForRequest(req)
       return ids.length ? { id: { in: ids } } : false
     },
     delete: () => false,
   },
   hooks: {
+    afterChange: [async ({ doc, previousDoc }) => {
+      if (previousDoc && ['filename', 'url', 'altText'].some((key) => doc[key] !== previousDoc[key])) {
+        await invalidateStorefront(STOREFRONT_PRODUCTS_TAG, STOREFRONT_NAVIGATION_TAG, STOREFRONT_SETTINGS_TAG)
+      }
+      return doc
+    }],
+    afterDelete: [async () => { await invalidateStorefront(STOREFRONT_PRODUCTS_TAG, STOREFRONT_NAVIGATION_TAG, STOREFRONT_SETTINGS_TAG) }],
     beforeDelete: [async ({ id, req }) => {
       const scheduledPosts = await req.payload.find({ collection: 'pinterest-posts', where: { imageMedia: { equals: String(id) } }, limit: 10000, pagination: false, depth: 0, overrideAccess: true })
       for (const post of scheduledPosts.docs as any[]) {
@@ -49,7 +50,7 @@ export const Media: CollectionConfig = {
       if (!data) return data
       if (req.context?.skipMediaOptimization) return data
       if (req.context?.skipMediaMetadata) return data
-      const marketing = await req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
+      const marketing = await getMarketingSettingsForRequest(req)
       const productID = typeof data.product === 'object' && data.product ? data.product.id : data.product
       const product = productID ? await req.payload.findByID({ collection: 'products', id: String(productID), depth: 0, overrideAccess: true }).catch(() => null) : null
       const filename = String(req.file?.name || data.filename || '')

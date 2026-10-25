@@ -297,15 +297,27 @@ function toPayloadData(row: GridRow, media: Media[], supplierOptions: SupplierOp
 
 export function ProductMediaAudit() {
   const [imageIssues, setImageIssues] = useState<Array<{ id: string; title: string; slot: string; reason: string }> | null>(null)
-  useEffect(() => {
-    fetch('/api/marketing/media-audit', { credentials: 'same-origin' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((data) => { if (data) setImageIssues(data.issues || []) })
-      .catch(() => setImageIssues([]))
-  }, [])
+  const [checking, setChecking] = useState(false)
+  const [auditError, setAuditError] = useState('')
+  const checkImages = async () => {
+    setChecking(true)
+    setAuditError('')
+    try {
+      const response = await fetch('/api/marketing/media-audit', { credentials: 'same-origin' })
+      if (!response.ok) throw new Error('Could not check product images. Please try again.')
+      const data = await response.json()
+      setImageIssues(data.issues || [])
+    } catch (error) {
+      setAuditError(error instanceof Error ? error.message : 'Could not check product images.')
+    } finally {
+      setChecking(false)
+    }
+  }
   return (
     <div style={{ marginBlock: '1rem' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+        <button type="button" className="ui-button ui-button--secondary" disabled={checking} onClick={checkImages}>{checking ? 'Checking images…' : 'Check product images'}</button>
+        {auditError && <span role="alert" style={{ color: 'var(--brand-danger)' }}>{auditError}</span>}
         {imageIssues && imageIssues.length > 0 && <details style={{ alignSelf: 'center' }}>
           <summary style={{ cursor: 'pointer', color: 'var(--brand-danger)', fontWeight: 600 }}>Image issues ({imageIssues.length})</summary>
           <ul style={{ margin: '8px 0', paddingInlineStart: 20 }}>
@@ -385,21 +397,13 @@ export function ProductBulkEditor() {
     setError('')
     try {
       const productOnly = new URLSearchParams(window.location.search).get('product')
-      const [productsResponse, mediaResponse, suppliersResponse] = await Promise.all([
-        fetch(productOnly ? `/api/products/${encodeURIComponent(productOnly)}?depth=1` : `/api/products?limit=${pageSize}&page=${page}&depth=1&sort=title`, { credentials: 'same-origin' }),
-        fetch('/api/media?limit=1000&depth=0&sort=filename', { credentials: 'same-origin' }),
-        fetch('/api/studio/suppliers', { credentials: 'same-origin' }),
-      ])
+      const productsResponse = await fetch(productOnly ? `/api/products/${encodeURIComponent(productOnly)}?depth=1` : `/api/products?limit=${pageSize}&page=${page}&depth=1&sort=title`, { credentials: 'same-origin' })
       if (!productsResponse.ok) throw new Error('Could not load products. Check that you are logged in to the admin.')
       const productsResult = await productsResponse.json()
-      const mediaResult = mediaResponse.ok ? await mediaResponse.json() : { docs: [] }
-      const supplierResult = suppliersResponse.ok ? await suppliersResponse.json() : { docs: [] }
       const productDocs = productOnly ? (productsResult?.id ? [productsResult] : []) : (productsResult.docs || [])
       const nextRows = (productDocs as Product[]).map(toGridRow)
       setRows(nextRows)
       setOriginalRows(nextRows)
-      setMedia((mediaResult.docs || []) as Media[])
-      setSupplierOptions((supplierResult.docs || []) as SupplierOption[])
       setTotalPages(productOnly ? 1 : productsResult.totalPages || 1)
       setTotalProducts(productOnly ? nextRows.length : productsResult.totalDocs || nextRows.length)
       setMessage(`Loaded page ${page} with ${nextRows.length} products.`)
@@ -409,6 +413,24 @@ export function ProductBulkEditor() {
       setLoading(false)
     }
   }, [page, pageSize])
+
+  useEffect(() => {
+    let active = true
+    const mediaParams = new URLSearchParams({ limit: '1000', depth: '0', sort: 'filename' })
+    for (const field of ['filename', 'title', 'mimeType', 'url']) mediaParams.set(`select[${field}]`, 'true')
+    Promise.all([
+      fetch(`/api/media?${mediaParams}`, { credentials: 'same-origin' }),
+      fetch('/api/studio/suppliers', { credentials: 'same-origin' }),
+    ]).then(async ([mediaResponse, suppliersResponse]) => {
+      if (!mediaResponse.ok || !suppliersResponse.ok) throw new Error('Could not load image and supplier options. Please reload this page.')
+      const [mediaResult, supplierResult] = await Promise.all([mediaResponse.json(), suppliersResponse.json()])
+      if (active) {
+        setMedia(mediaResult.docs || [])
+        setSupplierOptions(supplierResult.docs || [])
+      }
+    }).catch((error) => { if (active) setError(error.message || 'Could not load image and supplier options.') })
+    return () => { active = false }
+  }, [])
 
   useEffect(() => { void load() }, [load])
 

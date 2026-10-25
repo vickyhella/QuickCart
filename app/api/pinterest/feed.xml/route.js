@@ -1,6 +1,4 @@
-import { getPayload } from 'payload'
-import config from '@/payload.config'
-import { resolveProductMedia } from '@/lib/resolve-product-media'
+import { getPublishedCatalog } from '@/lib/storefront-catalog'
 import { getEnvironmentVariable } from '@/lib/environment-config'
 import { getPriceDetails } from '@/lib/product-pricing'
 
@@ -29,24 +27,7 @@ const urlFor = (value, base) => {
 const mediaDoc = (value) => value && typeof value === 'object' ? value : null
 
 export async function GET() {
-  const payload = await getPayload({ config })
-  const products = []
-  let page = 1
-  let hasNextPage = true
-  while (hasNextPage) {
-    const result = await payload.find({
-      collection: 'products',
-      where: { status: { equals: 'published' } },
-      depth: 1,
-      limit: 100,
-      page,
-      overrideAccess: true,
-    })
-    products.push(...result.docs)
-    hasNextPage = result.hasNextPage
-    page += 1
-  }
-  const productsWithMedia = await resolveProductMedia(payload, products)
+  const productsWithMedia = await getPublishedCatalog()
 
   const siteURL = (getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com').replace(/\/$/, '')
   const currency = getEnvironmentVariable('NEXT_PUBLIC_CURRENCY') || 'USD'

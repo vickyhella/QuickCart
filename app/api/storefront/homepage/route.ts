@@ -1,39 +1,39 @@
 import config from '@/payload.config'
 import { getPayload } from 'payload'
+import { unstable_cache } from 'next/cache'
+import { getPublishedCatalog, getStorefrontMarketingSettings } from '@/lib/storefront-catalog'
+import { STOREFRONT_CACHE_SECONDS, STOREFRONT_SETTINGS_TAG } from '@/lib/storefront-cache'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+const getHomepageImages = unstable_cache(async (imageIDs: string[]) => {
   const payload = await getPayload({ config })
-  const settings = await payload.findGlobal({ slug: 'marketing-settings', depth: 1, overrideAccess: true }) as Record<string, any>
-  const image = settings?.homepageHeroImage
-  const product = settings?.homepageHeroProduct
-  const mysteryImage = settings?.homepageMysteryBoxImage
-  let mysteryProduct = settings?.homepageMysteryBoxProduct
-  if (!mysteryProduct) {
-    try {
-      const result = await payload.find({
-        collection: 'products',
-        where: { status: { equals: 'published' }, category: { equals: 'mystery-box' } },
-        limit: 1,
-        depth: 1,
-        overrideAccess: true,
-      })
-      mysteryProduct = result.docs[0] || null
-    } catch (error) {
-      console.error('Homepage Mystery Box fallback lookup failed:', error)
-      mysteryProduct = null
-    }
-  }
-  const publishedProduct = product && typeof product === 'object' && product.status === 'published' ? product : null
-  const publishedMysteryProduct = mysteryProduct && typeof mysteryProduct === 'object' && mysteryProduct.status === 'published' ? mysteryProduct : null
+  const images = await payload.find({
+    collection: 'media', where: { id: { in: imageIDs } }, limit: imageIDs.length,
+    depth: 0, select: { url: true, altText: true }, overrideAccess: true,
+  })
+  return images.docs
+}, ['storefront-homepage-images-v1'], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_SETTINGS_TAG] })
+
+async function getHomepageData() {
+  // Keep these cache scopes separate: Next bypasses nested unstable_cache readers.
+  const [settings, products] = await Promise.all([getStorefrontMarketingSettings(), getPublishedCatalog()])
+  const relationID = (value: any) => String(value && typeof value === 'object' ? value.id : value ?? '')
+  const imageIDs = [settings.homepageHeroImage, settings.homepageMysteryBoxImage].map(relationID).filter(Boolean)
+  const images = imageIDs.length ? await getHomepageImages(imageIDs) : []
+  const image = images.find((item) => String(item.id) === relationID(settings.homepageHeroImage))
+  const mysteryImage = images.find((item) => String(item.id) === relationID(settings.homepageMysteryBoxImage))
+  const publishedProduct = products.find((item) => String(item.id) === relationID(settings.homepageHeroProduct)) || null
+  const publishedMysteryProduct = settings.homepageMysteryBoxProduct
+    ? products.find((item) => String(item.id) === relationID(settings.homepageMysteryBoxProduct)) || null
+    : products.find((item) => item.category === 'mystery-box') || null
   const productImage = (item: Record<string, any> | null) => {
     const featuredImage = item?.featuredImage
     if (featuredImage && typeof featuredImage === 'object' && featuredImage.url) return featuredImage.url
     const galleryImage = Array.isArray(item?.gallery) ? item.gallery[0] : null
     return galleryImage && typeof galleryImage === 'object' ? galleryImage.url || null : null
   }
-  return Response.json({
+  return {
     imageUrl: image?.url || productImage(publishedProduct),
     imageAlt: String(settings?.homepageHeroImageAlt || publishedProduct?.imageAlt?.[0] || publishedProduct?.name || publishedProduct?.title || ''),
     productHref: publishedProduct ? `/product/${publishedProduct.slug || publishedProduct.id}` : null,
@@ -45,5 +45,9 @@ export async function GET() {
       title: String(settings?.homepageMysteryBoxTitle || 'Meet your mystery box.'),
       description: String(settings?.homepageMysteryBoxDescription || 'A curated set, a little unexpected, and always made to feel like you.'),
     } : null,
-  }, { headers: { 'Cache-Control': 'no-store' } })
+  }
+}
+
+export async function GET() {
+  return Response.json(await getHomepageData(), { headers: { 'Cache-Control': 'no-store' } })
 }

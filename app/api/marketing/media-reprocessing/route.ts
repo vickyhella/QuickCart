@@ -12,8 +12,8 @@ export async function GET(request: Request) {
   const { user } = await payload.auth({ headers: request.headers })
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
   const [media, settings] = await Promise.all([
-    payload.find({ collection: 'media', limit: 10000, pagination: false, depth: 1, sort: 'createdAt', overrideAccess: true }),
-    payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }),
+    payload.find({ collection: 'media', limit: 10000, pagination: false, depth: 1, sort: 'createdAt', overrideAccess: true, select: { filename: true, title: true, mimeType: true, studioTemporary: true, sourceOriginal: true }, populate: { 'media-originals': { filename: true, mimeType: true } } }),
+    payload.findGlobal({ slug: 'marketing-settings', depth: 0, select: { webpQuality: true }, overrideAccess: true }),
   ])
   const images = (media.docs as any[]).filter((item) => !item.studioTemporary && hasReprocessableSource(item)).map((item) => ({ id: String(item.id), filename: String(item.filename || item.title || item.id) }))
   return NextResponse.json({ images, quality: Math.max(1, Math.min(100, Number(settings.webpQuality || 82))) })

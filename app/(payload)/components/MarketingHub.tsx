@@ -52,12 +52,21 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
         if (active) { setGmc(g); setPinterest(p) }
       }).catch((e) => { if (active) setError(e.message || 'Could not load marketing overview.') })
     }
-    if (section === 'homepage' || section === 'seo' || section === 'metadata') {
-      fetch('/api/products?limit=100&depth=0&sort=-updatedAt', { credentials: 'same-origin' })
+    if (section === 'homepage' || section === 'seo') {
+      const params = new URLSearchParams({ limit: '100', depth: '0', sort: '-updatedAt' })
+      const fields = section === 'homepage' ? ['title', 'status', 'category', 'featuredImage'] : ['title', 'brand', 'category', 'seoTitle', 'seoDescription']
+      fields.forEach((field) => params.set(`select[${field}]`, 'true'))
+      if (section === 'seo') ['enabled', 'length', 'shape', 'size'].forEach((field) => params.set(`select[variants][${field}]`, 'true'))
+      fetch(`/api/products?${params}`, { credentials: 'same-origin' })
         .then((r) => r.ok ? r.json() : Promise.reject(new Error('Could not load products.')))
         .then((products) => { if (active) setSeo((current) => ({ ...current, products: products.docs || [] })) })
         .catch((e) => { if (active) setError(e.message || 'Could not load products.') })
-      fetch('/api/media?limit=1000&depth=0&sort=-createdAt', { credentials: 'same-origin' })
+    }
+    if (section === 'homepage' || section === 'metadata') {
+      const params = new URLSearchParams({ limit: '1000', depth: '0', sort: '-createdAt' })
+      const fields = section === 'homepage' ? ['filename', 'url', 'altText'] : ['filename', 'url', 'title', 'altText', 'caption']
+      fields.forEach((field) => params.set(`select[${field}]`, 'true'))
+      fetch(`/api/media?${params}`, { credentials: 'same-origin' })
         .then((r) => r.ok ? r.json() : Promise.reject(new Error('Could not load media.')))
         .then((media) => { if (active) setSeo((current) => ({ ...current, media: media.docs || [] })) })
         .catch((e) => { if (active) setError(e.message || 'Could not load media.') })

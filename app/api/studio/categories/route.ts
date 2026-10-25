@@ -60,8 +60,8 @@ async function getSnapshot(payload: Awaited<ReturnType<typeof getPayload>>, user
   const [stored, result, mediaResult] = await Promise.all([
     payload.findGlobal({ slug: 'product-dimensions', depth: 1, overrideAccess: false, user }).catch(() => null) as Promise<Record<string, any> | null>,
     // shortcut: scans up to 10,000 products, raise this if the catalog grows beyond that.
-    payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: false, user }),
-    payload.find({ collection: 'media', limit: 1000, pagination: false, sort: '-createdAt', depth: 0, overrideAccess: false, user }),
+    payload.find({ collection: 'products', limit: 10000, pagination: false, depth: 0, overrideAccess: false, user, select: { title: true, status: true, length: true, shape: true, color: true, variants: { length: true, shape: true, attributes: true } } }),
+    payload.find({ collection: 'media', limit: 1000, pagination: false, sort: '-createdAt', depth: 0, overrideAccess: false, user, select: { filename: true, url: true } }),
   ])
   const products = result.docs as Record<string, any>[]
   const images = categoryImages(stored?.dimensions)

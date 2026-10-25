@@ -50,7 +50,7 @@
 | `lib/` | 可复用业务逻辑：价格、Variant 校验、库存、配送、PayPal、媒体命名和清理等。复杂逻辑优先放在这里，并由 API / 页面调用。 |
 | `context/AppContext.jsx` | Storefront 购物车状态、商品加载状态及失败重试逻辑；导航聚焦刷新限制为每 5 分钟一次。 |
 | `app/api/storefront/navigation/route.ts` | Storefront 导航数据 API；只查分类所需商品字段，并将公开导航数据缓存 5 分钟，降低 Neon 数据库出站流量。 |
-| `app/api/storefront/products/route.ts` | Storefront 已发布商品列表 API；缓存 1 分钟，减少重复读取 Neon，同时保留下单时的实时库存与价格校验。 |
+| `lib/storefront-catalog.ts`、`lib/storefront-cache.ts` | 首页、商品列表、搜索、商品 SEO 与 Merchant / Pinterest Feed 共用公开目录缓存，服务端缓存 5 分钟，CMS 保存后失效；商品和图片只读取必要字段。 |
 | `scripts/` | 手动运行的数据导入或迁移脚本；运行前确认当前环境和目标数据库。 |
 | `tests/` | 业务逻辑和 API 行为测试；功能变更时补充对应的聚焦测试。 |
 | `assets/`、`public/` | 项目图标、品牌素材和公开静态文件。 |
@@ -77,6 +77,8 @@ Storefront 使用共享 CSS 变量管理颜色、内容最大宽度、页面留�
 前后台基础色板统一在 `app/theme-tokens.css`，`app/brand-theme.css` 分别映射 Admin 与 storefront 的用途变量；后台使用白色操作面板、莓紫按钮与清晰的禁用态。主要、次要和危险操作分别复用 `ui-button--primary`、`ui-button--secondary`、`ui-button--danger`，共用尺寸、圆角与交互状态；筛选控件和操作面板使用 `ui-filter`、`ui-panel`。改色入口、组件约定和对比度检查见[主题维护说明](./docs/visual-theme.md)，不需要新增环境变量或 migration。
 
 导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。公开导航数据在 `app/api/storefront/navigation/route.ts` 缓存 5 分钟，窗口聚焦刷新也有 5 分钟间隔。
+
+数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与政策页面同样缓存 5 分钟。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`，避免另一层 CDN 缓存遮住刚保存的修改。后台图片选择器和分类 / 商品列表只读取所需字段，Spreadsheet 翻页不再重读媒体列表；Product Studio / Products 的 `Check product images` 按钮按需巡检图片。批量模板刷新在同一请求内复用刚保存的配置，商品编号查询只读 SKU，供应商统计只在关联发生变化时重算。本次无需新增环境变量或数据库 migration，提交部署后生效；结账价格与库存仍实时校验。
 
 `/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；预览图在后台 Product Studio → Categories 设置。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏，切回 storefront 时会刷新导航。新页面需将 Status 设为 Published 才会公开显示。Pages 新增展示位置字段，部署前需按[数据库迁移说明](./docs/database-migrations.md)应用 `20261023_190000_add_page_placement`。本地缺少默认内容时可运行 `npm run seed:pages`；该脚本只补建不存在的 Pages，不覆盖已编辑内容。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出；Google 各展示位置对格式的保留情况可能不同。Product Studio 批量删除会对关联记录提示二次确认。
 
@@ -133,6 +135,6 @@ npm run migrate:production -- apply
 
 ## 修改代码时
 
-商品名称搜索入口位于全站导航，结果页为 `/search?q=商品名`；`components/ProductSearch.jsx` 通过 Payload 商品 API 分页查询已发布商品，`lib/product-search.js` 统一查询参数。搜索忽略大小写、支持名称片段，每页 24 件；无需数据库 migration。
+商品名称搜索入口位于全站导航，结果页为 `/search?q=商品名`；`components/ProductSearch.jsx` 通过 `/api/storefront/search` 在共享的已发布商品目录中分页搜索，`lib/product-search.js` 统一查询参数。搜索忽略大小写、支持名称片段，每页 24 件；无需数据库 migration。
 
 先读 [AGENTS.md](./AGENTS.md) 和相关 PRD，再沿用现有 API、组件与业务逻辑。功能行为、重要目录、命令、环境变量或部署方式有变化时，同时用简短中文更新本 README；详细操作步骤和待办放在相应的 `docs/` 文件里，避免重复粘贴。

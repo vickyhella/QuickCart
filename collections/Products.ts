@@ -4,6 +4,8 @@ import { hideSupplierDetails } from '@/lib/product-privacy'
 import { storedProductPublishError } from '@/lib/product-validation'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
 import { DEFAULT_NEW_ARRIVAL_DAYS, isWithinNewArrivalDays } from '@/lib/product-newness'
+import { getMarketingSettingsForRequest } from '@/lib/marketing-settings-request'
+import { invalidateStorefront, STOREFRONT_PRODUCTS_TAG, STOREFRONT_NAVIGATION_TAG } from '@/lib/storefront-cache'
 
 const lengthCodeMap: Record<string, string> = {
   'x-short': '01',
@@ -70,19 +72,6 @@ function relationID(value: any): string {
   return String(value && typeof value === 'object' ? value.id : (value ?? ''))
 }
 
-const marketingSettingsByRequest = new WeakMap<object, Promise<Record<string, unknown>>>()
-
-function getMarketingSettingsForRequest(req: any) {
-  let settings = marketingSettingsByRequest.get(req)
-  if (!settings) {
-    settings = req.payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true })
-      .then((value: Record<string, unknown>) => value)
-      .catch(() => ({}))
-    marketingSettingsByRequest.set(req, settings)
-  }
-  return settings
-}
-
 function webpPickerFilter(values: unknown[]) {
   const existingIDs = [
     ...new Set(
@@ -106,7 +95,9 @@ async function nextProductCode(req: any) {
     limit: 10000,
     pagination: false,
     depth: 0,
+    select: { sku: true },
     overrideAccess: true,
+    req,
   })
   const highest = result.docs.reduce((max, product) => {
     const code = String(product.sku || '')
@@ -126,11 +117,18 @@ export const Products: CollectionConfig = {
       return data
     }],
     afterChange: [async ({ doc, previousDoc, req }) => {
-      await syncLinkedProductCounts(req, [...(previousDoc?.suppliers || []), ...(doc?.suppliers || [])])
+      const supplierIDs = (values: any[] | null = []) => (Array.isArray(values) ? values : []).map(relationID).sort().join(',')
+      if (supplierIDs(previousDoc?.suppliers) !== supplierIDs(doc?.suppliers)) {
+        await syncLinkedProductCounts(req, [...(previousDoc?.suppliers || []), ...(doc?.suppliers || [])])
+      }
+      if (doc.status === 'published' || previousDoc?.status === 'published') {
+        await invalidateStorefront(STOREFRONT_PRODUCTS_TAG, STOREFRONT_NAVIGATION_TAG)
+      }
       return doc
     }],
     afterDelete: [async ({ doc, req }) => {
       await syncLinkedProductCounts(req, doc?.suppliers || [])
+      if (doc.status === 'published') await invalidateStorefront(STOREFRONT_PRODUCTS_TAG, STOREFRONT_NAVIGATION_TAG)
     }],
     afterRead: [async ({ doc, req }) => {
       if (!doc) return doc
@@ -154,7 +152,7 @@ export const Products: CollectionConfig = {
     beforeValidate: [
       async ({ data, originalDoc, req }) => {
         if (!data) return data
-        const marketing = await req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
+        const marketing = await getMarketingSettingsForRequest(req)
         const fillTemplate = (template: string, values: Record<string, string>) =>
           template
             .replace(/\{(brand|productType|productName|length|shape|size|availableLengthShapeCombinations|availableSizes)\}/g, (_, token) => values[token] || '')
@@ -175,7 +173,9 @@ export const Products: CollectionConfig = {
               where: { slug: { equals: candidate } },
               limit: 1,
               depth: 0,
+              select: { slug: true },
               overrideAccess: true,
+              req,
             })
             const owner = collision.docs[0]
             if (!owner || String(owner.id) === String(originalDoc?.id ?? '')) break

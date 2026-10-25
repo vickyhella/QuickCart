@@ -21,7 +21,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const file = formData.get('file')
     if (!(file instanceof File) || !file.size) return NextResponse.json({ error: 'Choose a replacement image.' }, { status: 400 })
     const current: any = await payload.findByID({ collection: 'media', id, depth: 0, overrideAccess: true })
-    const marketing: any = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
+    const marketing: any = await payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true })
     const prepared = await prepareMediaUpload(file, Number(marketing?.webpQuality || 82), current.filename)
     const originalName = file.name || `replacement-${Date.now()}`
     const originalFilename = await uniqueOriginalFilename(payload, current.filename, originalName)

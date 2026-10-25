@@ -27,7 +27,7 @@ export const PinterestPosts: CollectionConfig = {
       if (!productID) return data
       const product: any = await req.payload.findByID({ collection: 'products', id: String(productID), depth: 1, overrideAccess: true })
       const variant = Array.isArray(product.variants) ? product.variants.find((item: any) => String(item.id) === String(data.variantId || '')) : null
-      const settings: any = await req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true })
+      const settings: any = await req.payload.findGlobal({ slug: 'marketing-settings', depth: 0, overrideAccess: true })
       const values = {
         brand: String(product.brand || 'Ginny Nana'),
         productName: String(product.title || ''),

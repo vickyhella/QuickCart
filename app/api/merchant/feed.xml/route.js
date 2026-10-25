@@ -1,7 +1,5 @@
-import { getPayload } from 'payload'
-import config from '@/payload.config'
 import { getEnvironmentVariable } from '@/lib/environment-config'
-import { resolveProductMedia } from '@/lib/resolve-product-media'
+import { getPublishedCatalog } from '@/lib/storefront-catalog'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { merchantDescription } from '@/lib/merchant-feed-description'
 
@@ -19,24 +17,7 @@ const text = (value) => escapeXML(String(value || '').replace(/\s+/g, ' ').trim(
 const amount = (value) => `${Number(value || 0).toFixed(2)} USD`
 
 export async function GET() {
-  const payload = await getPayload({ config })
-  const products = []
-  let page = 1
-  let hasNextPage = true
-  while (hasNextPage) {
-    const result = await payload.find({
-      collection: 'products',
-      where: { status: { equals: 'published' } },
-      depth: 1,
-      limit: 100,
-      page,
-      overrideAccess: true,
-    })
-    products.push(...result.docs)
-    hasNextPage = result.hasNextPage
-    page += 1
-  }
-  const productsWithMedia = await resolveProductMedia(payload, products)
+  const productsWithMedia = await getPublishedCatalog()
 
   const siteURL = (getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com').replace(/\/$/, '')
   const entries = productsWithMedia.flatMap((product) => {

@@ -13,7 +13,7 @@ export const StoreSettings: GlobalConfig = {
   hooks: {
     afterRead: [async ({ doc, req }) => {
       if (Array.isArray(doc.availableCountries) && doc.availableCountries.length) return doc
-      const marketing = await req.payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
+      const marketing = await req.payload.findGlobal({ slug: 'marketing-settings', depth: 0, select: { availableCountries: true }, overrideAccess: true }).catch(() => null)
       return { ...doc, availableCountries: marketing?.availableCountries?.length ? marketing.availableCountries : doc.availableCountries || [] }
     }],
     afterChange: [async ({ doc, req }) => {

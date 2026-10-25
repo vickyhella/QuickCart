@@ -136,7 +136,6 @@ export const AppContextProvider = (props) => {
                 setStorefrontNavigationStatus('loaded')
             })
             .catch(() => {
-                lastNavigationFetch = 0
                 setStorefrontNavigationStatus('error')
             })
         }

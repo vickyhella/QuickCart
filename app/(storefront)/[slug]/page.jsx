@@ -6,10 +6,13 @@ import config from '@/payload.config'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ContactForm from '@/components/ContactForm'
+import { cache } from 'react'
+import { unstable_cache } from 'next/cache'
+import { STOREFRONT_CACHE_SECONDS, STOREFRONT_PAGES_TAG } from '@/lib/storefront-cache'
 
 export const dynamic = 'force-dynamic'
 
-async function findPage(slug) {
+const findPage = cache(unstable_cache(async (slug) => {
   const payload = await getPayload({ config })
   const result = await payload.find({
     collection: 'pages',
@@ -20,10 +23,12 @@ async function findPage(slug) {
       ],
     },
     limit: 1,
+    depth: 0,
+    select: { title: true, slug: true, body: true, seoTitle: true, seoDescription: true },
     overrideAccess: false,
   })
   return result.docs[0]
-}
+}, ['storefront-page-v1'], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_PAGES_TAG] }))
 
 export async function generateMetadata({ params }) {
   const { slug } = await params

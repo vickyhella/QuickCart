@@ -1,26 +1,18 @@
-import { getPayload } from 'payload'
-import config from '@/payload.config'
+import { getPublishedCatalog, getStorefrontMarketingSettings } from '@/lib/storefront-catalog'
 import ProductDetailClient from './ProductDetailClient'
 
 export const dynamic = 'force-dynamic'
 
 async function findProduct(id) {
-  const payload = await getPayload({ config })
-  const result = await payload.find({
-    collection: 'products',
-    where: { and: [{ or: [{ slug: { equals: id } }, { id: { equals: id } }] }, { status: { equals: 'published' } }] },
-    limit: 1,
-    overrideAccess: false,
-  })
-  return result.docs[0]
+  const products = await getPublishedCatalog()
+  return products.find((product) => product.slug === id || String(product.id) === id)
 }
 
 export async function generateMetadata({ params }) {
   const { id } = await params
   const product = await findProduct(id)
   if (!product) return { title: 'Product not found | Ginny Nana' }
-  const payload = await getPayload({ config })
-  const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
+  const marketing = !product.seoTitle || !product.seoDescription ? await getStorefrontMarketingSettings() : null
   const values = {
     brand: String(product.brand || 'Ginny Nana'),
     productType: String(product.category || 'press-on-nails').replaceAll('-', ' '),

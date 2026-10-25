@@ -36,7 +36,11 @@ export async function GET(request: Request) {
   const { user } = await payload.auth({ headers: request.headers })
   if (!isAdminUser(user)) return NextResponse.json({ error: 'Authentication required.' }, { status: 401 })
 
-  const result = await payload.find({ collection: 'products', limit: 5000, pagination: false, depth: 1, sort: 'title', overrideAccess: true })
+  const result = await payload.find({
+    collection: 'products', limit: 5000, pagination: false, depth: 1, sort: 'title', overrideAccess: true,
+    select: { title: true, slug: true, featuredImage: true, gallery: true, variants: { image: true, length: true, shape: true, size: true } },
+    populate: { media: { url: true, filename: true } },
+  })
   const issues: Array<{ id: string; title: string; slug: string; slot: string; reason: string }> = []
   for (const product of result.docs as any[]) {
     const main = product.featuredImage && typeof product.featuredImage === 'object'

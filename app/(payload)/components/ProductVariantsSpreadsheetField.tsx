@@ -119,7 +119,7 @@ export function ProductVariantsSpreadsheetField({ path, readOnly }: { path: stri
 
   useEffect(() => {
     let alive = true
-    fetch('/api/media?limit=1000&depth=0&sort=filename', { credentials: 'same-origin' })
+    fetch('/api/media?limit=1000&depth=0&sort=filename&select[filename]=true&select[mimeType]=true&select[url]=true', { credentials: 'same-origin' })
       .then((response) => response.ok ? response.json() : { docs: [] })
       .then((result) => { if (alive) setMedia(result.docs || []) })
       .catch(() => { if (alive) setMedia([]) })

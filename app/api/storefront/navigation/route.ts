@@ -1,13 +1,14 @@
 import config from '@/payload.config'
+import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 
 export const dynamic = 'force-dynamic'
 
-export async function GET() {
+const getNavigationData = unstable_cache(async () => {
   const payload = await getPayload({ config })
   const [dimensions, result] = await Promise.all([
     payload.findGlobal({ slug: 'product-dimensions', depth: 1, overrideAccess: true }).catch(() => ({} as any)),
-    payload.find({ collection: 'pages', where: { status: { equals: 'published' } }, limit: 1000, depth: 0, overrideAccess: true }),
+    payload.find({ collection: 'pages', where: { status: { equals: 'published' } }, limit: 1000, depth: 0, select: { title: true, slug: true, placement: true }, overrideAccess: true }),
   ])
   const pages = result.docs.map((page: any) => ({
     title: page.title,
@@ -23,7 +24,14 @@ export async function GET() {
     const url = imageURLs.get(configuredImages.get(`${key}:${option.value}`) || '')
     return { ...option, image: url ? { url } : null }
   })
-  const products = await payload.find({ collection: 'products', where: { status: { equals: 'published' } }, limit: 10000, depth: 0, overrideAccess: true })
+  const products = await payload.find({
+    collection: 'products',
+    where: { status: { equals: 'published' } },
+    limit: 10000,
+    depth: 0,
+    select: { length: true, shape: true, variants: { enabled: true, length: true, shape: true } },
+    overrideAccess: true,
+  })
   const includeProductValues = (options: any[], key: 'length' | 'shape') => {
     const values = new Set(options.map((option) => String(option.value)))
     for (const product of products.docs as any[]) {
@@ -39,9 +47,16 @@ export async function GET() {
     }
     return options
   }
-  return Response.json({
+  return {
     lengths: includeProductValues(withImages('lengths', dimensions.lengths || []), 'length'),
     shapes: includeProductValues(withImages('shapes', dimensions.shapes || []), 'shape'),
     pages,
+  }
+}, ['storefront-navigation-v1'], { revalidate: 300, tags: ['storefront-navigation'] })
+
+export async function GET() {
+  const data = await getNavigationData()
+  return Response.json(data, {
+    headers: { 'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600' },
   })
 }

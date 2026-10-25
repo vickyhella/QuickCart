@@ -51,7 +51,7 @@ export const AppContextProvider = (props) => {
     const fetchProductData = async () => {
         setProductsStatus('loading')
         try {
-            const response = await fetch('/api/products?limit=100&depth=1&sort=-createdAt&where[status][equals]=published', { cache: 'no-store' })
+            const response = await fetch('/api/storefront/products', { cache: 'no-store' })
             if (!response.ok) throw new Error('Could not load products')
             const { docs = [] } = await response.json()
             setProducts(docs.map(toStorefrontProduct))
@@ -123,7 +123,10 @@ export const AppContextProvider = (props) => {
 
     useEffect(() => {
         fetchProductData()
-        const fetchNavigation = () => fetch('/api/storefront/navigation', { cache: 'no-store' })
+        let lastNavigationFetch = 0
+        const fetchNavigation = () => {
+            lastNavigationFetch = Date.now()
+            fetch('/api/storefront/navigation', { cache: 'no-store' })
             .then((response) => {
                 if (!response.ok) throw new Error('Could not load storefront navigation')
                 return response.json()
@@ -132,10 +135,17 @@ export const AppContextProvider = (props) => {
                 setStorefrontNavigation(data)
                 setStorefrontNavigationStatus('loaded')
             })
-            .catch(() => setStorefrontNavigationStatus('error'))
+            .catch(() => {
+                lastNavigationFetch = 0
+                setStorefrontNavigationStatus('error')
+            })
+        }
+        const refreshNavigationOnFocus = () => {
+            if (Date.now() - lastNavigationFetch >= 5 * 60 * 1000) fetchNavigation()
+        }
         fetchNavigation()
-        window.addEventListener('focus', fetchNavigation)
-        return () => window.removeEventListener('focus', fetchNavigation)
+        window.addEventListener('focus', refreshNavigationOnFocus)
+        return () => window.removeEventListener('focus', refreshNavigationOnFocus)
     }, [])
 
     const value = {

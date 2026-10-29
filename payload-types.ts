@@ -463,7 +463,7 @@ export interface Marketing {
   createdAt: string;
 }
 /**
- * Edit static pages and store policies. The body supports Markdown.
+ * Policy pages, About Us and Contact Us are maintained in the repository.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "pages".
@@ -1062,6 +1062,8 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   createdAt?: T;
 }
 /**
+ * Repository-managed shipping configuration; edit config/shipping.json and redeploy.
+ *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "store-settings".
  */
@@ -1076,6 +1078,10 @@ export interface StoreSetting {
    * Orders below this value cannot be checked out. Leave blank to disable this condition.
    */
   minimumOrderValue?: number | null;
+  handlingMinimumBusinessDays?: number | null;
+  handlingMaximumBusinessDays?: number | null;
+  transitMinimumBusinessDays?: number | null;
+  transitMaximumBusinessDays?: number | null;
   /**
    * Choose the same rate type you use in Google Merchant Center.
    */
@@ -1152,7 +1158,7 @@ export interface StoreSetting {
 export interface MarketingSetting {
   id: number;
   /**
-   * Legacy storage. Country settings are managed from Store settings.
+   * Archived storage. Checkout countries are maintained in config/shipping.json.
    */
   availableCountries?:
     | (
@@ -1195,6 +1201,12 @@ export interface MarketingSetting {
    * Published products show the automatic New badge for this many days. Set to 0 to disable the automatic window; manually marked New products remain included.
    */
   newArrivalDays?: number | null;
+  homepageHeroEyebrow?: string | null;
+  homepageHeroTitle?: string | null;
+  homepageHeroDescription?: string | null;
+  homepageHeroButtonLabel?: string | null;
+  homepageHeroButtonHref?: string | null;
+  homepageHeroBadge?: string | null;
   /**
    * Optional large image for the storefront homepage hero. If empty, the first published product image is used.
    */
@@ -1212,6 +1224,7 @@ export interface MarketingSetting {
    */
   homepageMysteryBoxImage?: (number | null) | Media;
   homepageMysteryBoxImageAlt?: string | null;
+  homepageMysteryBoxEnabled?: boolean | null;
   /**
    * Published Mystery Box product opened when customers click the banner.
    */
@@ -1219,6 +1232,19 @@ export interface MarketingSetting {
   homepageMysteryBoxEyebrow?: string | null;
   homepageMysteryBoxTitle?: string | null;
   homepageMysteryBoxDescription?: string | null;
+  siteBrandName?: string | null;
+  siteCustomerEmail?: string | null;
+  siteSocialLinks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  siteDefaultSeoTitle?: string | null;
+  siteDefaultSeoDescription?: string | null;
   /**
    * Product Studio Auto description template. Tokens: {brand}, {productType}, {productName}, {length}, {shape}, {availableLengthShapeCombinations}, {availableSizes}. Custom descriptions are not changed.
    */
@@ -1301,6 +1327,10 @@ export interface StoreSettingsSelect<T extends boolean = true> {
   currency?: T;
   freeShippingThreshold?: T;
   minimumOrderValue?: T;
+  handlingMinimumBusinessDays?: T;
+  handlingMaximumBusinessDays?: T;
+  transitMinimumBusinessDays?: T;
+  transitMaximumBusinessDays?: T;
   shippingCostType?: T;
   flatShippingRate?: T;
   shippingAdvancedDimension1?: T;
@@ -1330,15 +1360,27 @@ export interface StoreSettingsSelect<T extends boolean = true> {
 export interface MarketingSettingsSelect<T extends boolean = true> {
   availableCountries?: T;
   newArrivalDays?: T;
+  homepageHeroEyebrow?: T;
+  homepageHeroTitle?: T;
+  homepageHeroDescription?: T;
+  homepageHeroButtonLabel?: T;
+  homepageHeroButtonHref?: T;
+  homepageHeroBadge?: T;
   homepageHeroImage?: T;
   homepageHeroImageAlt?: T;
   homepageHeroProduct?: T;
   homepageMysteryBoxImage?: T;
   homepageMysteryBoxImageAlt?: T;
+  homepageMysteryBoxEnabled?: T;
   homepageMysteryBoxProduct?: T;
   homepageMysteryBoxEyebrow?: T;
   homepageMysteryBoxTitle?: T;
   homepageMysteryBoxDescription?: T;
+  siteBrandName?: T;
+  siteCustomerEmail?: T;
+  siteSocialLinks?: T;
+  siteDefaultSeoTitle?: T;
+  siteDefaultSeoDescription?: T;
   studioDescriptionTemplate?: T;
   productTitleTemplate?: T;
   productDescriptionTemplate?: T;

@@ -2,6 +2,9 @@ import config from '@/payload.config'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import { STOREFRONT_CACHE_SECONDS, STOREFRONT_NAVIGATION_TAG } from '@/lib/storefront-cache'
+import categoryImages from '@/config/category-images.json'
+import contentSources from '@/config/content-sources.json'
+import { defaultProductDimensionOptions } from '@/lib/product-dimensions'
 
 export const dynamic = 'force-dynamic'
 
@@ -22,6 +25,8 @@ const getNavigationData = unstable_cache(async () => {
   const imageURLs = new Map<string, string>(imageDocs.docs.map((item: any) => [String(item.id), String(item.url || '')] as [string, string]))
   const configuredImages = new Map<string, string>(imageSettings.map((image: any) => [String(image.value), String(image.image || '')] as [string, string]))
   const withImages = (key: string, options: any[] = []) => options.map((option) => {
+    const staticImage = contentSources.categoryImages === 'repository' ? categoryImages[key as keyof typeof categoryImages]?.[String(option.value) as keyof typeof categoryImages.lengths] : undefined
+    if (staticImage) return { ...option, image: { url: staticImage.image, alt: staticImage.alt } }
     const url = imageURLs.get(configuredImages.get(`${key}:${option.value}`) || '')
     return { ...option, image: url ? { url } : null }
   })
@@ -48,15 +53,30 @@ const getNavigationData = unstable_cache(async () => {
     }
     return options
   }
+  const shapes = includeProductValues(withImages('shapes', dimensions.shapes || []), 'shape')
+    // To restore a temporarily hidden shape, remove it from config/category-images.json's hiddenShapes list.
+    .filter((option) => contentSources.categoryImages === 'admin' || !(categoryImages.hiddenShapes as readonly string[]).includes(String(option.value)))
   return {
     lengths: includeProductValues(withImages('lengths', dimensions.lengths || []), 'length'),
-    shapes: includeProductValues(withImages('shapes', dimensions.shapes || []), 'shape'),
+    shapes,
     pages,
   }
-}, ['storefront-navigation-v2'], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_NAVIGATION_TAG] })
+}, [`storefront-navigation-v4-${contentSources.categoryImages}`], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_NAVIGATION_TAG] })
 
 export async function GET() {
-  const data = await getNavigationData()
+  let data
+  try {
+    data = await getNavigationData()
+  } catch {
+    if (contentSources.categoryImages === 'admin') return Response.json({ error: 'Category settings are unavailable.' }, { status: 503 })
+    const options = (key: 'lengths' | 'shapes') => defaultProductDimensionOptions[key]
+      .filter((option: any) => key !== 'shapes' || !(categoryImages.hiddenShapes as readonly string[]).includes(String(option.value)))
+      .map((option: any) => {
+      const staticImage = categoryImages[key][String(option.value) as keyof typeof categoryImages.lengths]
+      return { ...option, image: staticImage ? { url: staticImage.image, alt: staticImage.alt } : null }
+    })
+    data = { lengths: options('lengths'), shapes: options('shapes'), pages: [] }
+  }
   return Response.json(data, {
     headers: { 'Cache-Control': 'no-store' },
   })

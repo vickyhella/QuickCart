@@ -16,7 +16,11 @@ export default function CartDrawer({ open, onClose }) {
     updateCartQuantity,
     getCartAmount,
     getCartCount,
+    shippingSettings,
   } = useAppContext();
+  const handling = shippingSettings.handlingBusinessDays
+  const transit = shippingSettings.transitBusinessDays
+  const shippingEstimate = `estimated ${handling.minimum + transit.minimum}–${handling.maximum + transit.maximum} business days including preparation`
   const { quote, error } = useCartShippingQuote();
   const symbol = currency || "$";
   const lines = Object.entries(cartItems).flatMap(([key, line]) => {
@@ -148,7 +152,7 @@ export default function CartDrawer({ open, onClose }) {
                 <span>
                   Shipping{" "}
                   <span className="text-xs text-[#786963]">
-                    (estimated 7-15 business days)
+                    ({shippingEstimate})
                   </span>
                 </span>
                 <span className="shrink-0">

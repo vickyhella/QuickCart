@@ -6,6 +6,7 @@ import { readJSONResponse } from '@/lib/read-json-response'
 import { defaultProductDimensionOptions } from '@/lib/product-dimensions'
 import { ProductWorkspaceTabs } from './ProductWorkspaceTabs'
 import { AdminSearchableSelect } from './AdminSearchableSelect'
+import contentSources from '@/config/content-sources.json'
 
 type CategoryOption = {
   value: string | number
@@ -172,6 +173,8 @@ export function ProductCategoriesView() {
       </header>
 
       <ProductWorkspaceTabs />
+
+      <p className="mb-5 rounded border border-[#ded4cf] bg-white p-4 text-sm">{contentSources.categoryImages === 'repository' ? <>Category preview images are maintained in <code>config/category-images.json</code>; image changes require a deployment. To restore Almond, remove <code>&quot;almond&quot;</code> from that file’s <code>hiddenShapes</code> list. Category definitions and product values remain editable here.</> : <>Category preview images are maintained in this Admin screen and take effect after saving. Changes are stored in the Product Dimensions global.</>}</p>
 
       <form
         className="mb-5 flex flex-wrap items-end gap-3"

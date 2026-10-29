@@ -18,6 +18,7 @@ import { MarketingWorkspace } from '../collections/MarketingWorkspace'
 import { Media } from '../collections/Media'
 import { MediaOriginals } from '../collections/MediaOriginals'
 import { StoreSettings } from '../globals/StoreSettings'
+import { repositoryPageSlugs } from '../lib/repository-pages'
 import { MarketingSettings } from '../globals/MarketingSettings'
 import { ProductDimensions } from '../globals/ProductDimensions'
 import * as productDimensionOptions from '../lib/product-dimensions'
@@ -32,10 +33,13 @@ test('customers cannot mutate or read internal collections/globals, including a 
       if (access) assert.equal(await access({ req: { user: customer } }), false, `${config.slug}.${action}`)
     }
   }
-  for (const config of [Products, Pages]) {
+  for (const config of [Products]) {
     assert.deepEqual(await (config.access!.read as any)({ req: { user: customer } }), { status: { equals: 'published' } })
     assert.equal(await (config.access!.read as any)({ req: { user: admin } }), true)
   }
+  const editablePages = { slug: { not_in: repositoryPageSlugs } }
+  assert.deepEqual(await (Pages.access!.read as any)({ req: { user: customer } }), { and: [editablePages, { status: { equals: 'published' } }] })
+  assert.deepEqual(await (Pages.access!.read as any)({ req: { user: admin } }), editablePages)
   for (const config of [Products, Pages, Media]) {
     for (const action of ['create', 'update']) assert.equal(await (config.access![action] as any)({ req: { user: customer } }), false)
   }

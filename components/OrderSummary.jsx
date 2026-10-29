@@ -5,7 +5,10 @@ import PaymentMethods from "@/components/PaymentMethods";
 import useCartShippingQuote from "@/hooks/useCartShippingQuote";
 
 export default function OrderSummary() {
-    const { currency, router, getCartCount, getCartAmount } = useAppContext();
+    const { currency, router, getCartCount, getCartAmount, shippingSettings } = useAppContext();
+    const handling = shippingSettings.handlingBusinessDays
+    const transit = shippingSettings.transitBusinessDays
+    const shippingEstimate = `estimated ${handling.minimum + transit.minimum}–${handling.maximum + transit.maximum} business days including preparation`
     const symbol = currency || "$";
     const subtotal = getCartAmount();
     const { quote, error } = useCartShippingQuote();
@@ -27,7 +30,7 @@ export default function OrderSummary() {
                     </span>
                 </div>
                 <div className="flex justify-between">
-                    <span className="text-[#6e5c55]">Shipping <span className="text-xs text-[#786963]">(estimated 7-15 business days)</span></span>
+                    <span className="text-[#6e5c55]">Shipping <span className="text-xs text-[#786963]">({shippingEstimate})</span></span>
                     <span>{shipping}</span>
                 </div>
                 {error && <p className="-mt-2 text-xs text-[#786963]">{error}</p>}

@@ -7,6 +7,7 @@ import { getPayPalPublicConfig, isPayPalConfigured, paypalRequest } from '@/lib/
 import { shippingCountries } from '@/lib/countries'
 import { calculateShippingCharge } from '@/lib/shipping-tiers'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { getShippingSettings } from '@/lib/shipping-config'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 const amountText = (value) => roundMoney(value).toFixed(2)
@@ -36,10 +37,9 @@ export async function POST(request) {
     if (body.items.length > 40) return NextResponse.json({ error: '购物车商品种类过多。' }, { status: 400 })
 
     const payload = await getPayload({ config })
-    const marketing = await payload.findGlobal({ slug: 'marketing-settings', overrideAccess: true }).catch(() => null)
-    const availableCountries = Array.isArray(marketing?.availableCountries) && marketing.availableCountries.length ? marketing.availableCountries : shippingCountries.map(([code]) => code)
+    const settings = await getShippingSettings(payload)
+    const availableCountries = settings.availableCountries
     if (!availableCountries.includes(countryCode)) return NextResponse.json({ error: '暂不配送到该国家。' }, { status: 400 })
-    const settings = await payload.findGlobal({ slug: 'store-settings', overrideAccess: true })
     const currency = settings.currency || 'USD'
     const lines = []
 

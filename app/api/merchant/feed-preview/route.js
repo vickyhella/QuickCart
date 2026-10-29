@@ -2,17 +2,19 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@/payload.config'
 import { shippingCountries } from '@/lib/countries'
-import { getPublishedCatalog, getStorefrontMarketingSettings } from '@/lib/storefront-catalog'
+import { getPublishedCatalog } from '@/lib/storefront-catalog'
+import { getShippingSettings } from '@/lib/shipping-config'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 export async function GET() {
   const payload = await getPayload({ config })
-  const [published, { totalDocs }, marketing] = await Promise.all([
-    getPublishedCatalog(), payload.count({ collection: 'products', overrideAccess: true }), getStorefrontMarketingSettings(),
+  const shippingSettings = await getShippingSettings(payload)
+  const [published, { totalDocs }] = await Promise.all([
+    getPublishedCatalog(), payload.count({ collection: 'products', overrideAccess: true }),
   ])
-  const allowedCountries = Array.isArray(marketing?.availableCountries) && marketing.availableCountries.length ? marketing.availableCountries : shippingCountries.map(([code]) => code)
+  const allowedCountries = shippingSettings.availableCountries
   let itemCount = 0
   const skipped = []
 

@@ -1,6 +1,10 @@
 import { isAdminUser } from '../lib/admin-access'
 import type { CollectionConfig } from 'payload'
 import { invalidateStorefront, STOREFRONT_NAVIGATION_TAG, STOREFRONT_PAGES_TAG } from '../lib/storefront-cache'
+import { isRepositoryPage, repositoryPageSlugs } from '../lib/repository-pages'
+import contentSources from '../config/content-sources.json'
+
+const editablePages = contentSources.policies === 'repository' ? { slug: { not_in: repositoryPageSlugs } } : {}
 
 function slugify(value: string) {
   return value
@@ -26,6 +30,9 @@ export const Pages: CollectionConfig = {
         if (!data) return data
         const title = String(data.title || originalDoc?.title || '').trim()
         const requestedSlug = typeof data.slug === 'string' ? data.slug.trim() : ''
+        if (contentSources.policies === 'repository' && process.env.SEED_REPOSITORY_PAGES !== 'true' && (isRepositoryPage(originalDoc?.slug) || isRepositoryPage(slugify(requestedSlug || title)))) {
+          throw new Error('This page is maintained in content/pages/*.md. Edit the repository file and redeploy.')
+        }
         const oldGeneratedSlug = originalDoc ? slugify(String(originalDoc.title || '')) : ''
 
         const hasRequestedSlug = typeof data.slug === 'string'
@@ -54,16 +61,17 @@ export const Pages: CollectionConfig = {
   },
   access: {
     read: ({ req }) =>
-      isAdminUser(req.user) ? true : { status: { equals: 'published' } },
+      isAdminUser(req.user) ? editablePages : { and: [editablePages, { status: { equals: 'published' } }] },
     create: ({ req }) => isAdminUser(req.user),
-    update: ({ req }) => isAdminUser(req.user),
-    delete: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => isAdminUser(req.user) ? editablePages : false,
+    delete: ({ req }) => isAdminUser(req.user) ? editablePages : false,
   },
   admin: {
     group: 'Website',
     useAsTitle: 'title',
     defaultColumns: ['title', 'slug', 'status', 'updatedAt'],
-    description: 'Edit static pages and store policies. The body supports Markdown.',
+    description: contentSources.policies === 'repository' ? 'Policy pages, About Us and Contact Us are maintained in the repository.' : 'Storefront pages are maintained here in Payload Admin.',
+    components: { beforeList: ['/components/RepositorySettings#RepositoryPagesNotice'] },
   },
   fields: [
     { name: 'title', type: 'text', required: true },

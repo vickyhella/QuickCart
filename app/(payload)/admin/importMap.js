@@ -29,7 +29,9 @@ import { MediaCompressionView as MediaCompressionView_525be5d54a45056cab8bc77917
 import { MediaMetadataView as MediaMetadataView_525be5d54a45056cab8bc779174c2e8c } from '../components/MediaToolsView'
 import { OriginalsCleanup as OriginalsCleanup_8ee34e0bbdf97614b2a688b17b57f836 } from '../components/OriginalsCleanup'
 import { MarketingStudioView as MarketingStudioView_2329a0d776bbd604a5e1c7768b8228f5 } from '../components/MarketingStudioView'
+import { RepositoryPagesNotice as RepositoryPagesNotice_a15d51008405afba7446ac83b5b9d359 } from '../components/RepositorySettings'
 import { PinterestPublishing as PinterestPublishing_27a57dad575eb919d00754f09cec5d83 } from '../components/PinterestPublishing'
+import { RepositoryShippingNotice as RepositoryShippingNotice_a15d51008405afba7446ac83b5b9d359 } from '../components/RepositorySettings'
 import { StorefrontHomeAction as StorefrontHomeAction_cbc9200bb77880a9b4ebe1053d304c39 } from '../components/StorefrontHomeAction'
 import { StudioNavLink as StudioNavLink_82da4bf386bde16554597b0aa0981201 } from '../components/StudioNavLink'
 import { AdminDashboard as AdminDashboard_23ec33776346719f737fb9ed0745e7e8 } from '../components/AdminDashboard'
@@ -69,7 +71,9 @@ export const importMap = {
   "/components/MediaToolsView#MediaMetadataView": MediaMetadataView_525be5d54a45056cab8bc779174c2e8c,
   "/components/OriginalsCleanup#OriginalsCleanup": OriginalsCleanup_8ee34e0bbdf97614b2a688b17b57f836,
   "/components/MarketingStudioView#MarketingStudioView": MarketingStudioView_2329a0d776bbd604a5e1c7768b8228f5,
+  "/components/RepositorySettings#RepositoryPagesNotice": RepositoryPagesNotice_a15d51008405afba7446ac83b5b9d359,
   "/components/PinterestPublishing#PinterestPublishing": PinterestPublishing_27a57dad575eb919d00754f09cec5d83,
+  "/components/RepositorySettings#RepositoryShippingNotice": RepositoryShippingNotice_a15d51008405afba7446ac83b5b9d359,
   "/components/StorefrontHomeAction#StorefrontHomeAction": StorefrontHomeAction_cbc9200bb77880a9b4ebe1053d304c39,
   "/components/StudioNavLink#StudioNavLink": StudioNavLink_82da4bf386bde16554597b0aa0981201,
   "/components/AdminDashboard#AdminDashboard": AdminDashboard_23ec33776346719f737fb9ed0745e7e8,

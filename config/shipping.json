@@ -1,0 +1,15 @@
+{
+  "currency": "USD",
+  "pricesIncludeTax": true,
+  "freeShippingThreshold": 50,
+  "minimumOrderValue": null,
+  "shippingCostType": "weight",
+  "shippingTiers": [
+    { "minimumWeightKg": 0.0001, "maximumWeightKg": 0.201, "fee": 9 },
+    { "minimumWeightKg": 0.2011, "maximumWeightKg": 0.601, "fee": 12 },
+    { "minimumWeightKg": 0.6011, "maximumWeightKg": null, "fee": 0 }
+  ],
+  "availableCountries": ["US", "AU", "AT", "BH", "BE", "CA", "CL", "DK", "FR", "DE", "GR", "HK", "HU", "IE", "IL", "IT", "JP", "KW", "MX", "NL", "NZ", "NO", "PL", "RO", "SA", "SG", "SK", "ZA", "ES", "SE", "CH", "TH", "GB"],
+  "handlingBusinessDays": { "minimum": 5, "maximum": 10 },
+  "transitBusinessDays": { "minimum": 7, "maximum": 15 }
+}

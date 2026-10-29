@@ -1,0 +1,20 @@
+{
+  "hero": {
+    "image": "/site/homepage-hero.webp",
+    "alt": "Ginny Nana handmade press-on nails",
+    "eyebrow": "Ginny Nana · Handmade press-ons",
+    "title": "A little art.\nA lot of you.",
+    "description": "Wearable nail designs, made by hand and ready when you are. Find a set that feels like your kind of statement.",
+    "buttonLabel": "Shop the collection",
+    "buttonHref": "/all-products",
+    "badge": "YOUR NEXT FAVORITE SET"
+  },
+  "mysteryBox": {
+    "enabled": false,
+    "image": null,
+    "alt": "",
+    "eyebrow": "A little surprise, just for you",
+    "title": "Meet your mystery box.",
+    "description": "A curated set, a little unexpected, and always made to feel like you."
+  }
+}

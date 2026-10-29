@@ -7,6 +7,7 @@ import { MarketingHub } from '../(payload)/components/MarketingHub'
 
 export const marketingStudioTabs = [
   { id: 'homepage', label: 'Homepage' },
+  { id: 'site', label: 'Site settings' },
   { id: 'pinterest', label: 'Pinterest' },
   { id: 'seo', label: 'SEO' },
   { id: 'feeds', label: 'Feeds' },
@@ -106,6 +107,7 @@ export default function MarketingStudio() {
     </div>
 
     {tab === 'homepage' && <MarketingHub section="homepage" />}
+    {tab === 'site' && <MarketingHub section="site" />}
 
     {tab === 'pinterest' && <>
     <section className="mb-8 grid grid-cols-2 gap-3 md:grid-cols-4">

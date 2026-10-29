@@ -6,7 +6,6 @@ import Link from 'next/link'
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
 import { useAppContext } from '@/context/AppContext'
-import { shippingCountries as defaultShippingCountries } from '@/lib/countries'
 import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
 import PayPalCardButton from '@/components/PayPalCardButton'
@@ -15,9 +14,9 @@ import { getPriceDetails } from '@/lib/product-pricing'
 const emptyAddress = { fullName: '', phone: '', address1: '', address2: '', city: '', state: '', postalCode: '', country: 'US' }
 
 export default function CheckoutPage() {
-  const { products, cartItems, currency } = useAppContext()
+  const { products, cartItems, currency, checkoutCountries: shippingCountries, shippingEstimate } = useAppContext()
   const [email, setEmail] = useState('')
-  const [address, setAddress] = useState(emptyAddress)
+  const [address, setAddress] = useState({ ...emptyAddress, country: shippingCountries[0]?.[0] || 'US' })
   const [promoInput, setPromoInput] = useState('')
   const [promoCode, setPromoCode] = useState('')
   const [addOrderNote, setAddOrderNote] = useState(false)
@@ -26,10 +25,8 @@ export default function CheckoutPage() {
   const [quoteError, setQuoteError] = useState('')
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
-  const [shippingCountries, setShippingCountries] = useState(defaultShippingCountries)
   const [paypalConfig, setPaypalConfig] = useState(null)
   const formRef = useRef(null)
-  useEffect(() => { fetch('/api/marketing/countries').then((r) => r.ok ? r.json() : null).then((data) => { if (data?.countries?.length) { setShippingCountries(data.countries); if (!data.countries.some(([code]) => code === address.country)) setAddress((current) => ({ ...current, country: data.countries[0][0] })) } }).catch(() => {}) }, [])
   useEffect(() => { fetch('/api/checkout/paypal-config').then((r) => r.ok ? r.json() : null).then(setPaypalConfig).catch(() => {}) }, [])
   const symbol = currency || '$'
 
@@ -157,8 +154,8 @@ export default function CheckoutPage() {
               </div>
               <div className="mt-4 rounded-lg bg-[#f8f3ef] p-4 text-sm text-[#6e5c55]">
                 <p className="font-medium text-[#302522]">Shipping details</p>
-                <p className="mt-1">Shipping to {shippingCountries.find(([code]) => code === address.country)?.[1] || address.country}. The shipping charge is calculated from the selected shipping method and shown in your order summary.</p>
-                {quote?.freeShippingThreshold != null && <p className="mt-1">Orders over {symbol}{Number(quote.freeShippingThreshold).toFixed(2)} ship free.</p>}
+                <p className="mt-1">Shipping to {shippingCountries.find(([code]) => code === address.country)?.[1] || address.country}. The shipping charge is calculated by total product weight and shown in your order summary.</p>
+                {quote?.freeShippingThreshold != null && <p className="mt-1">Orders of {symbol}{Number(quote.freeShippingThreshold).toFixed(2)} or more after discounts ship free.</p>}
                 {quote?.minimumOrderValue != null && <p className="mt-1">A minimum order of {symbol}{Number(quote.minimumOrderValue).toFixed(2)} is required for shipping.</p>}
                 <Link href="/shipping-policy/" className="inline-block mt-2 underline underline-offset-2">Read our shipping policy</Link>
               </div>
@@ -196,9 +193,9 @@ export default function CheckoutPage() {
             <div className="space-y-3 border-t border-[#d8c9c1] mt-6 pt-5 text-sm">
               <div className="flex justify-between"><span>Subtotal</span><span>{symbol}{(quote?.subtotal ?? lines.reduce((sum, line) => sum + line.unitPrice * line.line.quantity, 0)).toFixed(2)}</span></div>
               {quote?.discountTotal > 0 && <div className="flex justify-between"><span>Discount</span><span>-{symbol}{quote.discountTotal.toFixed(2)}</span></div>}
-              <div className="flex justify-between gap-3"><span>Shipping <span className="text-xs text-[#786963]">(estimated 7-15 business days)</span></span><span className="shrink-0">{quote ? (quote.shippingTotal ? `${symbol}${quote.shippingTotal.toFixed(2)}` : 'Free') : 'Calculating…'}</span></div>
+              <div className="flex justify-between gap-3"><span>Shipping <span className="text-xs text-[#786963]">({shippingEstimate})</span></span><span className="shrink-0">{quote ? (quote.shippingTotal ? `${symbol}${quote.shippingTotal.toFixed(2)}` : 'Free') : 'Calculating…'}</span></div>
               <div className="flex justify-between"><span>Tax</span><span>Included</span></div>
-              {quote?.freeShippingThreshold != null && quote.subtotal - quote.discountTotal < quote.freeShippingThreshold && <p className="text-xs text-[#786963]">Spend {symbol}{(quote.freeShippingThreshold - (quote.subtotal - quote.discountTotal)).toFixed(2)} more for free shipping.</p>}
+              {quote?.shippingTotal > 0 && quote?.freeShippingThreshold != null && quote.subtotal - quote.discountTotal < quote.freeShippingThreshold && <p className="text-xs text-[#786963]">Spend {symbol}{(quote.freeShippingThreshold - (quote.subtotal - quote.discountTotal)).toFixed(2)} more for free shipping.</p>}
               <div className="flex justify-between border-t border-[#d8c9c1] pt-4 text-base font-medium"><span>Total</span><span>{quote ? `${symbol}${quote.total.toFixed(2)}` : 'Calculating…'}</span></div>
             </div>
             {error && <p role="alert" className="text-sm text-red-700 mt-4">{error}</p>}

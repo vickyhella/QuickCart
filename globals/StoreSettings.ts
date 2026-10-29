@@ -1,32 +1,18 @@
 import { isAdminUser } from '../lib/admin-access'
-import type { GlobalConfig } from 'payload'
+import type { Field, GlobalConfig } from 'payload'
 import { shippingCountries } from '../lib/countries'
+import { shippingSettings } from '../lib/shipping-config'
+import contentSources from '../config/content-sources.json'
 
-export const StoreSettings: GlobalConfig = {
-  slug: 'store-settings',
-  label: 'Store settings',
-  admin: { group: 'Commerce' },
-  access: {
-    read: ({ req }) => isAdminUser(req.user),
-    update: ({ req }) => isAdminUser(req.user),
-  },
-  hooks: {
-    afterRead: [async ({ doc, req }) => {
-      if (Array.isArray(doc.availableCountries) && doc.availableCountries.length) return doc
-      const marketing = await req.payload.findGlobal({ slug: 'marketing-settings', depth: 0, select: { availableCountries: true }, overrideAccess: true }).catch(() => null)
-      return { ...doc, availableCountries: marketing?.availableCountries?.length ? marketing.availableCountries : doc.availableCountries || [] }
-    }],
-    afterChange: [async ({ doc, req }) => {
-      if (Array.isArray(doc.availableCountries)) {
-        await req.payload.updateGlobal({ slug: 'marketing-settings', data: { availableCountries: doc.availableCountries }, overrideAccess: true })
-      }
-      return doc
-    }],
-  },
-  fields: [
+// Retain legacy fields so archived database values need no destructive migration.
+const legacyFields: Field[] = [
     { name: 'currency', type: 'select', required: true, defaultValue: 'USD', options: [{ label: 'USD ($)', value: 'USD' }] },
     { name: 'freeShippingThreshold', label: 'Free shipping over a specific order value', type: 'number', min: 0, defaultValue: 50, admin: { description: 'Leave blank to disable this order value condition.' } },
     { name: 'minimumOrderValue', label: 'No shipping below a specific order value', type: 'number', min: 0, admin: { description: 'Orders below this value cannot be checked out. Leave blank to disable this condition.' } },
+    { name: 'handlingMinimumBusinessDays', label: 'Preparation minimum (business days)', type: 'number', min: 0, defaultValue: 5 },
+    { name: 'handlingMaximumBusinessDays', label: 'Preparation maximum (business days)', type: 'number', min: 0, defaultValue: 10 },
+    { name: 'transitMinimumBusinessDays', label: 'Transit minimum (business days)', type: 'number', min: 0, defaultValue: 7 },
+    { name: 'transitMaximumBusinessDays', label: 'Transit maximum (business days)', type: 'number', min: 0, defaultValue: 15 },
     {
       name: 'shippingCostType',
       label: 'Shipping cost for orders under the free shipping threshold',
@@ -90,5 +76,20 @@ export const StoreSettings: GlobalConfig = {
       options: shippingCountries.map(([value, label]) => ({ value, label: `${label} (${value})` })),
       admin: { description: 'Countries available at checkout. This also controls the country scope shown in product feeds.' },
     },
+
+]
+
+export const StoreSettings: GlobalConfig = {
+  slug: 'store-settings',
+  label: 'Store settings',
+  admin: { group: 'Commerce', description: contentSources.shipping === 'repository' ? 'Repository-managed shipping configuration; edit config/shipping.json and redeploy.' : 'Shipping configuration is managed in this Admin global.' },
+  access: {
+    read: ({ req }) => isAdminUser(req.user),
+    update: ({ req }) => contentSources.shipping === 'admin' && isAdminUser(req.user),
+  },
+  hooks: { afterRead: [({ doc }) => contentSources.shipping === 'repository' ? ({ ...doc, ...shippingSettings }) : doc] },
+  fields: [
+    { name: 'repositorySettings', type: 'ui', admin: { components: { Field: '/components/RepositorySettings#RepositoryShippingNotice' } } },
+    ...legacyFields.map((field) => ({ ...field, admin: { ...field.admin, hidden: contentSources.shipping === 'repository', readOnly: contentSources.shipping === 'repository' } } as Field)),
   ],
 }

@@ -5,6 +5,7 @@ import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
 import * as pricing from '../lib/product-pricing.js'
+import * as shippingConfig from '../lib/shipping-config'
 import * as validation from '../lib/product-validation.js'
 import * as shipping from '../lib/shipping-tiers.js'
 import * as mergeVariants from '../lib/merge-product-variants.js'
@@ -26,6 +27,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/product-pricing': pricing,
     '@/lib/product-validation': validation,
     '@/lib/shipping-tiers': shipping,
+    '@/lib/shipping-config': shippingConfig,
     '@/lib/merge-product-variants': mergeVariants,
     '@/lib/product-variant-attributes': variantAttributes,
     '@/lib/product-color': productColor,
@@ -64,7 +66,7 @@ test('real quote, saved order and PayPal amounts agree with legacy selling price
       let payment: any
       const payload = {
         findByID: async () => product,
-        findGlobal: async ({ slug }: any) => slug === 'marketing-settings' ? { availableCountries: ['US'] } : { currency: 'USD', shippingCostType: 'flat', flatShippingRate: 5, freeShippingThreshold: 50 },
+        findGlobal: async () => { throw new Error('Checkout must not read database settings') },
         find: async () => ({ docs: [{ kind: 'percentage', value: 10 }] }),
         create: async ({ data }: any) => { order = data; return { id: 10 } },
         update: async () => ({}),
@@ -82,7 +84,7 @@ test('real quote, saved order and PayPal amounts agree with legacy selling price
       const actualPrice = variantPrice ?? product.price
       const subtotal = actualPrice * 2
       const discount = promoCode ? subtotal * 0.1 : 0
-      const shippingCost = subtotal - discount >= 50 ? 0 : 5
+      const shippingCost = subtotal - discount >= 50 ? 0 : 12
       assert.equal(quoted.subtotal, subtotal)
       assert.equal(quoted.shippingTotal, shippingCost)
       assert.equal(quoted.total, subtotal - discount + shippingCost)

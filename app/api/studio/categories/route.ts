@@ -3,6 +3,7 @@ import config from '@payload-config'
 import { getPayload } from 'payload'
 import { defaultProductDimensionOptions, variantEditorOptions } from '@/lib/product-dimensions'
 import { getProductColor } from '@/lib/product-color'
+import contentSources from '@/config/content-sources.json'
 
 type DimensionValue = string | number
 type Option = { value: DimensionValue; label: string; image?: any; products?: { id: string | number; title: string; status: string }[] }
@@ -134,6 +135,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json() as Record<string, unknown>
     const action = String(body.action || '')
+    if (action === 'set-image' && contentSources.categoryImages === 'repository') return responseError('Category images are maintained in config/category-images.json. Edit the repository file and redeploy.', 409)
     const label = typeof body.label === 'string' ? body.label.trim() : ''
     const globalData = await payload.findGlobal({ slug: 'product-dimensions', overrideAccess: false, user }).catch(() => null) as Record<string, any> | null
     const customDimensions = normalizeCustomDimensions(globalData?.dimensions)

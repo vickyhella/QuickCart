@@ -45,7 +45,7 @@ export const adminDashboardSections = [
   {
     title: 'Website',
     links: [
-      { label: 'Pages', href: '/admin/collections/pages', description: 'Edit storefront pages and policies.' },
+      { label: 'Pages', href: '/admin/collections/pages', description: 'Edit storefront pages; view repository-managed policy links and Markdown locations.' },
     ],
   },
   {
@@ -53,7 +53,7 @@ export const adminDashboardSections = [
     links: [
       { label: 'Orders', href: '/admin/collections/orders', description: 'Review customer payments and fulfillment.' },
       { label: 'Discounts', href: '/admin/collections/discounts', description: 'Create and manage checkout discount codes.' },
-      { label: 'Store settings', href: '/admin/globals/store-settings', description: 'Configure currency, shipping, tax behavior, and checkout countries.' },
+      { label: 'Store settings', href: '/admin/globals/store-settings', description: 'Preview repository-managed shipping rates, countries and delivery times; view the configuration file location.' },
     ],
   },
 ] as const

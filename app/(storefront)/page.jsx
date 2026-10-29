@@ -10,7 +10,6 @@ import { useAppContext } from '@/context/AppContext'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { isStorefrontNew } from '@/lib/product-newness'
 import { getProductColor } from '@/lib/product-color'
-import { useEffect, useState } from 'react'
 
 const values = [
   ['Handmade', 'Designed and finished by hand.'],
@@ -20,8 +19,7 @@ const values = [
 ]
 
 export default function Home() {
-  const { products, productsStatus, fetchProductData, currency } = useAppContext()
-  const [homepageSettings, setHomepageSettings] = useState(null)
+  const { products, productsStatus, fetchProductData, currency, shippingSettings, homepageSettings } = useAppContext()
   const newProducts = products.filter(isStorefrontNew)
   const visibleProducts = newProducts.length ? newProducts : products
   const heroProduct = products[0]
@@ -30,17 +28,9 @@ export default function Home() {
     if (color) counts.set(color, (counts.get(color) || 0) + 1)
     return counts
   }, new Map()), ([color, count]) => ({ color, count })).sort((a, b) => b.count - a.count || a.color.localeCompare(b.color)).slice(0, 6)
-  useEffect(() => {
-    let active = true
-    fetch('/api/storefront/homepage', { cache: 'no-store' })
-      .then((response) => response.ok ? response.json() : null)
-      .then((settings) => { if (active) setHomepageSettings(settings) })
-      .catch(() => { if (active) setHomepageSettings(null) })
-    return () => { active = false }
-  }, [])
-  const heroImage = homepageSettings?.imageUrl || heroProduct?.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'
-  const heroHref = homepageSettings?.productHref || (heroProduct ? `/product/${heroProduct.slug || heroProduct._id}` : '/all-products')
-  const heroAlt = homepageSettings?.imageAlt || heroProduct?.imageAlt?.[0] || heroProduct?.name || 'Ginny Nana handmade press-on nails worn on a hand'
+  const hero = homepageSettings.hero
+  const heroImage = hero.image
+  const heroAlt = hero.alt
 
   return (
     <main className="bg-[#fbf8f5] text-[#291b2d]">
@@ -49,18 +39,18 @@ export default function Home() {
       <section className="bg-[#fbf8f5] px-0 pt-0">
         <div className="storefront-container storefront-card grid bg-[#eee5f2] lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[640px]">
           <div className="order-2 flex flex-col justify-center bg-[#eee5f2] px-6 py-9 sm:px-10 sm:py-12 lg:order-1 lg:px-16 lg:py-12">
-            <p className="text-xs font-semibold tracking-[0.16em] text-[#704576]">Ginny Nana · Handmade press-ons</p>
+            <p className="text-xs font-semibold tracking-[0.16em] text-[#704576]">{hero.eyebrow}</p>
             <h1 className="mt-5 max-w-[620px] font-serif text-[3.35rem] leading-[.93] tracking-[-.055em] sm:text-7xl lg:text-[4.8rem] xl:text-[5rem]">
-              A little art.<br />A lot of you.
+              {hero.title.split('\n').map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
             </h1>
             <p className="mt-6 max-w-md text-[15px] leading-7 text-[#393720] sm:text-base">
-              Wearable nail designs, made by hand and ready when you are. Find a set that feels like your kind of statement.
+              {hero.description}
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Link href="/all-products" className="ui-button ui-button--primary">
-                Shop the collection
+              <Link href={hero.buttonHref} className="ui-button ui-button--primary">
+                {hero.buttonLabel}
               </Link>
-              <span className="text-xs font-medium text-[#615364]">Free shipping over $50</span>
+              <span className="text-xs font-medium text-[#615364]">Free shipping on ${shippingSettings.freeShippingThreshold}+ after discounts</span>
             </div>
             <div className="mt-10 hidden items-center gap-3 text-xs font-semibold text-[#704576] sm:flex">
               <span className="h-px w-10 bg-[#704576]" />
@@ -70,7 +60,7 @@ export default function Home() {
 
           <div className="relative order-1 aspect-square overflow-hidden bg-[#eee5f2] sm:aspect-[4/3] lg:order-2 lg:aspect-auto lg:min-h-[600px] xl:min-h-[640px]">
             {heroImage ? (
-              <Link href={heroHref} aria-label={`View ${heroAlt}`} className="absolute inset-0 block">
+              <div className="absolute inset-0 block">
               <SafeImage
                 unoptimized
                 src={heroImage}
@@ -80,11 +70,11 @@ export default function Home() {
                 className="object-cover object-[center_24%] lg:object-[center_28%]"
                 priority
               />
-              </Link>
+              </div>
             ) : (
               <div className="absolute inset-0 bg-[#eee5f2]" />
             )}
-            <span className="absolute bottom-4 right-4 bg-[#fbf8f5] px-3 py-2 text-[10px] font-semibold tracking-[.08em] text-[#291b2d] sm:bottom-6 sm:right-6 sm:px-4 sm:py-3 sm:text-xs">YOUR NEXT FAVORITE SET</span>
+            <span className="absolute bottom-4 right-4 bg-[#fbf8f5] px-3 py-2 text-[10px] font-semibold tracking-[.08em] text-[#291b2d] sm:bottom-6 sm:right-6 sm:px-4 sm:py-3 sm:text-xs">{hero.badge}</span>
           </div>
         </div>
       </section>
@@ -94,7 +84,7 @@ export default function Home() {
           <span>HANDMADE WITH CARE</span>
           <span>REUSABLE BY DESIGN</span>
           <span>READY IN MINUTES</span>
-          <span>FREE SHIPPING OVER $50</span>
+          <span>FREE SHIPPING ON ${shippingSettings.freeShippingThreshold}+ AFTER DISCOUNTS</span>
         </div>
       </section>
 
@@ -189,19 +179,18 @@ export default function Home() {
           </div>
         </div>
       </section>
-      {homepageSettings?.mysteryBox && <section className="bg-[#fbf8f5] py-14 md:py-16">
+      {homepageSettings.mysteryBox?.enabled && <section className="bg-[#fbf8f5] py-14 md:py-16">
         <div className="storefront-container">
-          <Link href={homepageSettings.mysteryBox.href} aria-label={`Shop ${homepageSettings.mysteryBox.title}`} className="storefront-card mystery-box-banner group relative isolate grid min-h-[340px] bg-[#291b2d] sm:min-h-[420px] lg:grid-cols-2">
-            {homepageSettings.mysteryBox.imageUrl && <span className="relative col-start-1 row-start-1 block h-[240px] overflow-hidden sm:h-[300px] lg:col-start-2 lg:row-start-1 lg:h-full lg:min-h-[420px]">
-              <SafeImage unoptimized src={homepageSettings.mysteryBox.imageUrl} alt={homepageSettings.mysteryBox.imageAlt} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
+          <div className="storefront-card mystery-box-banner relative isolate grid min-h-[340px] bg-[#291b2d] sm:min-h-[420px] lg:grid-cols-2">
+            {homepageSettings.mysteryBox.image && <span className="relative col-start-1 row-start-1 block h-[240px] overflow-hidden sm:h-[300px] lg:col-start-2 lg:row-start-1 lg:h-full lg:min-h-[420px]">
+              <SafeImage unoptimized src={homepageSettings.mysteryBox.image} alt={homepageSettings.mysteryBox.alt} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover" />
             </span>}
             <span className="relative flex max-w-xl flex-col justify-center p-7 text-[#fbf8f5] sm:p-10 lg:col-start-1 lg:row-start-1 lg:p-14">
               <span className="text-xs font-semibold uppercase tracking-[.16em] text-[#e5c8df]">{homepageSettings.mysteryBox.eyebrow}</span>
               <span className="mt-4 font-serif text-4xl leading-tight tracking-[-.04em] sm:text-6xl">{homepageSettings.mysteryBox.title}</span>
               <span className="mt-4 max-w-md text-sm leading-6 text-white/80 sm:text-base">{homepageSettings.mysteryBox.description}</span>
-              <span className="ui-button ui-button--primary mt-7 w-fit">Discover the box <span aria-hidden="true">↗</span></span>
             </span>
-          </Link>
+          </div>
         </div>
       </section>}
       <NewsletterSignup />

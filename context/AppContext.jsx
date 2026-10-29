@@ -4,6 +4,10 @@ import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { getPriceDetails } from '@/lib/product-pricing'
 import { toStorefrontProduct } from '@/lib/storefront-product'
+import repositoryShippingSettings from '@/config/shipping.json'
+import { shippingCountries } from '@/lib/countries'
+import repositoryHomepageSettings from '@/config/homepage.json'
+import repositorySiteSettings from '@/config/site.json'
 
 export const AppContext = createContext();
 
@@ -17,6 +21,13 @@ export const AppContextProvider = (props) => {
     const router = useRouter()
 
     const [products, setProducts] = useState([])
+    const shippingSettings = props.initialShippingSettings || repositoryShippingSettings
+    const homepageSettings = props.initialHomepageSettings || repositoryHomepageSettings
+    const siteSettings = props.initialSiteSettings || repositorySiteSettings
+    const checkoutCountries = shippingCountries.filter(([code]) => shippingSettings.availableCountries.includes(code))
+    const handling = shippingSettings.handlingBusinessDays
+    const transit = shippingSettings.transitBusinessDays
+    const shippingEstimate = `estimated ${handling.minimum + transit.minimum}–${handling.maximum + transit.maximum} business days including preparation`
     const [storefrontNavigation, setStorefrontNavigation] = useState({ lengths: [], shapes: [], pages: [] })
     const [storefrontNavigationStatus, setStorefrontNavigationStatus] = useState('loading')
     const [productsStatus, setProductsStatus] = useState('loading')
@@ -148,7 +159,7 @@ export const AppContextProvider = (props) => {
     }, [])
 
     const value = {
-        currency, router,
+        currency, router, shippingSettings, homepageSettings, siteSettings, checkoutCountries, shippingEstimate,
         products, productsStatus, fetchProductData, storefrontNavigation, storefrontNavigationStatus,
         cartItems, setCartItems,
         addToCart, updateCartQuantity,

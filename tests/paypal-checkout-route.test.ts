@@ -4,6 +4,7 @@ import { randomBytes } from 'node:crypto'
 import { runInNewContext } from 'node:vm'
 import { test } from 'node:test'
 import ts from 'typescript'
+import * as shippingConfig from '../lib/shipping-config'
 
 async function checkout({ card = true, enabled = true, approval = false } = {}) {
   const created: any[] = []
@@ -31,6 +32,7 @@ async function checkout({ card = true, enabled = true, approval = false } = {}) 
     },
     '@/lib/countries': { shippingCountries: [['US', 'United States']] },
     '@/lib/shipping-tiers': { calculateShippingCharge: () => ({ shippingTotal: 5 }) },
+    '@/lib/shipping-config': shippingConfig,
     '@/lib/product-pricing': { getPriceDetails: () => ({ currentPrice: 20 }) },
   }
   const compiled = ts.transpileModule(readFileSync(new URL('../app/api/checkout/route.js', import.meta.url), 'utf8'), {

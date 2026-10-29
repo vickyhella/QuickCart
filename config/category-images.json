@@ -1,0 +1,15 @@
+{
+  "hiddenShapes": ["almond"],
+  "lengths": {
+    "x-short": { "image": "/site/categories/x-short-square.webp", "alt": "Extra short square press-on nails" },
+    "short": { "image": "/site/categories/short-square.webp", "alt": "Short square press-on nails" },
+    "medium": { "image": "/site/categories/medium-square.webp", "alt": "Medium square press-on nails" },
+    "long": { "image": "/site/categories/long-oval.webp", "alt": "Long oval press-on nails" },
+    "x-long": { "image": "/site/categories/x-long-oval.webp", "alt": "Extra long oval press-on nails" }
+  },
+  "shapes": {
+    "square": { "image": "/site/categories/medium-square.webp", "alt": "Square press-on nail shape" },
+    "oval": { "image": "/site/categories/short-oval.webp", "alt": "Oval press-on nail shape" },
+    "round": { "image": "/site/categories/x-short-round.webp", "alt": "Round press-on nail shape" }
+  }
+}

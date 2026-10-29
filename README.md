@@ -62,6 +62,18 @@
 
 Sandbox 已完成一笔端到端付款测试，订单显示 Paid；Production Live 环境变量已配置并完成 Netlify 部署，`/api/checkout/paypal-config` 返回 `environment: production`，银行卡字段保持关闭。Live Webhook 尚未用真实付款验证；后续待核对 Live `PAYMENT.CAPTURE.COMPLETED` 投递和订单状态。订单付款、折扣使用次数与库存更新仍存在非原子事务风险。配置和已知风险见[PayPal 专项文档](./docs/paypal-advanced-checkout.md)，待办见[PRD](./docs/prd.md#当前待办与开放讨论)。
 
+## 政策与运费（仓库维护）
+
+六个核心页面在 `content/pages/*.md` 编辑，前台沿用原网址；标题、SEO 简介与固定页脚链接在 `lib/repository-pages.ts`。当前配送说明从 `config/shipping.json` 生成，结账共用同份配置。折后满 USD 50 免邮，否则 0.0001–0.2010 kg 收 USD 9、0.2011–0.6010 kg 收 USD 12、≥0.6011 kg 免费；备货 5–10、运输 7–15 个工作日，合计预计 12–25 个工作日。
+
+Admin → Pages 提供页面预览链接和 Markdown 路径；Store settings 提供运费预览与当前维护位置。`config/content-sources.json` 可逐组切换 `repository` / `admin`，切换前要分别应用数据库 migration、检查并按需补建 Pages 内容，再核对后台数据；migration 不会同步 Pages 正文，只有部署后来源切换才会生效。具体命令和覆盖说明见[政策与运费维护](./docs/store-policies.md)。GMC 配送规则仍需手动同步；仓库来源不依赖数据库，Admin 来源需要数据库可用。
+
+## 仓库维护的品牌与首页配置
+
+品牌名称、客服邮箱、默认 SEO 在 `config/site.json`；首页主视觉、文案和 Mystery Box 开关在 `config/homepage.json`，图片放 `public/site/`；Length / Shape 固定入口图片在 `config/category-images.json`。Admin → Store settings 展示预览和维护位置；Marketing Studio 与 Categories 会按来源显示维护说明。首页图片不跳转商品。切换来源和 Admin 编辑步骤见[政策与运费维护](./docs/store-policies.md#配置文件使用与来源切换)。
+
+`config/content-sources.json` 当前各项均为 `repository`。各组来源切换已连接到对应 Admin 数据，但切换前仍须应用 `20261029_120000_add_site_identity_settings` migration 并核对旧数据。具体步骤见[配置文件使用与来源切换](./docs/store-policies.md#配置文件使用与来源切换)。
+
 ## 商品变体
 
 线上规则暂时保持不变：普通商品使用已选定的 Length + Shape 组合及尺码；Mystery Box 仅使用尺码。通用商品仅尺码变体暂缓开发。变体按 `Length + Shape + Size` 组合匹配；编辑时组合键不变会保留原 Variant ID。若以后改变组合键（例如把普通商品改成仅尺码），旧变体会停用，新组合可能获得新 ID。历史订单保留原 Variant ID 和规格快照；实施这类改动前需评估购物车及外部变体链接，并明确旧变体 ID 的映射和库存处理。详见 [Product Studio PRD](./docs/prd.md)。
@@ -83,9 +95,9 @@ Storefront 使用共享 CSS 变量管理颜色、内容最大宽度、页面留�
 
 导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。公开导航数据在 `app/api/storefront/navigation/route.ts` 缓存 5 分钟，窗口聚焦刷新也有 5 分钟间隔。
 
-数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与政策页面同样缓存 5 分钟。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`，避免另一层 CDN 缓存遮住刚保存的修改。后台图片选择器和分类 / 商品列表只读取所需字段，Spreadsheet 翻页不再重读媒体列表；Product Studio / Products 的 `Check product images` 按钮按需巡检图片。批量模板刷新在同一请求内复用刚保存的配置，商品编号查询只读 SKU，供应商统计只在关联发生变化时重算。本次无需新增环境变量或数据库 migration，提交部署后生效；结账价格与库存仍实时校验。
+数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与普通 CMS 页面同样缓存 5 分钟；仓库来源的政策页静态生成。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`。站点身份和配送工作日新增字段需部署前应用 migration `20261029_120000_add_site_identity_settings`，步骤见[数据库迁移说明](./docs/database-migrations.md)。
 
-`/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；预览图在后台 Product Studio → Categories 设置。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏，切回 storefront 时会刷新导航。新页面需将 Status 设为 Published 才会公开显示。Pages 新增展示位置字段，部署前需按[数据库迁移说明](./docs/database-migrations.md)应用 `20261023_190000_add_page_placement`。本地缺少默认内容时可运行 `npm run seed:pages`；该脚本只补建不存在的 Pages，不覆盖已编辑内容。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出；Google 各展示位置对格式的保留情况可能不同。Product Studio 批量删除会对关联记录提示二次确认。
+`/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；分类预览图按来源从仓库或 Product Dimensions Admin 读取。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏。核心政策、About Us 和 Contact Us 默认仓库维护；`npm run seed:pages` 预览 Admin 页面初始化，`--apply` 补建缺失页，`--overwrite` 更新现有正文。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出。
 
 
 导航栏人像图标进入 `/account`，支持邮箱密码登录、退出及查看本人邮箱下的订单。顾客由 `collections/Customers.ts` 管理，`Users` 仍为管理员账户。`components/CustomerAccount.jsx` 是顾客界面，`app/api/customer/` 负责独立的 HTTP-only Cookie 和订单查询；`lib/admin-access.ts` 保证顾客没有后台管理权限。

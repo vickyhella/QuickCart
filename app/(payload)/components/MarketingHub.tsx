@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import type { CSSProperties } from 'react'
+import contentSources from '@/config/content-sources.json'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { DEFAULT_PRODUCT_SEO_DESCRIPTION, DEFAULT_PRODUCT_SEO_TITLE, resolveProductSeoTemplates } from '../../../lib/product-seo-templates'
@@ -12,7 +13,7 @@ import { AdminSearchableSelect } from './AdminSearchableSelect'
 
 type Summary = { feedItems?: number; publishedProducts?: number; skippedPublishedProducts?: Array<{ title: string; reason: string }> }
 type ReprocessableImage = { id: string; filename: string }
-type MarketingSection = 'homepage' | 'feeds' | 'seo' | 'compression' | 'metadata'
+type MarketingSection = 'homepage' | 'feeds' | 'seo' | 'compression' | 'metadata' | 'site'
 
 export function MarketingHub({ section }: { section: MarketingSection }) {
   const [gmc, setGmc] = useState<Summary | null>(null)
@@ -99,17 +100,23 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
   }, [section])
 
   const saveMarketingSettings = async (values: Record<string, unknown>) => {
+    if (section === 'homepage' && contentSources.homepage === 'repository') {
+      setSaveMessage('Homepage presentation is maintained in config/homepage.json. Edit the repository file and redeploy.')
+      return
+    }
     setSaving(true)
     setSaveMessage('')
     try {
       const sectionFields: Record<MarketingSection, string[]> = {
-        homepage: ['newArrivalDays', 'homepageHeroImage', 'homepageHeroImageAlt', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxImageAlt', 'homepageMysteryBoxProduct', 'homepageMysteryBoxEyebrow', 'homepageMysteryBoxTitle', 'homepageMysteryBoxDescription'],
+        homepage: ['newArrivalDays', 'homepageHeroImage', 'homepageHeroImageAlt', 'homepageHeroEyebrow', 'homepageHeroTitle', 'homepageHeroDescription', 'homepageHeroButtonLabel', 'homepageHeroButtonHref', 'homepageHeroBadge', 'homepageMysteryBoxImage', 'homepageMysteryBoxImageAlt', 'homepageMysteryBoxEnabled', 'homepageMysteryBoxEyebrow', 'homepageMysteryBoxTitle', 'homepageMysteryBoxDescription'],
         feeds: [],
         seo: ['studioDescriptionTemplate', 'productTitleTemplate', 'productDescriptionTemplate'],
         compression: ['webpQuality'],
         metadata: ['imageFilenameTemplate', 'imageTitleTemplate', 'imageAltTemplate', 'imageCaptionTemplate'],
+        site: ['siteBrandName', 'siteCustomerEmail', 'siteSocialLinks', 'siteDefaultSeoTitle', 'siteDefaultSeoDescription'],
       }
       const settingsToSave = Object.fromEntries(sectionFields[section].map((key) => [key, values[key]]))
+      if (section === 'site') settingsToSave.siteSocialLinks = String(values.siteSocialLinks || '').split('\n').map((url) => url.trim()).filter(Boolean).map((url) => ({ url }))
       if (section === 'homepage') {
         const arrivalDaysInput = settingsToSave.newArrivalDays ?? 30
         const arrivalDays = Number(arrivalDaysInput)
@@ -118,7 +125,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
         }
         settingsToSave.newArrivalDays = arrivalDays
       }
-      for (const key of ['homepageHeroImage', 'homepageHeroProduct', 'homepageMysteryBoxImage', 'homepageMysteryBoxProduct']) {
+      for (const key of ['homepageHeroImage', 'homepageMysteryBoxImage']) {
         const relation = settingsToSave[key]
         const relationID = relation && typeof relation === 'object' && 'id' in relation ? relation.id : relation
         settingsToSave[key] = typeof relationID === 'string' && /^\d+$/.test(relationID) ? Number(relationID) : relationID
@@ -195,11 +202,16 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
       </section>)}
     </div>
     </>}
-    {(section === 'homepage' || section === 'seo' || section === 'compression' || section === 'metadata') && (settingsLoading ? <p role="status">Loading saved Marketing settings…</p> : <>
+    {(section === 'homepage' || section === 'seo' || section === 'compression' || section === 'metadata' || section === 'site') && (settingsLoading ? <p role="status">Loading saved Marketing settings…</p> : <>
         {section === 'homepage' && <>
+        {contentSources.homepage === 'repository' && <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>Repository managed homepage</h2>
+          <p>Preview the current homepage at <a href="/" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>the storefront</a>. Edit <code>config/homepage.json</code> and its image files under <code>public/site/</code>, then redeploy. Hero and Mystery Box images are not product links.</p>
+        </section>}
+        {contentSources.homepage !== 'repository' && <>
         <section style={panelStyle}>
           <h2 style={{ marginTop: 0 }}>Homepage hero</h2>
-          <p style={{ lineHeight: 1.6 }}>Choose an image from the Media library and an optional published product to open when shoppers click the hero. Upload an image in <Link href="/admin/collections/media" style={{ textDecoration: 'underline' }}>Media</Link> first.</p>
+          <p style={{ lineHeight: 1.6 }}>Edit the hero copy and choose an image from the Media library. The hero image is decorative and does not link to a product. Upload an image in <Link href="/admin/collections/media" style={{ textDecoration: 'underline' }}>Media</Link> first.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
             <label style={labelStyle}>Hero image
               <AdminSearchableSelect ariaLabel="Homepage hero image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id), imageUrl: String(media.url || '') }))} value={String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')} onChange={(value) => update('homepageHeroImage', value)} placeholder="Use the first product image" style={fieldStyle} />
@@ -207,9 +219,12 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
             <label style={labelStyle}>Image alt text
               <input style={fieldStyle} value={templates.homepageHeroImageAlt || ''} onChange={(event) => update('homepageHeroImageAlt', event.target.value)} placeholder="Describe the image for screen readers" />
             </label>
-            <label style={labelStyle}>Click-through product
-              <AdminSearchableSelect ariaLabel="Homepage click-through product" options={seo.products.filter((product) => product.status === 'published').map((product) => ({ value: String(product.id), label: String(product.title || product.name || product.id), imageUrl: productImageUrl(product) }))} value={String(templates.homepageHeroProduct?.id ?? templates.homepageHeroProduct ?? '')} onChange={(value) => update('homepageHeroProduct', value)} placeholder="Use the first product" searchPlaceholder="Search product name…" emptyMessage="No products match that name." style={fieldStyle} />
-            </label>
+            <label style={labelStyle}>Eyebrow<input style={fieldStyle} value={templates.homepageHeroEyebrow ?? 'Ginny Nana · Handmade press-ons'} onChange={(event) => update('homepageHeroEyebrow', event.target.value)} /></label>
+            <label style={labelStyle}>Headline<input style={fieldStyle} value={templates.homepageHeroTitle ?? 'A little art.\nA lot of you.'} onChange={(event) => update('homepageHeroTitle', event.target.value)} /></label>
+            <label style={labelStyle}>Button label<input style={fieldStyle} value={templates.homepageHeroButtonLabel ?? 'Shop the collection'} onChange={(event) => update('homepageHeroButtonLabel', event.target.value)} /></label>
+            <label style={labelStyle}>Button destination<input style={fieldStyle} value={templates.homepageHeroButtonHref ?? '/all-products'} onChange={(event) => update('homepageHeroButtonHref', event.target.value)} /></label>
+            <label style={labelStyle}>Image badge<input style={fieldStyle} value={templates.homepageHeroBadge ?? 'YOUR NEXT FAVORITE SET'} onChange={(event) => update('homepageHeroBadge', event.target.value)} /></label>
+            <label style={{ ...labelStyle, gridColumn: '1 / -1' }}>Description<textarea rows={3} style={{ ...fieldStyle, resize: 'vertical' }} value={templates.homepageHeroDescription ?? 'Wearable nail designs, made by hand and ready when you are. Find a set that feels like your kind of statement.'} onChange={(event) => update('homepageHeroDescription', event.target.value)} /></label>
           </div>
           {(() => {
             const imageID = String(templates.homepageHeroImage?.id ?? templates.homepageHeroImage ?? '')
@@ -219,11 +234,9 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
         </section>
         <section style={panelStyle}>
           <h2 style={{ marginTop: 0 }}>Mystery Box feature</h2>
-          <p style={{ lineHeight: 1.6 }}>Choose a published Mystery Box product to show a clickable feature on the homepage. Its product image is used unless you select a separate banner image.</p>
+          <p style={{ lineHeight: 1.6 }}>Choose a banner image to show this feature. The image does not link to a product; clear the image to hide the feature.</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 360px), 1fr))', gap: 20, marginTop: 22 }}>
-            <label style={labelStyle}>Published Mystery Box product
-              <AdminSearchableSelect ariaLabel="Published Mystery Box product" options={seo.products.filter((product) => product.status === 'published' && product.category === 'mystery-box').map((product) => ({ value: String(product.id), label: String(product.title || product.name || product.id), imageUrl: productImageUrl(product) }))} value={String(templates.homepageMysteryBoxProduct?.id ?? templates.homepageMysteryBoxProduct ?? '')} onChange={(value) => update('homepageMysteryBoxProduct', value)} placeholder="Hide this homepage feature" searchPlaceholder="Search product name…" emptyMessage="No Mystery Box products match that name." style={fieldStyle} />
-            </label>
+            <label style={{ ...labelStyle, gridColumn: '1 / -1', display: 'flex', alignItems: 'center', gap: 10 }}><input type="checkbox" checked={Boolean(templates.homepageMysteryBoxEnabled)} onChange={(event) => update('homepageMysteryBoxEnabled', event.target.checked)} />Show this feature</label>
             <label style={labelStyle}>Optional banner image
               <AdminSearchableSelect ariaLabel="Optional banner image" options={seo.media.map((media) => ({ value: String(media.id), label: String(media.filename || media.altText || media.id), imageUrl: String(media.url || '') }))} value={String(templates.homepageMysteryBoxImage?.id ?? templates.homepageMysteryBoxImage ?? '')} onChange={(value) => update('homepageMysteryBoxImage', value)} placeholder="Use the product image" style={fieldStyle} />
             </label>
@@ -249,6 +262,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           </label>
           <p style={{ marginBottom: 0, fontSize: 'var(--brand-font-size-caption)', color: 'var(--brand-text-secondary)' }}>Use 0 to turn off automatic badges; the product’s manual New checkbox still works.</p>
         </section>
+        </>}
         </>}
         {section === 'seo' && <>
         <section style={panelStyle}>
@@ -319,8 +333,19 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           {!!reprocessFailures.length && <div role="alert" style={{ marginTop: 12, color: 'var(--brand-danger)', fontSize: 'var(--brand-font-size-caption)' }}><strong>{reprocessFailures.length} image(s) failed:</strong><ul>{reprocessFailures.map((failure) => <li key={failure.id}>{failure.filename}: {failure.error}</li>)}</ul></div>}
         </section>
         </>}
+        {section === 'site' && <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>Site identity and default SEO</h2>
+          <p style={{ lineHeight: 1.6 }}>These values are used by the storefront when <code>config/content-sources.json</code> sets <code>site</code> to <code>admin</code>.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(250px,1fr))', gap: 18 }}>
+            <label style={labelStyle}>Brand name<input style={fieldStyle} value={templates.siteBrandName || ''} onChange={(event) => update('siteBrandName', event.target.value)} /></label>
+            <label style={labelStyle}>Customer service email<input type="email" style={fieldStyle} value={templates.siteCustomerEmail || ''} onChange={(event) => update('siteCustomerEmail', event.target.value)} /></label>
+            <label style={labelStyle}>Default SEO title<input style={fieldStyle} value={templates.siteDefaultSeoTitle || ''} onChange={(event) => update('siteDefaultSeoTitle', event.target.value)} /></label>
+            <label style={labelStyle}>Social profile URLs (one per line)<textarea rows={4} style={{ ...fieldStyle, resize: 'vertical' }} value={Array.isArray(templates.siteSocialLinks) ? templates.siteSocialLinks.map((item: any) => item.url || '').join('\n') : templates.siteSocialLinks || ''} onChange={(event) => update('siteSocialLinks', event.target.value)} /></label>
+            <label style={{ ...labelStyle, gridColumn: '1 / -1' }}>Default SEO description<textarea rows={3} style={{ ...fieldStyle, resize: 'vertical' }} value={templates.siteDefaultSeoDescription || ''} onChange={(event) => update('siteDefaultSeoDescription', event.target.value)} /></label>
+          </div>
+        </section>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
-        <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} className="ui-button ui-button--primary">{saving ? 'Saving…' : section === 'homepage' ? 'Save homepage settings' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : 'Save compression settings'}</button>
+        <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} className="ui-button ui-button--primary">{saving ? 'Saving…' : section === 'homepage' ? 'Save homepage settings' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : section === 'site' ? 'Save site settings' : 'Save compression settings'}</button>
           {saveMessage && <span role="status">{saveMessage}</span>}
         </div>
         {section === 'seo' && <section style={{ marginTop: 22, padding: 20, border: '1px solid var(--theme-elevation-200)', borderRadius: 'var(--brand-radius-md)', overflowX: 'auto' }}>

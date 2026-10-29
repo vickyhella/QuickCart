@@ -4,6 +4,7 @@ import config from '@/payload.config'
 import { getCheckoutFailure } from '@/lib/checkout-error'
 import { calculateShippingCharge } from '@/lib/shipping-tiers'
 import { getPriceDetails } from '@/lib/product-pricing'
+import { getShippingSettings } from '@/lib/shipping-config'
 
 const roundMoney = (value) => Math.round((Number(value) + Number.EPSILON) * 100) / 100
 export async function POST(request) {
@@ -12,7 +13,7 @@ export async function POST(request) {
     if (!Array.isArray(items) || items.length === 0) return NextResponse.json({ error: '购物车为空。' }, { status: 400 })
     if (items.length > 40) return NextResponse.json({ error: '购物车商品种类过多。' }, { status: 400 })
     const payload = await getPayload({ config })
-    const settings = await payload.findGlobal({ slug: 'store-settings', overrideAccess: true })
+    const settings = await getShippingSettings(payload)
     let subtotal = 0
     let quantity = 0
     const lines = []

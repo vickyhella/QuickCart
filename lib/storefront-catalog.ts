@@ -51,7 +51,7 @@ export const getStorefrontMarketingSettings = unstable_cache(async () => {
       homepageHeroImage: true, homepageHeroProduct: true, homepageHeroImageAlt: true,
       homepageMysteryBoxImage: true, homepageMysteryBoxProduct: true, homepageMysteryBoxImageAlt: true,
       homepageMysteryBoxEyebrow: true, homepageMysteryBoxTitle: true, homepageMysteryBoxDescription: true,
-      productTitleTemplate: true, productDescriptionTemplate: true, availableCountries: true,
+      productTitleTemplate: true, productDescriptionTemplate: true,
     },
   }) as Promise<Record<string, any>>
 }, ['storefront-marketing-v1'], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_SETTINGS_TAG] })

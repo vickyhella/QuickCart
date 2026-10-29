@@ -12,9 +12,9 @@ Checkout 使用 PayPal Orders v2。初次集成应使用 Sandbox；本地、Prev
 
 ## 配送与税费
 
-在 **Admin → Store settings**（`/admin/globals/store-settings`）中先配置可选条件：订单金额达到指定值免运费（默认 USD 50），以及订单低于最低金额时不允许配送。然后选择配送费类型：Free shipping、Flat rate、Price、Weight、Number of items 或 Advanced cost table；页面只显示所选方式需要的字段。
+配送规则统一维护在仓库 `config/shipping.json`，**Admin → Store settings**（`/admin/globals/store-settings`）提供只读预览和维护位置。修改后需重新部署。折后商品金额达到 USD 50 免邮；不足时按总重量收取：0.0001–0.2010 kg 为 USD 9，0.2011–0.6010 kg 为 USD 12，≥0.6011 kg 免费。全部现有配送国家使用同表；备货 5–10 个工作日，运输 7–15 个工作日，预计合计 12–25 个工作日。
 
-重量范围使用 kg，订单总重量按商品每件重量乘购买数量计算。Advanced cost table 按选定的两个维度匹配费率行；低于最低金额或没有匹配费率时，Checkout 会阻止下单。商品价格含税，Checkout 不会再次加税。
+重量范围使用 kg，订单总重量按商品每件重量乘购买数量计算并向上取到四位小数；没有匹配费率时，Checkout 会阻止下单。商品价格含税，Checkout 不会再次加税。政策 Markdown、Admin 查看入口及 GMC 核对步骤见[政策与运费维护](./store-policies.md)。
 
 ## 商品规格与批量编辑
 
@@ -24,7 +24,7 @@ Products Payload 列表可多选文档并批量编辑共同字段；Product Stud
 
 ## Google Merchant Center Feed
 
-商品 Feed 地址为 `/api/merchant/feed.xml`。Production 环境需设置 `NEXT_PUBLIC_SITE_URL=https://ginnynana.com`，让商品链接和图片使用正式域名。没有主图的商品不会进入 Feed。Merchant Center 配送费需单独配置，并与 Payload 的配送规则保持一致；两边设置不会自动同步。商品支持选填 GTIN、MPN 和 Google 商品分类；手工商品没有真实标识时不要编造。
+商品 Feed 地址为 `/api/merchant/feed.xml`。Production 环境需设置 `NEXT_PUBLIC_SITE_URL=https://ginnynana.com`，让商品链接和图片使用正式域名。没有主图的商品不会进入 Feed。Merchant Center 配送费需单独配置，并与仓库 `config/shipping.json` 的规则保持一致；两边设置不会自动同步。商品支持选填 GTIN、MPN 和 Google 商品分类；手工商品没有真实标识时不要编造。
 
 ## 订单与折扣
 

@@ -30,7 +30,7 @@ function fixture() {
   const cacheScope = new AsyncLocalStorage<boolean>()
   const nextCache = {
     unstable_cache: (read: Function, key: string[], options: { tags: string[]; revalidate: number }) => async (...args: any[]) => {
-      assert.equal(options.revalidate, 300)
+      assert.equal(options.revalidate, 900)
       // Next deliberately bypasses inner unstable_cache readers in an existing cache scope.
       if (cacheScope.getStore()) return read(...args)
       const id = JSON.stringify([key, args])

@@ -50,8 +50,8 @@
 | `migrations/` | Payload 数据库迁移文件及注册表。只有数据库结构或需要迁移的数据变化时才新增。 |
 | `lib/` | 可复用业务逻辑：价格、Variant 校验、库存、配送、PayPal、媒体命名和清理等。复杂逻辑优先放在这里，并由 API / 页面调用。 |
 | `context/AppContext.jsx` | Storefront 购物车状态、商品加载状态及失败重试逻辑；导航聚焦刷新限制为每 5 分钟一次。 |
-| `app/api/storefront/navigation/route.ts` | Storefront 导航数据 API；只查分类所需商品字段，并将公开导航数据缓存 5 分钟，降低 Neon 数据库出站流量。 |
-| `lib/storefront-catalog.ts`、`lib/storefront-cache.ts` | 首页、商品列表、搜索、商品 SEO 与 Merchant / Pinterest Feed 共用公开目录缓存，服务端缓存 5 分钟，CMS 保存后失效；商品和图片只读取必要字段。 |
+| `app/api/storefront/navigation/route.ts` | Storefront 导航数据 API；只查分类所需商品字段，并将公开导航数据缓存 15 分钟，降低 Neon 数据库出站流量。 |
+| `lib/storefront-catalog.ts`、`lib/storefront-cache.ts` | 首页、商品列表、搜索、商品 SEO 与 Merchant / Pinterest Feed 共用公开目录缓存，服务端缓存 15 分钟，CMS 保存后失效；商品和图片只读取必要字段。 |
 | `scripts/` | 手动运行的数据导入或迁移脚本；运行前确认当前环境和目标数据库。 |
 | `tests/` | 业务逻辑和 API 行为测试；功能变更时补充对应的聚焦测试。 |
 | `assets/`、`public/` | 项目图标、品牌素材和公开静态文件。 |
@@ -93,9 +93,9 @@ Storefront 使用共享 CSS 变量管理颜色、内容最大宽度、页面留�
 
 前后台基础色板统一在 `app/theme-tokens.css`，`app/brand-theme.css` 分别映射 Admin 与 storefront 的用途变量；后台使用白色操作面板、莓紫按钮与清晰的禁用态。主要、次要和危险操作分别复用 `ui-button--primary`、`ui-button--secondary`、`ui-button--danger`，共用尺寸、圆角与交互状态；筛选控件和操作面板使用 `ui-filter`、`ui-panel`。改色入口、组件约定和对比度检查见[主题维护说明](./docs/visual-theme.md)，不需要新增环境变量或 migration。
 
-导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。公开导航数据在 `app/api/storefront/navigation/route.ts` 缓存 5 分钟，窗口聚焦刷新也有 5 分钟间隔。
+导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。公开导航数据在 `app/api/storefront/navigation/route.ts` 缓存 15 分钟，窗口聚焦刷新仍有 5 分钟间隔。
 
-数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与普通 CMS 页面同样缓存 5 分钟；仓库来源的政策页静态生成。商品工作台远程同步为用户手动触发，只从 Neon 读取工作台需要的字段，不进行后台轮询。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`。站点身份和配送工作日新增字段需部署前应用 migration `20261029_120000_add_site_identity_settings`，步骤见[数据库迁移说明](./docs/database-migrations.md)。
+数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与普通 CMS 页面同样缓存 15 分钟；仓库来源的政策页静态生成。商品工作台远程同步为用户手动触发，只从 Neon 读取工作台需要的字段，不进行后台轮询。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`。站点身份和配送工作日新增字段需部署前应用 migration `20261029_120000_add_site_identity_settings`，步骤见[数据库迁移说明](./docs/database-migrations.md)。
 
 `/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；分类预览图按来源从仓库或 Product Dimensions Admin 读取。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏。核心政策、About Us 和 Contact Us 默认仓库维护；`npm run seed:pages` 预览 Admin 页面初始化，`--apply` 补建缺失页，`--overwrite` 更新现有正文。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出。
 

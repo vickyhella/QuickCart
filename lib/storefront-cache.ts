@@ -1,5 +1,5 @@
 // Keep one server cache layer so CMS saves can expire every public reader together.
-export const STOREFRONT_CACHE_SECONDS = 300
+export const STOREFRONT_CACHE_SECONDS = 900
 export const STOREFRONT_PRODUCTS_TAG = 'storefront-products'
 export const STOREFRONT_SETTINGS_TAG = 'storefront-settings'
 export const STOREFRONT_NAVIGATION_TAG = 'storefront-navigation'

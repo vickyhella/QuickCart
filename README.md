@@ -42,7 +42,7 @@
 | `app/(payload)/components/` | Payload 后台自定义界面，包括 Marketing Studio（`MarketingHub.tsx`：按需加载配置、商品和媒体列表），以及 Product Studio、Categories、Spreadsheet、Suppliers 和媒体工具。 |
 | `app/(payload)/admin/[[...segments]]/` | Payload Admin 路由；`importMap.js` 把 Payload 配置中的组件路径连接到实际组件。 |
 | `app/api/` | Next.js 服务端 API：商品后台、媒体、Checkout / PayPal、Merchant / Pinterest Feed 和定时任务。改 API 时同时检查调用它的页面与测试。 |
-| `app/api/inventory-sync/products/route.ts` | 商品工作台专用分页快照和确认后状态更新接口；令牌配置及部署验收见[连接说明](./docs/inventory-sync.md)。 |
+| `app/api/inventory-sync/products/route.ts` | 商品工作台专用分页快照和确认后状态更新接口；快照查询只读同步所需字段。令牌配置及部署验收见[连接说明](./docs/inventory-sync.md)。 |
 | `collections/` | Payload 集合的数据结构、字段、权限和 Hook。商品、Variant、Supplier、Media、Order、Discounts 和带展示位置的 Pages schema 在这里。 |
 | `globals/` | Payload 单例配置数据，如配送设置、营销设置和商品规格维度。 |
 | `payload.config.ts` | 注册 Payload collections / globals、数据库、R2 文件存储、Admin 组件和类型输出位置。 |
@@ -95,7 +95,7 @@ Storefront 使用共享 CSS 变量管理颜色、内容最大宽度、页面留�
 
 导航配置加载时会保留 `How to Use` 入口，数据返回后再显示页面链接，避免刷新时入口闪烁；加载状态由 `context/AppContext.jsx` 提供，`components/Navbar.jsx` 呈现。公开导航数据在 `app/api/storefront/navigation/route.ts` 缓存 5 分钟，窗口聚焦刷新也有 5 分钟间隔。
 
-数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与普通 CMS 页面同样缓存 5 分钟；仓库来源的政策页静态生成。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`。站点身份和配送工作日新增字段需部署前应用 migration `20261029_120000_add_site_identity_settings`，步骤见[数据库迁移说明](./docs/database-migrations.md)。
+数据库流量优化与上线观察见[数据库流量维护说明](./docs/database-traffic.md)。公开目录按 100 件分批读取并在服务器共享，搜索不再按不同关键词重复查询 Neon；首页配置与普通 CMS 页面同样缓存 5 分钟；仓库来源的政策页静态生成。商品工作台远程同步为用户手动触发，只从 Neon 读取工作台需要的字段，不进行后台轮询。后台商品发布、下架、库存更新、页面 / 分类 / 首页设置保存及图片替换会清除相关缓存；浏览器 API 响应保留 `no-store`。站点身份和配送工作日新增字段需部署前应用 migration `20261029_120000_add_site_identity_settings`，步骤见[数据库迁移说明](./docs/database-migrations.md)。
 
 `/by-length` 和 `/by-shape` 先展示正方形分类图卡片，再进入对应商品；分类预览图按来源从仓库或 Product Dimensions Admin 读取。Pages 的 slug 默认由标题生成，手动指定时保留自定义值；展示位置可将已发布内容加入 How to Use 下拉菜单或页脚两栏。核心政策、About Us 和 Contact Us 默认仓库维护；`npm run seed:pages` 预览 Admin 页面初始化，`--apply` 补建缺失页，`--overwrite` 更新现有正文。Merchant Center feed 会把商品 Markdown 转为基础 HTML 格式输出。
 

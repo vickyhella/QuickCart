@@ -25,7 +25,15 @@ export async function GET(request: Request) {
   const payload = await getPayload({ config })
   const params = new URL(request.url).searchParams
   const page = Math.max(1, Number(params.get('page')) || 1)
-  const result = await payload.find({ collection: 'products', page, limit: 100, depth: 0, overrideAccess: true })
+  const result = await payload.find({
+    collection: 'products', page, limit: 100, depth: 0, overrideAccess: true,
+    select: {
+      sku: true, title: true, status: true, updatedAt: true,
+      // Products.afterRead uses these fields to preserve its published-product behavior.
+      publishedAt: true, createdAt: true, isNew: true,
+      variants: { sku: true, length: true, shape: true, size: true, enabled: true },
+    },
+  })
   return Response.json({
     docs: result.docs.map((product: any) => ({
       id: String(product.id), sku: String(product.sku || ''), title: String(product.title || ''),

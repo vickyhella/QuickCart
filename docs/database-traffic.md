@@ -14,6 +14,7 @@ Neon 的 Network transfer 是数据库传给应用的数据，不等于网站图
 - Product Studio / Products 的图片巡检由 `Check product images` 按钮触发，避免每次打开列表都全库扫描和检查图片文件。
 - 商品编号仅查询 SKU；商品供应商关联不变时不重复统计。修改商品标题 / 描述模板仍会刷新自动生成内容，但同一请求只读取一次配置，并把刚保存的模板传给后续商品更新。手写内容不受影响。
 - 公共图片权限仅查询图片引用，并在同一请求内复用结果；公开范围包含已发布商品、首页主图 / Mystery Box 和分类预览图，仍不开放无引用的草稿图或 Media Originals。
+- `app/api/inventory-sync/products/route.ts`：商品工作台快照只查询商品 / SKU 展示、状态和版本字段，不读取描述、SEO、供应商或媒体内容。工作台由用户手动刷新，快照仅保存在本机 SQLite；写入状态后才再次读取完整快照，不做后台轮询。
 
 ## 部署与确认
 
@@ -30,5 +31,7 @@ Neon 的 Network transfer 是数据库传给应用的数据，不等于网站图
 ## 后续排查入口
 
 开发环境使用 `DATABASE_URL_DEVELOPMENT`，Preview 使用 `DATABASE_URL_PREVIEW`，生产环境使用 `DATABASE_URL`。开发与 Preview 不应连接生产库；同一 Neon 项目内的不同分支仍属于同一个项目额度。没有开发数据库 URL 时，现有配置使用本地 SQLite。
+
+`getRuntimeEnvironment()` 在本地开发选择 development（未设置专用数据库 URL 时使用 SQLite），部署环境按 Preview / Production 分别读取后缀或无后缀的数据库 URL。仓库默认把首页、站点、配送和分类图片设置作为代码配置，不会为这些设置额外请求数据库。线上是否实际命中 Next 服务端缓存，仍须按上面的 Functions 日志步骤确认。
 
 已登录 Admin 的编辑 API、原生 Payload API、人工导入 / 清理及订单写入仍按各自权限直接访问数据库。它们不适合套公开缓存；如果部署后流量仍异常，应按 Netlify 请求路径、调用频率和缓存刷新次数定位，尤其关注直接请求 `/api/products`、`/api/media` 或频繁重建目录的来源。商品量大到整份目录不再适合内存筛选时，再改为查询索引与分页缓存。

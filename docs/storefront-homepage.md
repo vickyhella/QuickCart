@@ -1,42 +1,28 @@
-# 首页主视觉图片
+# 首页维护与验收
 
-Storefront 的颜色、边框和商品卡片样式变量在 `app/brand-theme.css`；首页与所有商品列表共用 `store-product-card` 样式。首页也会根据商品已有的 Color 字段显示可直接筛选的色系入口。
+首页在 `app/(storefront)/page.jsx`，当前展示配置来自 `config/homepage.json`。沿用现有字体、莓紫与奶白色，未修改支付、订单或数据库结构。
 
-## 在后台设置
+## 内容与图片
 
-1. 打开 `/admin/` → **Marketing Studio** → **Homepage**。
-2. 图片先上传到 **Media**，再回到 Homepage 标签，从 **Hero image** 中选择。
-3. 填写 **Image alt text** 作为无障碍替代文字。
-4. 在 **Click-through product** 选择一个已发布商品。顾客点击主图后会进入该商品页。
-5. 点击 **Save homepage settings**。
+- `hero`：主图、标题、简短说明与购买按钮。主图为展示素材，不跳转商品；手机端另有链接跳到新客指南。
+- `discovery.lengths`：长度入口的名称、说明及筛选值。图片沿用 `config/category-images.json`，Admin 图片来源时读取导航中的配置。移除了提及当前隐藏 Almond 的固定文案。
+- `craft`：实物细节照片与品牌说明。当前只有商品实物图，没有制作实拍或顾客评价，不应标成制作过程或顾客反馈。
+- 新客指南：链接到尺码、套装内容与贴戴教程；操作特写为生成的教学示意，与实物细节区分开。
+- FAQ：回答尺码、套装、复用和配送；配送时效与免邮门槛读取当前配送配置。
+- Mystery Box：保留原开关与展示，默认关闭。
 
-主图与跳转商品可以分开选择。没有指定跳转商品时，主图会指向首个商品页；没有设置主图时，首页会使用首个商品图片。
+## 手动精选
 
-## 在代码中指定备用图片
+在 `featured.productKeys` 按展示顺序填写 4–6 个已发布商品的 slug 或 ID。可从商品链接复制 slug；不要填写本地测试商品。标题和介绍由 `featured.title`、`featured.description` 维护。
 
-主视觉读取逻辑位于 `app/(storefront)/page.jsx` 的 `heroImage` 常量。当前优先级是后台设置图片、首个商品图片、最后的静态备用图片：
+只从当前公开目录匹配商品，自动去重，最多展示六款；无效或已下架的条目跳过。没有有效精选时显示普通目录与 Explore our nail sets 标题，不把自动结果标为手动精选。当前列表为空，正式选品待 11 号 Neon 数据恢复后确定。该配置在仓库维护，即使 Hero 切到 Admin 来源，精选与新增区块仍从仓库配置读取。
 
-```js
-const heroImage = homepageSettings?.imageUrl || heroProduct?.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'
-```
+## Newsletter
 
-若只想替换最后的静态备用图，把图片放进 `public/`，并修改表达式末尾的路径。例如 `public/images/home-hero.webp` 对应 `/images/home-hero.webp`。该备用图只会在后台未设图片且首个商品没有图片时显示。
+订阅区缩小后位于 Footer 上方，仍使用现有 API 保存邮箱、同意时间和来源，重复订阅不创建重复记录。没有接入营销群发服务，成功提示仅确认邮箱已保存，不承诺欢迎邮件、优惠码或自动新品通知。未改邮件发送逻辑。顾客可通过联系邮箱申请退出。
 
-若希望代码中的图片作为默认主图、但仍允许后台图片覆盖，可将表达式改为：
+## 验收
 
-```js
-const heroImage = homepageSettings?.imageUrl || '/images/home-hero.webp'
-```
+检查桌面与手机布局，特别是 375×667 手机首屏购物按钮、分类筛选、新客锚点、指南链接和 FAQ 展开。目录失败时仍显示重试入口。测试手动选品顺序、去重、无效条目和无配置回退。真实商品、订阅数据库写入和生产效果待 Neon 恢复后复查；本地测试商品不代表正式陈列。
 
-点击跳转的默认逻辑在同一文件的 `heroHref` 常量。后台选择的商品优先；没有选择时跳到首个商品页。要改代码默认目标，可修改 `heroHref` 中 `'/all-products'` 或首个商品的路由表达式。
-
-## Mystery Box 首页横幅
-
-1. 在 **Marketing Studio → Homepage → Mystery Box feature** 里选择一个已发布商品；不选择时首页隐藏该区域。
-2. 可选上传并选择独立横幅图片；未选时使用商品图片。
-3. 修改替代文字、眉题、标题和描述，再点 **Save homepage settings**。
-4. 横幅整体点击后打开所选商品页。
-
-首页 Newsletter 区显示在 Footer 上方。订阅邮箱、同意时间和来源保存于 Admin → Store → Newsletter subscribers；重复订阅不会创建重复记录。当前只收集同意名单，尚未接入营销群发服务。顾客可发邮件至 `ginnynana@hotmail.com` 申请退出。
-
-`Find your shape` 与 `Pick your length` 分别使用 `--gn-plum` 和 `--gn-highlight` 两个共享颜色令牌，悬停色也在 `app/theme-tokens.css` 集中维护。
+本次无新依赖、环境变量或 migration。修改仓库配置后需部署生效。

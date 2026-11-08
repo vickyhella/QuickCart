@@ -76,6 +76,10 @@ Admin → Pages 提供页面预览链接和 Markdown 路径；Store settings 提
 
 ## 仓库维护的品牌与首页配置
 
+首页新增带实物图的长度入口、新客指南、实物细节区和四项 FAQ，手机首屏压缩文案并提前展示购物按钮。维护入口为 `config/homepage.json`：`discovery.lengths` 设置分类，图片沿用 `config/category-images.json`；`craft` 设置品牌细节图文；`featured.productKeys` 按顺序填写 4–6 个已发布商品的 slug 或 ID，去重后最多展示 6 款。未配置有效精选时展示普通目录，不标为手动精选。正式选品待 Neon 恢复后补齐。无需环境变量或 migration。
+
+订阅区已缩小，仅保存订阅同意名单，不自动发送邮件；成功提示只确认保存。后续营销群发服务仍需另行接入。详细维护与验收说明见 [首页说明](./docs/storefront-homepage.md)。
+
 品牌名称、客服邮箱、默认 SEO 在 `config/site.json`；首页主视觉、文案和 Mystery Box 开关在 `config/homepage.json`，图片放 `public/site/`；Length / Shape 固定入口图片在 `config/category-images.json`。Admin → Store settings 展示预览和维护位置；Marketing Studio 与 Categories 会按来源显示维护说明。首页图片不跳转商品。切换来源和 Admin 编辑步骤见[政策与运费维护](./docs/store-policies.md#配置文件使用与来源切换)。
 
 `config/content-sources.json` 当前各项均为 `repository`。各组来源切换已连接到对应 Admin 数据，但切换前仍须应用 `20261029_120000_add_site_identity_settings` migration 并核对旧数据。具体步骤见[配置文件使用与来源切换](./docs/store-policies.md#配置文件使用与来源切换)。

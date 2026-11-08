@@ -2,202 +2,139 @@
 
 import Link from 'next/link'
 import SafeImage from '@/components/SafeImage'
-import NailMotif from '@/components/NailMotif'
+import ProductCard from '@/components/ProductCard'
 import NewsletterSignup from '@/components/NewsletterSignup'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { useAppContext } from '@/context/AppContext'
-import { getPriceDetails } from '@/lib/product-pricing'
-import { isStorefrontNew } from '@/lib/product-newness'
 import { getProductColor } from '@/lib/product-color'
+import { selectHomepageProducts } from '@/lib/homepage-products'
+import categoryImages from '@/config/category-images.json'
+import contentSources from '@/config/content-sources.json'
 
-const values = [
-  ['Handmade', 'Designed and finished by hand.'],
-  ['Reusable', 'Keep the set and wear it again.'],
-  ['Easy to apply', 'A polished manicure in about ten minutes.'],
-  ['Made to last', 'Up to four weeks with nail glue.'],
+const guides = [
+  { title: 'Find your size', description: 'Measure once, then compare with our size chart.', href: '/size-guide/' },
+  { title: 'See what’s in the set', description: 'Get to know your adhesive and prep accessories.', href: '/what-you-will-get/' },
+  { title: 'Learn how to apply', description: 'Follow our four-step photo guide, at your own pace.', href: '/how-to-apply/' },
 ]
 
 export default function Home() {
-  const { products, productsStatus, fetchProductData, currency, shippingSettings, homepageSettings } = useAppContext()
-  const newProducts = products.filter(isStorefrontNew)
-  const visibleProducts = newProducts.length ? newProducts : products
-  const heroProduct = products[0]
+  const { products, productsStatus, fetchProductData, shippingSettings, shippingEstimate, homepageSettings, storefrontNavigation, siteSettings } = useAppContext()
+  const selection = selectHomepageProducts(products, homepageSettings.featured.productKeys)
   const colorOptions = Array.from(products.reduce((counts, product) => {
     const color = getProductColor(product)
     if (color) counts.set(color, (counts.get(color) || 0) + 1)
     return counts
   }, new Map()), ([color, count]) => ({ color, count })).sort((a, b) => b.count - a.count || a.color.localeCompare(b.color)).slice(0, 6)
+  const lengths = homepageSettings.discovery.lengths.map((item) => {
+    const configured = storefrontNavigation.lengths.find((option) => option.value === item.value)
+    const image = contentSources.categoryImages === 'repository'
+      ? categoryImages.lengths[item.value]
+      : configured?.image && { image: configured.image.url, alt: configured.image.alt || item.label + ' press-on nails' }
+    return { ...item, image }
+  }).filter((item) => item.image?.image)
   const hero = homepageSettings.hero
-  const heroImage = hero.image
-  const heroAlt = hero.alt
+  const craft = homepageSettings.craft
+  const faqs = [
+    { question: 'How do I choose my size?', answer: <>Measure the widest part of each natural nail on both hands, then compare with our <Link href="/size-guide/">size chart and photo guide</Link>. You can also find the chart on every product page.</> },
+    { question: 'What comes with my set?', answer: <>Our set guide lists jelly adhesive pieces, nail glue, alcohol pads, remover and prep tools. See <Link href="/what-you-will-get/">the full contents and quantities</Link>, and check any design-specific information on the product page.</> },
+    { question: 'Can I wear my nails again?', answer: <>With careful removal and proper care, you can keep your press-ons to wear again. Follow your adhesive’s removal instructions and never force a nail off. Start with our <Link href="/how-to-apply/">application guide</Link>.</> },
+    { question: 'When will my order arrive?', answer: <>Delivery is {shippingEstimate}. Orders of {'$'}{shippingSettings.freeShippingThreshold}+ after discounts qualify for free shipping. See <Link href="/shipping-policy/">shipping destinations, rates and preparation times</Link> before ordering.</> },
+  ]
 
   return (
-    <main className="bg-[#fbf8f5] text-[#291b2d]">
+    <main className="min-h-screen bg-[var(--store-surface)] text-[var(--store-ink)]">
       <Navbar />
-
-      <section className="bg-[#fbf8f5] px-0 pt-0">
-        <div className="storefront-container storefront-card grid bg-[#eee5f2] lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[640px]">
-          <div className="order-2 flex flex-col justify-center bg-[#eee5f2] px-6 py-7 sm:px-10 sm:py-12 lg:order-1 lg:px-16 lg:py-12">
-            <p className="text-xs font-semibold tracking-[0.16em] text-[#704576]">{hero.eyebrow}</p>
-            <h1 className="mt-4 max-w-[620px] font-serif text-[3rem] leading-[.96] tracking-[-.055em] sm:mt-5 sm:text-7xl lg:text-[4.8rem] xl:text-[5rem]">
+      <section aria-label="Handmade press-on nails">
+        <div className="storefront-container storefront-card grid bg-[var(--store-lavender)] lg:min-h-[580px] lg:grid-cols-2 xl:min-h-[620px]">
+          <div className="order-2 flex flex-col justify-center px-6 py-5 sm:px-10 sm:py-10 lg:order-1 lg:px-14 lg:py-12">
+            <p className="text-xs font-semibold tracking-[.12em] text-[var(--store-accent)]">{hero.eyebrow}</p>
+            <h1 className="mt-3 max-w-[620px] font-serif text-[2.85rem] leading-[.98] tracking-[-.05em] sm:mt-5 sm:text-6xl lg:text-[4.6rem] xl:text-[5rem]">
               {hero.title.split('\n').map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
             </h1>
-            <p className="mt-6 max-w-md text-[15px] leading-7 text-[#393720] sm:text-base">
-              {hero.description}
-            </p>
-            <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-3">
-              <Link href={hero.buttonHref} className="ui-button ui-button--primary">
-                {hero.buttonLabel}
-              </Link>
-              <span className="text-xs font-medium text-[#615364]">Free shipping on ${shippingSettings.freeShippingThreshold}+ after discounts</span>
-            </div>
-            <div className="mt-10 hidden items-center gap-3 text-xs font-semibold text-[#704576] sm:flex">
-              <span className="h-px w-10 bg-[#704576]" />
-              Made to match your mood
-            </div>
+            <p className="mt-4 max-w-md text-[15px] leading-6 text-[var(--store-muted)] sm:mt-6 sm:text-base sm:leading-7">{hero.description}</p>
+            <div className="mt-5 flex flex-wrap items-center gap-4 sm:mt-7"><Link href={hero.buttonHref} className="ui-button ui-button--primary">{hero.buttonLabel}</Link></div>
+            <a href="#first-set" className="mt-4 inline-flex min-h-10 w-fit items-center text-sm font-medium text-[var(--store-accent)] underline underline-offset-4">New to press-ons? Start here</a>
           </div>
-
-          <div className="relative order-1 aspect-[3/2] overflow-hidden bg-[#eee5f2] sm:aspect-[4/3] lg:order-2 lg:aspect-auto lg:min-h-[600px] xl:min-h-[640px]">
-            {heroImage ? (
-              <div className="absolute inset-0 block">
-              <SafeImage
-                unoptimized
-                src={heroImage}
-                alt={heroAlt}
-                fill
-                sizes="(max-width: 1023px) 100vw, (max-width: 1280px) 50vw, 640px"
-                className="object-cover object-[center_24%] lg:object-[center_28%]"
-                priority
-              />
-              </div>
-            ) : (
-              <div className="absolute inset-0 bg-[#eee5f2]" />
-            )}
-            <span className="absolute bottom-4 right-4 bg-[#fbf8f5] px-3 py-2 text-[10px] font-semibold tracking-[.08em] text-[#291b2d] sm:bottom-6 sm:right-6 sm:px-4 sm:py-3 sm:text-xs">{hero.badge}</span>
+          <div className="relative order-1 aspect-[2/1] overflow-hidden bg-[var(--store-lavender)] sm:aspect-[4/3] lg:order-2 lg:aspect-auto lg:min-h-[580px] xl:min-h-[620px]">
+            {hero.image && <SafeImage unoptimized src={hero.image} alt={hero.alt} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover object-[center_55%] lg:object-[center_28%]" priority />}
+            {hero.badge && <span className="absolute bottom-6 right-6 hidden bg-[var(--store-surface)] px-4 py-3 text-xs font-semibold sm:block">{hero.badge}</span>}
           </div>
         </div>
       </section>
 
-      <section aria-label="Why Ginny Nana" className="border-b border-[#e9e5d9] py-5">
-        <div className="storefront-container flex flex-wrap justify-center gap-x-8 gap-y-2 text-center text-[11px] font-semibold tracking-[.08em] sm:justify-between sm:text-xs">
-          <span>HANDMADE WITH CARE</span>
-          <span>REUSABLE BY DESIGN</span>
-          <span>READY IN MINUTES</span>
-          <span>FREE SHIPPING ON ${shippingSettings.freeShippingThreshold}+ AFTER DISCOUNTS</span>
-        </div>
-      </section>
+      <nav aria-label="Shopping help" className="storefront-container flex flex-wrap items-center justify-center gap-x-7 gap-y-1 py-4 text-sm text-[var(--store-muted)] sm:justify-between">
+        <Link className="inline-flex min-h-10 items-center hover:underline" href="/about-us/">Handmade with care</Link>
+        <Link className="inline-flex min-h-10 items-center hover:underline" href="/size-guide/">Find your fit</Link>
+        <Link className="inline-flex min-h-10 items-center hover:underline" href="/what-you-will-get/">See what’s included</Link>
+      </nav>
 
-      <section className="overflow-hidden bg-[#f1eaf2] py-16 md:py-20">
+      <section aria-labelledby="length-heading" className="py-9 sm:py-12">
         <div className="storefront-container">
-          <div className="flex items-end justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold tracking-[.12em] text-[#704576]">THE GINNY NANA EDIT · 01—04</p>
-              <h2 className="mt-2 font-serif text-4xl tracking-[-.04em] sm:text-5xl">Fresh off the nail desk</h2>
-              <p className="mt-3 max-w-lg text-sm leading-6 text-[#615364]">Hand-finished sets made to turn a small detail into your whole look.</p>
-            </div>
-            <Link href="/all-products" className="hidden shrink-0 border-b border-[#a55a9c] pb-1 text-sm font-semibold hover:text-[#704576] sm:inline">Shop all ↗</Link>
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div><h2 id="length-heading" className="font-serif text-3xl tracking-[-.03em] sm:text-4xl">Start with your length.</h2><p className="mt-2 text-sm leading-6 text-[var(--store-muted)]">Find the look that fits your day.</p></div>
+            <Link href="/by-shape/" className="inline-flex min-h-10 items-center text-sm font-medium text-[var(--store-accent)] underline underline-offset-4">Prefer to shop by shape?</Link>
           </div>
-          {visibleProducts.length ? (
-            <div className="mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto pb-5 [scrollbar-color:#a55a9c_#e4d8e8] [scrollbar-width:thin] lg:gap-6" role="region" aria-label="Featured nail sets" tabIndex={0}>
-              {visibleProducts.slice(0, 8).map((product, index) => {
-                const price = getPriceDetails(product)
-                return <Link key={product._id} href={'/product/' + (product.slug || product._id)} className="store-product-card group relative w-[78vw] max-w-[360px] shrink-0 snap-start sm:w-[43vw] lg:w-[calc((100%-3rem)/3)]">
-                  <div className="store-product-card__media">
-                    <SafeImage unoptimized src={product.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'} alt={product.imageAlt?.[0] || product.name} fill sizes="(max-width: 640px) 78vw, (max-width: 1024px) 43vw, 30vw" className="store-product-card__image" />
-                    <span className="store-product-card__badge">{isStorefrontNew(product) ? 'New' : `Set Nº 0${index + 1}`}</span>
-                    {price.onSale && <span className="store-product-card__badge store-product-card__badge--sale">On sale</span>}
-                    <span aria-hidden="true" className="absolute bottom-4 right-4 grid h-11 w-11 place-items-center rounded-full bg-[#fbf8f5] text-xl text-[#704576] transition-transform group-hover:translate-x-1">↗</span>
-                  </div>
-                  <div className="store-product-card__details">
-                    <div className="store-product-card__copy"><h3 className="store-product-card__name">{product.name}</h3><p className="store-product-card__meta">Handmade press-on set</p></div>
-                    <div className="store-product-card__price">{currency || '$'}{Number(price.currentPrice).toFixed(2)}{price.onSale && <s>{currency || '$'}{Number(price.price).toFixed(2)}</s>}</div>
-                  </div>
-                </Link>
-              })}
-            </div>
-          ) : productsStatus === 'loading' ? (
-              <div className="mt-8 bg-[#eee5f2] py-12 text-center text-sm text-[#615364]" role="status">Loading designs…</div>
-          ) : productsStatus === 'error' ? (
-            <div className="mt-8 bg-[#eee5f2] py-12 text-center text-sm text-[#615364]" role="alert">
-              <p>We couldn’t load the collection.</p>
-              <button type="button" onClick={fetchProductData} className="mt-3 underline underline-offset-4">Try again</button>
-            </div>
-          ) : (
-            <div className="mt-8 bg-[#eee5f2] py-12 text-center text-sm text-[#615364]">New designs are on the way. Check back soon.</div>
-          )}
-          <Link href="/all-products" className="mt-2 inline-flex border-b border-[#a55a9c] pb-1 text-sm font-semibold sm:hidden">Shop all sets ↗</Link>
+          <div className="mt-5 grid grid-cols-3 gap-3 sm:mt-7 sm:gap-6">
+            {lengths.map((item) => <Link key={item.value} href={'/by-length?length=' + encodeURIComponent(item.value)} className="group min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--store-accent)]">
+              <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-[var(--store-lavender)] sm:aspect-[4/3]"><SafeImage src={item.image.image} alt={item.image.alt} fill sizes="(max-width: 639px) 30vw, (max-width: 1023px) 31vw, 380px" className="object-cover object-[center_65%] transition-transform duration-500 group-hover:scale-[1.03]" /></div>
+              <h3 className="mt-3 flex items-center justify-between gap-1 font-serif text-xl sm:text-3xl">{item.label}<span aria-hidden="true" className="text-base text-[var(--store-accent)]">↗</span></h3>
+              <p className="mt-1 hidden text-sm text-[var(--store-muted)] sm:block">{item.description}</p>
+            </Link>)}
+          </div>
+          {colorOptions.length > 0 && <nav aria-label="Shop by color" className="mt-6 flex flex-wrap items-center gap-2 text-sm"><span className="mr-2 text-[var(--store-muted)]">Or find your shade</span>{colorOptions.map(({ color, count }) => <Link key={color} href={'/all-products?color=' + encodeURIComponent(color)} className="store-color-chip">{color}<span className="text-[var(--store-muted)]">{count}</span></Link>)}</nav>}
         </div>
       </section>
 
-      {colorOptions.length > 0 && <section className="bg-[#fbf8f5] py-12">
+      <section aria-labelledby="collection-heading" className="bg-[var(--store-lavender-soft)] py-12 sm:py-16">
         <div className="storefront-container">
-          <p className="text-xs font-semibold tracking-[.12em] text-[#704576]">FIND YOUR SHADE</p>
-          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
-            <div><h2 className="font-serif text-3xl tracking-[-.04em] sm:text-4xl">Shop by color</h2><p className="mt-2 text-sm text-[#615364]">Browse designs in the shades you love.</p></div>
-            <nav aria-label="Shop by color" className="flex flex-wrap gap-2">
-              {colorOptions.map(({ color, count }) => <Link key={color} href={`/all-products?color=${encodeURIComponent(color)}`} className="store-color-chip">{color}<span className="text-[#897b8d]">{count}</span></Link>)}
-            </nav>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div><h2 id="collection-heading" className="font-serif text-3xl tracking-[-.03em] sm:text-4xl">{selection.curated ? homepageSettings.featured.title : 'Explore our nail sets.'}</h2><p className="mt-2 max-w-xl text-sm leading-6 text-[var(--store-muted)]">{selection.curated ? homepageSettings.featured.description : 'Take a closer look at the designs, lengths and finishes in the collection.'}</p></div>
+            <Link href="/all-products" className="inline-flex min-h-10 items-center text-sm font-semibold text-[var(--store-accent)] underline underline-offset-4">Shop all designs ↗</Link>
           </div>
-        </div>
-      </section>}
-
-      <section className="pb-16 lg:pb-20">
-        <div className="storefront-container grid gap-3 md:grid-cols-2">
-          <Link href="/by-shape" className="category-card category-card--shape group relative isolate flex min-h-[240px] flex-col justify-between overflow-hidden p-7 text-white transition-colors sm:min-h-[300px] sm:p-10">
-            <NailMotif className="pointer-events-none absolute right-5 top-5 h-24 w-32 text-[#e8d9ef] sm:right-8 sm:top-7" />
-            <span className="text-xs font-semibold tracking-[.14em] text-[#e8d9ef]">FIND YOUR SHAPE</span>
-            <span className="flex items-end justify-between gap-4">
-              <span className="font-serif text-4xl leading-none tracking-[-.04em] sm:text-6xl">Almond, oval<br />or square?</span>
-              <span aria-hidden="true" className="text-3xl transition-transform group-hover:translate-x-1">↗</span>
-            </span>
-          </Link>
-          <Link href="/by-length" className="category-card category-card--length group relative isolate flex min-h-[240px] flex-col justify-between overflow-hidden p-7 text-white transition-colors sm:min-h-[300px] sm:p-10">
-            <NailMotif variant="length" className="pointer-events-none absolute right-5 top-5 h-24 w-32 text-[#e8d9ef] sm:right-8 sm:top-7" />
-            <span className="text-xs font-semibold tracking-[.14em] text-[#f7e8f4]">PICK YOUR LENGTH</span>
-            <span className="flex items-end justify-between gap-4">
-              <span className="font-serif text-4xl leading-none tracking-[-.04em] sm:text-6xl">Short and sweet<br />or full drama?</span>
-              <span aria-hidden="true" className="text-3xl transition-transform group-hover:translate-x-1">↗</span>
-            </span>
-          </Link>
+          {selection.products.length ? <div className="mt-7 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">{selection.products.map((product) => <ProductCard key={product._id} product={product} />)}</div>
+            : productsStatus === 'loading' ? <p className="py-12 text-center text-sm text-[var(--store-muted)]" role="status">Loading designs…</p>
+              : productsStatus === 'error' ? <div className="py-12 text-center text-sm text-[var(--store-muted)]" role="alert"><p>We couldn’t load the collection.</p><button type="button" onClick={fetchProductData} className="mt-3 min-h-10 underline underline-offset-4">Try again</button></div>
+                : <p className="py-12 text-center text-sm text-[var(--store-muted)]">New designs are on the way. Check back soon.</p>}
         </div>
       </section>
 
-      <section className="bg-[#291b2d] py-16 text-[#fbf8f5] md:py-20">
-        <div className="storefront-container">
-          <div className="max-w-2xl">
-            <p className="text-xs font-semibold tracking-[.14em] text-[#d9c9e5]">GOOD NAILS, NO APPOINTMENT</p>
-            <h2 className="mt-3 font-serif text-4xl tracking-[-.04em] sm:text-5xl">Your manicure, your moment.</h2>
+      <section id="first-set" aria-labelledby="first-set-heading" className="scroll-mt-6 py-12 sm:py-16">
+        <div className="storefront-container grid items-center gap-7 lg:grid-cols-2 lg:gap-14">
+          <div>
+            <h2 id="first-set-heading" className="font-serif text-3xl tracking-[-.03em] sm:text-4xl">First set? Start here.</h2>
+            <p className="mt-3 max-w-lg text-base leading-7 text-[var(--store-muted)]">A little guidance makes all the difference. Get comfortable with the fit, the kit and the application before you choose.</p>
+            <div className="mt-5 divide-y divide-[var(--store-border)]">{guides.map((guide) => <Link key={guide.href} href={guide.href} className="group flex items-center justify-between gap-4 py-4 text-[var(--store-accent)]"><span><h3 className="text-base font-semibold group-hover:underline">{guide.title}</h3><p className="mt-1 text-sm leading-6 text-[var(--store-muted)]">{guide.description}</p></span><span aria-hidden="true" className="text-xl">↗</span></Link>)}</div>
           </div>
-          <div className="mt-10 grid gap-7 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
-            {values.map(([title, description]) => (
-              <div className="border-t border-white/25 pt-4" key={title}>
-                <h3 className="font-semibold text-[#d9c9e5]">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-white/70">{description}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/20 pt-5 text-sm font-semibold text-[#e5c8df]">
-            <Link href="/how-to-apply/" className="underline underline-offset-4 hover:text-white">How to apply ↗</Link>
-            <Link href="/size-guide/" className="underline underline-offset-4 hover:text-white">Find your nail size ↗</Link>
-            <Link href="/what-you-will-get/" className="underline underline-offset-4 hover:text-white">What’s in the set ↗</Link>
+          <div className="overflow-hidden rounded-xl bg-[var(--store-lavender-soft)]"><SafeImage src="/site/guides/photos/application.jpg" alt="Illustrative photos showing nail preparation, fitting, adhesive and pressing a nail into place" width={1536} height={1024} sizes="(max-width: 1023px) 90vw, 45vw" className="h-auto w-full" /></div>
+        </div>
+      </section>
+
+      <section aria-labelledby="details-heading" className="bg-[var(--store-ink)] py-12 text-[var(--gn-ivory)] sm:py-16">
+        <div className="storefront-container grid items-center gap-7 md:grid-cols-[.9fr_1.1fr] md:gap-12">
+          <figure className="min-w-0"><div className="relative aspect-[4/3] overflow-hidden rounded-xl md:aspect-square"><SafeImage src={craft.image} alt={craft.alt} fill sizes="(max-width: 767px) 90vw, 40vw" className="object-cover object-[center_65%]" /></div><figcaption className="mt-3 text-sm text-white/70">A closer look at a Ginny Nana design.</figcaption></figure>
+          <div>
+            <h2 id="details-heading" className="max-w-lg font-serif text-3xl tracking-[-.03em] sm:text-4xl">{craft.title}</h2>
+            <p className="mt-4 max-w-xl text-base leading-7 text-white/80">{craft.description}</p>
+            <p className="mt-4 max-w-xl text-base leading-7 text-white/80">Because each set is handmade, small variations in colour and detail are part of its character. Choose your fit with care, then enjoy a design that feels personal.</p>
+            <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-sm font-semibold"><Link href="/about-us/" className="inline-flex min-h-10 items-center underline underline-offset-4">Meet Ginny Nana</Link><Link href="/what-you-will-get/" className="inline-flex min-h-10 items-center underline underline-offset-4">Explore your nail kit</Link></div>
+            <p className="mt-5 text-sm leading-6 text-white/70">Unsure about sizing? <a href={'mailto:' + siteSettings.customerEmail} className="underline underline-offset-4">Ask us before ordering.</a></p>
           </div>
         </div>
       </section>
-      {homepageSettings.mysteryBox?.enabled && <section className="bg-[#fbf8f5] py-14 md:py-16">
-        <div className="storefront-container">
-          <div className="storefront-card mystery-box-banner relative isolate grid min-h-[340px] bg-[#291b2d] sm:min-h-[420px] lg:grid-cols-2">
-            {homepageSettings.mysteryBox.image && <span className="relative col-start-1 row-start-1 block h-[240px] overflow-hidden sm:h-[300px] lg:col-start-2 lg:row-start-1 lg:h-full lg:min-h-[420px]">
-              <SafeImage unoptimized src={homepageSettings.mysteryBox.image} alt={homepageSettings.mysteryBox.alt} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover" />
-            </span>}
-            <span className="relative flex max-w-xl flex-col justify-center p-7 text-[#fbf8f5] sm:p-10 lg:col-start-1 lg:row-start-1 lg:p-14">
-              <span className="text-xs font-semibold uppercase tracking-[.16em] text-[#e5c8df]">{homepageSettings.mysteryBox.eyebrow}</span>
-              <span className="mt-4 font-serif text-4xl leading-tight tracking-[-.04em] sm:text-6xl">{homepageSettings.mysteryBox.title}</span>
-              <span className="mt-4 max-w-md text-sm leading-6 text-white/80 sm:text-base">{homepageSettings.mysteryBox.description}</span>
-            </span>
-          </div>
+
+      {homepageSettings.mysteryBox?.enabled && <section className="py-12 sm:py-16"><div className="storefront-container storefront-card grid bg-[var(--store-lavender)] lg:grid-cols-2">
+        {homepageSettings.mysteryBox.image && <SafeImage src={homepageSettings.mysteryBox.image} alt={homepageSettings.mysteryBox.alt} width={800} height={600} className="h-full w-full object-cover" />}
+        <div className="flex flex-col justify-center p-7 sm:p-10"><p className="text-sm text-[var(--store-accent)]">{homepageSettings.mysteryBox.eyebrow}</p><h2 className="mt-3 font-serif text-3xl sm:text-4xl">{homepageSettings.mysteryBox.title}</h2><p className="mt-4 text-base leading-7 text-[var(--store-muted)]">{homepageSettings.mysteryBox.description}</p></div>
+      </div></section>}
+
+      <section aria-labelledby="faq-heading" className="py-12 sm:py-16">
+        <div className="storefront-container grid gap-5 lg:grid-cols-[.65fr_1fr] lg:gap-14">
+          <div><h2 id="faq-heading" className="font-serif text-3xl tracking-[-.03em] sm:text-4xl">A few good questions.</h2><p className="mt-3 max-w-sm text-base leading-7 text-[var(--store-muted)]">The practical details, before you fall for your next set.</p><Link href="/all-products" className="mt-4 inline-flex min-h-10 items-center text-sm font-semibold text-[var(--store-accent)] underline underline-offset-4">Ready to find your set?</Link></div>
+          <div className="divide-y divide-[var(--store-border)]">{faqs.map((faq) => <details key={faq.question} className="group py-4 first:pt-0"><summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold [&::-webkit-details-marker]:hidden">{faq.question}<span aria-hidden="true" className="text-xl font-normal text-[var(--store-accent)] group-open:rotate-45">+</span></summary><div className="pb-2 pt-3 text-base leading-7 text-[var(--store-muted)] [&_a]:text-[var(--store-accent)] [&_a]:underline [&_a]:underline-offset-4">{faq.answer}</div></details>)}</div>
         </div>
-      </section>}
+      </section>
+
       <NewsletterSignup />
       <Footer />
     </main>

@@ -4,10 +4,28 @@
     "alt": "Ginny Nana handmade press-on nails",
     "eyebrow": "Ginny Nana · Handmade press-ons",
     "title": "A little art.\nA lot of you.",
-    "description": "Wearable nail designs, made by hand and ready when you are. Find a set that feels like your kind of statement.",
+    "description": "Handmade, reusable press-on nails. Find your shape. Make them yours.",
     "buttonLabel": "Shop the collection",
     "buttonHref": "/all-products",
     "badge": "YOUR NEXT FAVORITE SET"
+  },
+  "discovery": {
+    "lengths": [
+      { "value": "short", "label": "Short", "description": "A little everyday detail" },
+      { "value": "medium", "label": "Medium", "description": "A little more length" },
+      { "value": "long", "label": "Long", "description": "A bigger statement" }
+    ]
+  },
+  "featured": {
+    "productKeys": [],
+    "title": "The Ginny Nana edit",
+    "description": "A few hand-picked designs to make your next set feel like you."
+  },
+  "craft": {
+    "image": "/site/categories/medium-oval.webp",
+    "alt": "Close-up of a Ginny Nana press-on nail design",
+    "title": "The beauty is in the details.",
+    "description": "Our nail designs are finished by hand. Look a little closer at the colours, textures and tiny details that make each set its own."
   },
   "mysteryBox": {
     "enabled": false,

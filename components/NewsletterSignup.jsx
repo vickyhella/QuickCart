@@ -21,7 +21,7 @@ export default function NewsletterSignup() {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Please try again.')
-      setStatus({ kind: 'success', message: 'You’re on the list. Look out for a little Ginny Nana in your inbox.' })
+      setStatus({ kind: 'success', message: 'You’re on the list. Your email preferences have been saved.' })
       setEmail('')
       setConsent(false)
     } catch (error) {
@@ -32,13 +32,12 @@ export default function NewsletterSignup() {
   }
 
   return (
-    <section aria-labelledby="newsletter-heading" className="bg-[#f1eaf2] py-14 md:py-16">
+    <section aria-labelledby="newsletter-heading" className="bg-[#f1eaf2] py-8 md:py-10">
       <div className="storefront-container">
-        <div className="storefront-card mx-auto grid gap-8 border border-[#d9cddd] bg-[#fbf8f5] p-6 sm:p-9 lg:grid-cols-[1fr_1fr] lg:items-center lg:gap-12 lg:p-12">
+        <div className="mx-auto grid gap-5 lg:grid-cols-2 lg:items-center lg:gap-10">
           <div>
-            <p className="text-xs font-semibold tracking-[.14em] text-[#704576]">A LITTLE NOTE FROM US</p>
-            <h2 id="newsletter-heading" className="mt-3 max-w-xl font-serif text-4xl leading-tight tracking-[-.04em] sm:text-5xl">Good things, straight to your inbox.</h2>
-            <p className="mt-4 max-w-lg text-sm leading-6 text-[#615364]">New nail art, little surprises, and first dibs on the next drop.</p>
+            <h2 id="newsletter-heading" className="font-serif text-3xl leading-tight tracking-[-.03em]">Keep in touch.</h2>
+            <p className="mt-2 max-w-lg text-sm leading-6 text-[#615364]">Leave your email for future collection updates.</p>
           </div>
           <form onSubmit={submit} className="grid gap-3">
             <div className="flex flex-col gap-2 sm:flex-row">

@@ -6,6 +6,7 @@ import type { CSSProperties } from 'react'
 import contentSources from '@/config/content-sources.json'
 import { DEFAULT_PRODUCT_SEO_DESCRIPTION, DEFAULT_PRODUCT_SEO_TITLE, resolveProductSeoTemplates } from '../../../lib/product-seo-templates'
 import { MarketingSeoEditor, MarketingSeoAudit } from './MarketingSeoEditor'
+import { MarketingMetadataEditor } from './MarketingMetadataEditor'
 import { AdminSearchableSelect } from './AdminSearchableSelect'
 
 type Summary = { feedItems?: number; publishedProducts?: number; skippedPublishedProducts?: Array<{ title: string; reason: string }> }
@@ -46,9 +47,9 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
         if (active) { setGmc(g); setPinterest(p) }
       }).catch((e) => { if (active) setError(e.message || 'Could not load marketing overview.') })
     }
-    if (section === 'homepage' || section === 'seo') {
+    if (section === 'homepage' || section === 'seo' || section === 'metadata') {
       const params = new URLSearchParams({ limit: '100', depth: '0', sort: '-updatedAt' })
-      const fields = section === 'homepage' ? ['title', 'status', 'category', 'featuredImage'] : ['title', 'brand', 'category', 'seoTitle', 'seoDescription']
+      const fields = section === 'homepage' ? ['title', 'status', 'category', 'featuredImage'] : section === 'metadata' ? ['title', 'brand', 'category', 'length', 'shape'] : ['title', 'brand', 'category', 'seoTitle', 'seoDescription']
       fields.forEach((field) => params.set(`select[${field}]`, 'true'))
       if (section === 'seo') ['enabled', 'length', 'shape', 'size'].forEach((field) => params.set(`select[variants][${field}]`, 'true'))
       fetch(`/api/products?${params}`, { credentials: 'same-origin' })
@@ -272,33 +273,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
         </>}
         {section === 'seo' && <MarketingSeoEditor templates={templates} products={seo.products} update={update} />}
 
-        {section === 'metadata' && <>
-        <section style={panelStyle}>
-          <h2 style={{ marginTop: 0 }}>Image names and metadata</h2>
-          <p style={{ lineHeight: 1.6 }}>These defaults are applied to new uploads when the corresponding field is left blank.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 420px), 1fr))', gap: 20, marginTop: 22 }}>
-            <label style={labelStyle}>Filename pattern
-              <input style={fieldStyle} value={templates.imageFilenameTemplate || '{brand}-{productType}-{productName}-{length}-{shape}-{number}'} onChange={(event) => update('imageFilenameTemplate', event.target.value)} />
-            </label>
-            <label style={labelStyle}>Image title pattern
-              <input style={fieldStyle} value={templates.imageTitleTemplate || '{brand} {productName} {length} {shape} press-on nails'} onChange={(event) => update('imageTitleTemplate', event.target.value)} />
-            </label>
-            <label style={labelStyle}>Alt text pattern
-              <input style={fieldStyle} value={templates.imageAltTemplate || '{brand} {productName} press-on nails in {length} length and {shape} shape'} onChange={(event) => update('imageAltTemplate', event.target.value)} />
-            </label>
-            <label style={labelStyle}>Caption pattern
-              <input style={fieldStyle} value={templates.imageCaptionTemplate || '{productName} press-on nails by {brand}'} onChange={(event) => update('imageCaptionTemplate', event.target.value)} />
-            </label>
-          </div>
-          <p style={{ marginBottom: 0, color: 'var(--brand-text-secondary)', fontSize: 'var(--brand-font-size-caption)' }}>Available tokens: {'{brand}'}, {'{productType}'}, {'{productName}'}, {'{length}'}, {'{shape}'}, {'{size}'}, {'{number}'}.</p>
-        </section>
-        <section style={{ ...panelStyle, overflowX: 'auto' }}>
-          <h2 style={{ marginTop: 0 }}>Current image metadata</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}><thead><tr><th>File</th><th>Title</th><th>Alt text</th><th>Caption</th></tr></thead><tbody>
-            {seo.media.map((row) => <tr key={String(row.id)}><td><Link href={`/admin/collections/media/${row.id}`} style={{ textDecoration: 'underline' }}>{String(row.filename || '')}</Link></td><td>{String(row.title || '') || String(templates.imageTitleTemplate || '')}</td><td>{String(row.altText || '') || String(templates.imageAltTemplate || '')}</td><td>{String(row.caption || '') || String(templates.imageCaptionTemplate || '')}</td></tr>)}
-          </tbody></table>
-        </section>
-        </>}
+        {section === 'metadata' && <MarketingMetadataEditor templates={templates} products={seo.products} media={seo.media} update={update} />}
 
         {section === 'compression' && <>
         <section style={panelStyle}>
@@ -323,7 +298,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
             <label style={{ ...labelStyle, gridColumn: '1 / -1' }}>Default SEO description<textarea rows={3} style={{ ...fieldStyle, resize: 'vertical' }} value={templates.siteDefaultSeoDescription || ''} onChange={(event) => update('siteDefaultSeoDescription', event.target.value)} /></label>
           </div>
         </section>}
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, marginBottom: 20, ...(section === 'seo' ? { position: 'sticky', bottom: 12, zIndex: 10, padding: '14px 18px', background: 'var(--brand-surface)', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', boxShadow: '0 4px 20px rgb(0 0 0 / .06)' } : {}) }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 16, marginBottom: 20, ...(['seo', 'metadata'].includes(section) ? { position: 'sticky', bottom: 12, zIndex: 10, padding: '14px 18px', background: 'var(--brand-surface)', border: '1px solid var(--brand-border)', borderRadius: 'var(--brand-radius-sm)', boxShadow: '0 4px 20px rgb(0 0 0 / .06)' } : {}) }}>
         <button type="button" disabled={saving} onClick={() => void saveMarketingSettings(templates)} className="ui-button ui-button--primary">{saving ? 'Saving…' : section === 'homepage' ? 'Save homepage settings' : section === 'seo' ? 'Save SEO templates' : section === 'metadata' ? 'Save image metadata templates' : section === 'site' ? 'Save site settings' : 'Save compression settings'}</button>
           {saveMessage && <span role="status">{saveMessage}</span>}
         </div>

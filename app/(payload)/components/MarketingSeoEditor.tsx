@@ -7,7 +7,7 @@ import remarkGfm from 'remark-gfm'
 import { uniqueLengthShapePairs } from '@/lib/product-dimensions'
 import { DEFAULT_PRODUCT_SEO_TITLE, DEFAULT_PRODUCT_SEO_DESCRIPTION } from '@/lib/product-seo-templates'
 import { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE, renderStudioDescription } from '@/lib/studio-description-template'
-import styles from './MarketingSeoEditor.module.css'
+import styles from './MarketingTemplateEditor.module.css'
 
 type Product = Record<string, any>
 type Templates = Record<string, any>

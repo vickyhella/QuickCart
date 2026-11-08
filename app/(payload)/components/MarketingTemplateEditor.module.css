@@ -44,3 +44,9 @@
  .panel > header { padding: 18px; }
  .filter { margin: 18px; }
 }
+.metadataPreview { padding: 18px; border: 1px solid var(--brand-border); border-radius: var(--brand-radius-sm); background: var(--brand-soft); overflow-wrap: anywhere; }
+.imagePreview { display: block; width: 100%; height: 220px; object-fit: contain; border-radius: 6px; background: var(--brand-surface); }
+.metadataPreview dl { margin: 16px 0 0; }
+.metadataPreview dl > div + div { margin-top: 18px; }
+.metadataPreview dt { font-weight: 600; margin-bottom: 5px; font-size: var(--brand-font-size-control); }
+.metadataPreview dd { margin: 0; line-height: 1.7; }

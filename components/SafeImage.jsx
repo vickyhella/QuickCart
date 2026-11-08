@@ -9,7 +9,7 @@ const supportedRemote = (src) => remoteImageBases.some((base) => src.startsWith(
 
 const fallback = '/nail-placeholder.svg'
 
-export default function SafeImage({ src, alt = '', unoptimized, ...props }) {
+export default function SafeImage({ src, alt = '', unoptimized = undefined, ...props }) {
   const imageSrc = normalizeStorefrontImageSource(src) || fallback
   const [currentSrc, setCurrentSrc] = useState(imageSrc)
   useEffect(() => setCurrentSrc(imageSrc), [imageSrc])

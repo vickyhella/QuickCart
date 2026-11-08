@@ -8,8 +8,8 @@ import { getPayload } from 'payload';
 import config from '@/payload.config';
 import { getShippingSettings } from '@/lib/shipping-config';
 import { connection } from 'next/server';
-import homepageConfig from '@/config/homepage.json';
-import { getAdminHomepageSettings, getAdminSiteSettings } from '@/lib/storefront-content';
+import { getHomepageSettings } from '@/lib/homepage-settings';
+import { getAdminSiteSettings } from '@/lib/storefront-content';
 
 export async function generateMetadata() {
   let activeSiteSettings = siteSettings;
@@ -30,13 +30,13 @@ export async function generateMetadata() {
 
 export default async function RootLayout({ children }) {
   let shippingSettings = shippingConfig;
-  let homepageSettings = homepageConfig;
+  if (contentSources.homepage === 'admin') await connection();
+  const homepageSettings = await getHomepageSettings();
   let activeSiteSettings = siteSettings;
-  if (contentSources.shipping === 'admin' || contentSources.homepage === 'admin' || contentSources.site === 'admin') {
+  if (contentSources.shipping === 'admin' || contentSources.site === 'admin') {
     await connection();
     const payload = await getPayload({ config });
     if (contentSources.shipping === 'admin') shippingSettings = await getShippingSettings(payload);
-    if (contentSources.homepage === 'admin') homepageSettings = await getAdminHomepageSettings(payload);
     if (contentSources.site === 'admin') activeSiteSettings = await getAdminSiteSettings(payload);
   }
   return (

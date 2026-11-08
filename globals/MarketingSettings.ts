@@ -58,6 +58,15 @@ export const MarketingSettings: GlobalConfig = {
           label: 'Homepage',
           fields: [
             { name: 'newArrivalDays', type: 'number', min: 0, max: 365, defaultValue: 30, admin: { description: 'Published products show the automatic New badge for this many days. Set to 0 to disable the automatic window; manually marked New products remain included.' } },
+            { name: 'homepageFeatured', type: 'json', validate: (value: unknown) => {
+              if (value == null) return true
+              if (typeof value !== 'object' || Array.isArray(value)) return 'Enter a featured product configuration object.'
+              const featured = value as { productKeys?: unknown; title?: unknown; description?: unknown }
+              if (!Array.isArray(featured.productKeys) || featured.productKeys.length > 6 || featured.productKeys.some((key) => typeof key !== 'string' || !key.trim())) return 'Enter up to six product slugs or IDs as non-empty strings.'
+              if (featured.title !== undefined && typeof featured.title !== 'string') return 'Title must be text.'
+              if (featured.description !== undefined && typeof featured.description !== 'string') return 'Description must be text.'
+              return true
+            }, admin: { description: 'Homepage picks: { productKeys: [published product slug or ID, in display order], title, description }. Up to six products. Used when config/content-sources.json homepage is admin.' } },
             { name: 'homepageHeroEyebrow', type: 'text' },
             { name: 'homepageHeroTitle', type: 'text' },
             { name: 'homepageHeroDescription', type: 'textarea' },

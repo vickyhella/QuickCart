@@ -1,3 +1,4 @@
+import * as homepageFeatured from './20261108_120000_add_homepage_featured';
 import * as migration_20261013_085525 from './20261013_085525';
 import * as migration_20261013_143230_addStudioDescriptionTemplate from './20261013_143230_addStudioDescriptionTemplate';
 import * as migration_20261014_110652_add_marketing_workspace from './20261014_110652_add_marketing_workspace';
@@ -21,6 +22,7 @@ import * as migration_20261024_001000_add_new_arrival_window from './20261024_00
 import * as migration_20261029_120000_add_site_identity_settings from './20261029_120000_add_site_identity_settings';
 
 export const migrations = [
+
   {
     up: migration_20261013_085525.up,
     down: migration_20261013_085525.down,
@@ -126,4 +128,5 @@ export const migrations = [
     down: migration_20261029_120000_add_site_identity_settings.down,
     name: '20261029_120000_add_site_identity_settings',
   },
+  { up: homepageFeatured.up, down: homepageFeatured.down, name: '20261108_120000_add_homepage_featured' },
 ];

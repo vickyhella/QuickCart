@@ -4,13 +4,28 @@ import defaultSite from '@/config/site.json'
 
 const mediaURL = (value: any) => value && typeof value === 'object' ? String(value.url || '') : ''
 
-export async function getAdminHomepageSettings(payload: { findGlobal: Function }) {
-  if (contentSources.homepage !== 'admin') return defaultHomepage
-  const settings = await payload.findGlobal({ slug: 'marketing-settings', depth: 1, overrideAccess: true })
+export async function getAdminHomepageSettings(payload: { findGlobal: Function }, source: string = contentSources.homepage) {
+  if (source !== 'admin') return defaultHomepage
+  let settings
+  try {
+    settings = await payload.findGlobal({ slug: 'marketing-settings', depth: 1, overrideAccess: true })
+  } catch (error) {
+    console.error('Homepage Admin settings unavailable; using repository settings.', error)
+    return defaultHomepage
+  }
+  const featured = settings.homepageFeatured
+  const productKeys = Array.isArray(featured?.productKeys)
+    ? [...new Set(featured.productKeys.filter((key: unknown): key is string => typeof key === 'string' && !!key.trim()).map((key: string) => key.trim()))].slice(0, 6)
+    : defaultHomepage.featured.productKeys
   const heroImage = mediaURL(settings.homepageHeroImage)
   const mysteryImage = mediaURL(settings.homepageMysteryBoxImage)
   return {
     ...defaultHomepage,
+    featured: {
+      productKeys,
+      title: typeof featured?.title === 'string' && featured.title.trim() ? featured.title : defaultHomepage.featured.title,
+      description: typeof featured?.description === 'string' ? featured.description : defaultHomepage.featured.description,
+    },
     hero: {
       ...defaultHomepage.hero,
       image: heroImage || null,

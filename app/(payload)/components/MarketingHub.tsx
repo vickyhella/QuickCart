@@ -108,7 +108,7 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
     setSaveMessage('')
     try {
       const sectionFields: Record<MarketingSection, string[]> = {
-        homepage: ['newArrivalDays', 'homepageHeroImage', 'homepageHeroImageAlt', 'homepageHeroEyebrow', 'homepageHeroTitle', 'homepageHeroDescription', 'homepageHeroButtonLabel', 'homepageHeroButtonHref', 'homepageHeroBadge', 'homepageMysteryBoxImage', 'homepageMysteryBoxImageAlt', 'homepageMysteryBoxEnabled', 'homepageMysteryBoxEyebrow', 'homepageMysteryBoxTitle', 'homepageMysteryBoxDescription'],
+        homepage: ['homepageFeatured', 'newArrivalDays', 'homepageHeroImage', 'homepageHeroImageAlt', 'homepageHeroEyebrow', 'homepageHeroTitle', 'homepageHeroDescription', 'homepageHeroButtonLabel', 'homepageHeroButtonHref', 'homepageHeroBadge', 'homepageMysteryBoxImage', 'homepageMysteryBoxImageAlt', 'homepageMysteryBoxEnabled', 'homepageMysteryBoxEyebrow', 'homepageMysteryBoxTitle', 'homepageMysteryBoxDescription'],
         feeds: [],
         seo: ['studioDescriptionTemplate', 'productTitleTemplate', 'productDescriptionTemplate'],
         compression: ['webpQuality'],
@@ -124,6 +124,12 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           throw new Error('Automatic New badge window must be a whole number from 0 to 365 days.')
         }
         settingsToSave.newArrivalDays = arrivalDays
+        if (values.homepageFeatured) {
+          const featured = values.homepageFeatured as { productKeys?: string[]; title?: string; description?: string }
+          const productKeys = [...new Set((featured.productKeys || []).map((key: string) => key.trim()).filter(Boolean))]
+          if (productKeys.length > 6) throw new Error('Choose up to six featured products.')
+          settingsToSave.homepageFeatured = { ...featured, productKeys }
+        }
       }
       for (const key of ['homepageHeroImage', 'homepageMysteryBoxImage']) {
         const relation = settingsToSave[key]
@@ -209,6 +215,13 @@ export function MarketingHub({ section }: { section: MarketingSection }) {
           <p>Preview the current homepage at <a href="/" target="_blank" rel="noreferrer" style={{ textDecoration: 'underline' }}>the storefront</a>. Edit <code>config/homepage.json</code> and its image files under <code>public/site/</code>, then redeploy. Hero and Mystery Box images are not product links.</p>
         </section>}
         {contentSources.homepage !== 'repository' && <>
+        <section style={panelStyle}>
+          <h2 style={{ marginTop: 0 }}>Featured products</h2>
+          <p>Enter up to six published product slugs or IDs, one per line, in display order. Missing or unpublished products are skipped.</p>
+          <label style={labelStyle}>Product slugs or IDs<textarea rows={6} style={fieldStyle} value={(templates.homepageFeatured?.productKeys || []).join('\n')} onChange={(event) => update('homepageFeatured', { ...templates.homepageFeatured, productKeys: event.target.value.split('\n') })} /></label>
+          <label style={labelStyle}>Title<input style={fieldStyle} value={templates.homepageFeatured?.title ?? ''} onChange={(event) => update('homepageFeatured', { ...templates.homepageFeatured, title: event.target.value })} placeholder="The Ginny Nana edit" /></label>
+          <label style={labelStyle}>Description<textarea rows={2} style={fieldStyle} value={templates.homepageFeatured?.description ?? ''} onChange={(event) => update('homepageFeatured', { ...templates.homepageFeatured, description: event.target.value })} /></label>
+        </section>
         <section style={panelStyle}>
           <h2 style={{ marginTop: 0 }}>Homepage hero</h2>
           <p style={{ lineHeight: 1.6 }}>Edit the hero copy and choose an image from the Media library. The hero image is decorative and does not link to a product. Upload an image in <Link href="/admin/collections/media" style={{ textDecoration: 'underline' }}>Media</Link> first.</p>

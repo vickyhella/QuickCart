@@ -76,7 +76,7 @@ Admin → Pages 提供页面预览链接和 Markdown 路径；Store settings 提
 
 ## 仓库维护的品牌与首页配置
 
-首页新增带实物图的长度入口、新客指南、实物细节区和四项 FAQ，手机首屏压缩文案并提前展示购物按钮。维护入口为 `config/homepage.json`：`discovery.lengths` 设置分类，图片沿用 `config/category-images.json`；`craft` 设置品牌细节图文；`featured.productKeys` 按顺序填写 4–6 个已发布商品的 slug 或 ID，去重后最多展示 6 款。未配置有效精选时展示普通目录，不标为手动精选。正式选品待 Neon 恢复后补齐。无需环境变量或 migration。
+首页新增带实物图的长度入口、新客指南、实物细节区和四项 FAQ，手机首屏压缩文案并提前展示购物按钮。维护入口为 `config/homepage.json`：`discovery.lengths` 设置分类，图片沿用 `config/category-images.json`；`craft` 设置品牌细节图文；`featured.productKeys` 按顺序填写 4–6 个已发布商品的 slug 或 ID，去重后最多展示 6 款。未配置有效精选时展示普通目录，不标为手动精选。正式选品待 Neon 恢复后补齐。精选来源跟随 `config/content-sources.json` 的 `homepage` 开关，默认 `repository`；切为 `admin` 后在 Marketing Studio → Homepage → Featured products 维护。统一读取入口 `lib/homepage-settings.ts`，公开接口 `/api/storefront/homepage/settings`；Admin 设置缓存读取失败回退仓库。新增 `20261108_120000_add_homepage_featured` 迁移，需在部署新版本前按数据库迁移说明执行 `npm run migrate:production`；11 号前未连接 Neon 执行。无需新环境变量。
 
 订阅区已缩小，仅保存订阅同意名单，不自动发送邮件；成功提示只确认保存。后续营销群发服务仍需另行接入。详细维护与验收说明见 [首页说明](./docs/storefront-homepage.md)。
 

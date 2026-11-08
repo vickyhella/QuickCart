@@ -1201,6 +1201,18 @@ export interface MarketingSetting {
    * Published products show the automatic New badge for this many days. Set to 0 to disable the automatic window; manually marked New products remain included.
    */
   newArrivalDays?: number | null;
+  /**
+   * Homepage picks: { productKeys: [published product slug or ID, in display order], title, description }. Up to six products. Used when config/content-sources.json homepage is admin.
+   */
+  homepageFeatured?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   homepageHeroEyebrow?: string | null;
   homepageHeroTitle?: string | null;
   homepageHeroDescription?: string | null;
@@ -1360,6 +1372,7 @@ export interface StoreSettingsSelect<T extends boolean = true> {
 export interface MarketingSettingsSelect<T extends boolean = true> {
   availableCountries?: T;
   newArrivalDays?: T;
+  homepageFeatured?: T;
   homepageHeroEyebrow?: T;
   homepageHeroTitle?: T;
   homepageHeroDescription?: T;

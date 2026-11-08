@@ -15,7 +15,11 @@
 
 在 `featured.productKeys` 按展示顺序填写 4–6 个已发布商品的 slug 或 ID。可从商品链接复制 slug；不要填写本地测试商品。标题和介绍由 `featured.title`、`featured.description` 维护。
 
-只从当前公开目录匹配商品，自动去重，最多展示六款；无效或已下架的条目跳过。没有有效精选时显示普通目录与 Explore our nail sets 标题，不把自动结果标为手动精选。当前列表为空，正式选品待 11 号 Neon 数据恢复后确定。该配置在仓库维护，即使 Hero 切到 Admin 来源，精选与新增区块仍从仓库配置读取。
+只从当前公开目录匹配商品，自动去重，最多展示六款；无效或已下架的条目跳过。没有有效精选时显示普通目录与 Explore our nail sets 标题，不把自动结果标为手动精选。当前列表为空，正式选品待 11 号 Neon 数据恢复后确定。精选跟随 `config/content-sources.json` 的 `homepage` 来源开关：`repository` 使用仓库配置，不读取首页配置数据库；`admin` 使用 Marketing Studio → Homepage → Featured products，支持按行填写商品 slug / ID、标题和说明。新客指南、长度入口和实物细节区仍使用仓库配置。Admin 未配置精选时沿用仓库精选，显式保存空名单则展示普通目录。
+
+统一读取接口为 `lib/homepage-settings.ts` 的 `getHomepageSettings()`；首页布局和 `GET /api/storefront/homepage/settings` 复用该入口。Admin 使用已有设置缓存与保存失效标签，读取失败回退仓库配置。商品目录仍依赖原有商品接口。
+
+新增迁移 `20261108_120000_add_homepage_featured` 只增加一个 JSON 字段。11 号恢复后，先按数据库迁移说明执行 `npm run migrate:production`，再使用新增 Admin 字段及切换来源。新版本 Admin 也依赖该字段，部署前应先完成迁移；本次未连接 Neon 执行迁移。来源切换需重新部署。
 
 ## Newsletter
 
@@ -25,4 +29,4 @@
 
 检查桌面与手机布局，特别是 375×667 手机首屏购物按钮、分类筛选、新客锚点、指南链接和 FAQ 展开。目录失败时仍显示重试入口。测试手动选品顺序、去重、无效条目和无配置回退。真实商品、订阅数据库写入和生产效果待 Neon 恢复后复查；本地测试商品不代表正式陈列。
 
-本次无新依赖、环境变量或 migration。修改仓库配置后需部署生效。
+本次无新依赖或环境变量。精选 Admin 适配新增上述 migration；修改仓库配置后需部署生效。

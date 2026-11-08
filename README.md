@@ -66,6 +66,8 @@ Sandbox 已完成一笔端到端付款测试，订单显示 Paid；Production Li
 
 顾客指南也在 `content/pages/*.md` 维护：`how-to-apply.md`、`size-guide.md` 和 `what-you-will-get.md`；对应原创示意图位于 `public/site/guides/*.svg`。页面标题和 How to Use 导航入口配置在 `lib/repository-pages.ts`，无需数据库 migration。
 
+每个商品页的 How to choose your size 折叠区直接展示尺码表，已选尺码会高亮，手机端可横向滚动。普通访问默认选中已有的 S 尺码，没有 S 时回退为商品首个启用规格；带 `?variant=ID` 的链接仍优先保留指定规格。切换形状或长度后同步选中匹配的有效尺码，避免购买按钮因尺码空白置灰；缺货规格仍不可购买。尺码数值统一编辑 `config/nail-size-chart.json`；商品页组件 `components/NailSizeChart.jsx` 与独立尺码指南共用这份数据，指南 Markdown 中保留 `{{sizeChart}}` 占位符即可，无需 migration。
+
 贴戴与测量指南使用生成的操作特写配可编辑 SVG 文字；原始图片图层在 `public/site/guides/photos/`。修改文案或版式可编辑 `scripts/build-nail-guides.mjs`，运行 `node scripts/build-nail-guides.mjs` 重新生成两张 SVG；图层、直接编辑及重生成规则见[指南图片维护](./docs/guide-images.md)。无需新增依赖或环境变量。
 
 六个核心页面在 `content/pages/*.md` 编辑，前台沿用原网址；标题、SEO 简介与固定页脚链接在 `lib/repository-pages.ts`。当前配送说明从 `config/shipping.json` 生成，结账共用同份配置。折后满 USD 50 免邮，否则 0.0001–0.2010 kg 收 USD 9、0.2011–0.6010 kg 收 USD 12、≥0.6011 kg 免费；备货 5–10、运输 7–15 个工作日，合计预计 12–25 个工作日。

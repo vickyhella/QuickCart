@@ -6,12 +6,7 @@ Press-on sizing is based on the width of each natural nail. Measure across the w
 
 Compare each nail with the chart below. The numbers are nail widths in millimeters, transcribed from the Ginny Nana size chart previously used by the store.
 
-| Size | Thumb | Index | Middle | Ring | Pinky |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| XS | 14 mm | 10 mm | 11 mm | 10 mm | 8 mm |
-| S | 15 mm | 11 mm | 12 mm | 11 mm | 9 mm |
-| M | 16 mm | 12 mm | 13 mm | 12 mm | 10 mm |
-| L | 17 mm | 13 mm | 14 mm | 13 mm | 11 mm |
+{{sizeChart}}
 
 ## How to measure
 

@@ -14,8 +14,10 @@ import { isRepositoryPage, mergeRepositoryPages, repositoryPages, repositoryPage
 import { checkoutCountries, shippingEstimate, shippingSettings, shippingPolicyDetails } from '../lib/shipping-config'
 import { calculateShippingCharge } from '../lib/shipping-tiers'
 import { RepositoryPagesNotice, RepositoryShippingNotice } from '../app/(payload)/components/RepositorySettings'
+import nailSizeChart from '../config/nail-size-chart.json'
+import NailSizeChart from '../components/NailSizeChart'
 
-test('all six repository pages contain HTML-readable content, metadata and permanent footer links', () => {
+test('all repository pages contain HTML-readable content, metadata and permanent links', () => {
   for (const page of repositoryPages) {
     const { body } = readRepositoryPage(page.slug)
     assert.ok(body.length > 100, page.slug)
@@ -28,7 +30,7 @@ test('all six repository pages contain HTML-readable content, metadata and perma
     assert.equal(links.filter(({ slug }) => slug === page.slug).length, 1)
     assert.equal(links.find(({ slug }) => slug === page.slug)?.title, page.title)
   }
-  assert.equal(mergeRepositoryPages().length, 6)
+  assert.equal(mergeRepositoryPages().length, repositoryPages.length)
   assert.throws(() => readRepositoryPage('../payload.config'), /Unknown repository page/)
   const shippingHTML = renderToStaticMarkup(createElement(ReactMarkdown, { remarkPlugins: [remarkGfm] }, readRepositoryPage('shipping-policy').body))
   assert.match(shippingHTML, /<table>/)
@@ -38,6 +40,29 @@ test('all six repository pages contain HTML-readable content, metadata and perma
   const pageResolver = readFileSync(new URL('../lib/repository-page-content.ts', import.meta.url), 'utf8')
   assert.match(pageResolver, /repositoryPolicy && contentSources\.shipping === 'repository'/)
   assert.match(pageResolver, /await import\('payload'\)/)
+})
+
+test('the standalone size guide resolves the shared product size chart', () => {
+  const body = readRepositoryPage('size-guide').body
+  assert.doesNotMatch(body, /\{\{sizeChart\}\}/)
+  for (const [size, ...widths] of nailSizeChart.rows) {
+    assert.ok(body.includes(`| ${size} | ${widths.map((width) => `${width} mm`).join(' | ')} |`))
+  }
+  const html = renderToStaticMarkup(createElement(ReactMarkdown, { remarkPlugins: [remarkGfm] }, body))
+  assert.equal((html.match(/<tbody>[\s\S]*<\/tbody>/)?.[0].match(/<tr>/g) || []).length, nailSizeChart.rows.length)
+})
+
+test('the product chart shows units, every finger width and the selected size', () => {
+  const html = renderToStaticMarkup(createElement(NailSizeChart, { selectedSize: 's' }))
+  assert.match(html, /Nail widths in millimeters \(mm\)/)
+  assert.match(html, /role="region" aria-label="Nail size chart" tabindex="0"/)
+  for (const [size, ...widths] of nailSizeChart.rows) {
+    const row = html.match(new RegExp(`<tr[^>]*><th[^>]*>${size}</th>([\\s\\S]*?)</tr>`))?.[0] || ''
+    assert.ok(row, String(size))
+    assert.equal((row.match(/<td/g) || []).length, widths.length)
+    for (const width of widths) assert.ok(row.includes(`>${width}</td>`))
+    assert.equal(row.includes('text-[#704576]'), size === 'S')
+  }
 })
 
 test('reserved pages cannot be overwritten, renamed or recreated in Admin or CMS writes', async () => {

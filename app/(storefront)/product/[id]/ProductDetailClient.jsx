@@ -13,6 +13,7 @@ import remarkGfm from 'remark-gfm'
 import { formatDimension } from '@/lib/format-dimension'
 import PaymentMethods from '@/components/PaymentMethods'
 import StorefrontSelect from '@/components/StorefrontSelect'
+import NailSizeChart from '@/components/NailSizeChart'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { sortProductSizes } from '@/lib/product-size-order'
 import { productVariantAttributeKeys } from '@/lib/product-color'
@@ -33,10 +34,12 @@ export default function ProductPage() {
   useEffect(() => {
     if (variants.length) {
       const preferredVariant = new URLSearchParams(window.location.search).get('variant')
-      const initial = variants.find((variant) => String(variant.id) === preferredVariant) || variants[0]
+      const initial = variants.find((variant) => String(variant.id) === preferredVariant)
+        || variants.find((variant) => String(variant.size || 's').toLowerCase() === 's')
+        || variants[0]
       setSelectedLength(initial.length || '')
       setSelectedShape(initial.shape || '')
-      setSelectedSize('')
+      setSelectedSize(initial.size || 's')
       setSelectedAttributes(initial.attributes || {})
     } else {
       setSelectedLength('')
@@ -72,7 +75,7 @@ export default function ProductPage() {
     if (matching) {
       setSelectedLength(matching.length)
       setSelectedShape(matching.shape)
-      setSelectedSize(dimension === 'size' ? matching.size || 's' : '')
+      setSelectedSize(matching.size || 's')
       setSelectedAttributes(matching.attributes || proposedAttributes)
     }
   }
@@ -114,10 +117,12 @@ export default function ProductPage() {
               <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="ui-button ui-button--secondary w-full sm:flex-1">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
               <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/checkout') }} className="ui-button ui-button--primary w-full sm:flex-1">Buy now</button>
             </div>
-            {variants.length > 0 && <p className="mt-2 text-xs text-[#786963]" role="status">{selectedVariant ? `Selected size: ${String(selectedVariant.size || 's').toUpperCase()}` : 'Choose your size before adding this set to your bag.'}</p>}
+            {variants.length > 0 && <p className="mt-2 text-xs text-[#786963]" role="status">{selectedVariant ? `Selected size: ${String(selectedVariant.size || 's').toUpperCase()}. Check your measurements below before ordering.` : 'Choose your size before adding this set to your bag.'}</p>}
             <details className="mt-4 rounded-lg bg-[#f8f3ef] px-4 py-3 text-sm">
               <summary className="cursor-pointer font-medium underline underline-offset-2">How to choose your size</summary>
-              <p className="mt-3 leading-6 text-[#6e5c55]">Measure the widest part of each natural nail in millimeters, then compare those measurements with the <Link className="underline" href="/size-guide/">size guide</Link>. Try each press-on against a clean, dry nail before applying adhesive. If you’re unsure, contact <a className="underline" href={`mailto:${siteSettings.customerEmail}`}>{siteSettings.customerEmail}</a> before ordering.</p>
+              <p className="mt-3 leading-6 text-[#6e5c55]">Measure the widest part of each natural nail from sidewall to sidewall. Measure both hands, then compare your measurements with the chart below.</p>
+              <NailSizeChart selectedSize={selectedSize} />
+              <p className="mt-3 leading-6 text-[#6e5c55]">See the <Link className="underline underline-offset-2" href="/size-guide/">step-by-step measuring guide</Link> for photos. Try each press-on against a clean, dry nail before applying adhesive. If you’re unsure, contact <a className="underline" href={`mailto:${siteSettings.customerEmail}`}>{siteSettings.customerEmail}</a> before ordering.</p>
             </details>
             <p className="mt-4 text-sm leading-6 text-[#6e5c55]">Estimated delivery: {shippingEstimate}. Free shipping on orders over {currency || '$'}{Number(shippingSettings.freeShippingThreshold).toFixed(2)} after discounts. <Link href="/shipping-policy/" className="underline underline-offset-2">Shipping details</Link></p>
             <PaymentMethods className="mt-3" />

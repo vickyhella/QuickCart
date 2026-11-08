@@ -1,14 +1,23 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import contentSources from '../config/content-sources.json'
+import nailSizeChart from '../config/nail-size-chart.json'
 import { repositoryPages } from './repository-pages'
 import { getShippingSettings, shippingPolicyDetails } from './shipping-config'
+
+const sizeChartMarkdown = [
+  `| ${nailSizeChart.columns.join(' | ')} |`,
+  `| ${nailSizeChart.columns.map(() => '---').join(' | ')} |`,
+  ...nailSizeChart.rows.map(([size, ...widths]) => `| ${size} | ${widths.map((width) => `${width} mm`).join(' | ')} |`),
+].join('\n')
 
 export function readRepositoryPage(slug: string) {
   const page = repositoryPages.find((page) => page.slug === slug)
   if (!page) throw new Error(`Unknown repository page: ${slug}`)
   const source = readFileSync(path.join(process.cwd(), 'content/pages', `${page.slug}.md`), 'utf8')
-  const body = page.slug === 'shipping-policy' ? source.replace('{{shippingDetails}}', shippingPolicyDetails()) : source
+  const body = page.slug === 'shipping-policy'
+    ? source.replace('{{shippingDetails}}', shippingPolicyDetails())
+    : page.slug === 'size-guide' ? source.replace('{{sizeChart}}', sizeChartMarkdown) : source
   if (!body.trim()) throw new Error(`Empty repository page: ${slug}`)
   return { ...page, body }
 }
@@ -35,6 +44,7 @@ export async function getPublicRepositoryPage(slug: string) {
   if (!page) return null
   let body = String(page.body || '')
   if (slug === 'shipping-policy') body = body.replace('{{shippingDetails}}', shippingPolicyDetails(await getShippingSettings(payload)))
+  if (slug === 'size-guide') body = body.replace('{{sizeChart}}', sizeChartMarkdown)
   return { slug, title: String(page.title || ''), seoTitle: String(page.seoTitle || ''), description: String(page.seoDescription || ''), body }
 }
 

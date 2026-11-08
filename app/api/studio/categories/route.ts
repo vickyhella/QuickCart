@@ -39,8 +39,8 @@ function normalizeCustomDimensions(value: unknown): Dimension[] {
     return [{ key, label, valueType, options: normalizeOptions(dimension.options, [], valueType) }]
   })
   if (!dimensions.some((dimension) => dimension.key === 'color')) dimensions.unshift({ key: 'color', label: 'Color', valueType: 'text', options: [] })
-  if (!dimensions.some((dimension) => dimension.key === 'quantity')) dimensions.push({ key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] })
-  return dimensions
+  if (!dimensions.some((dimension) => dimension.key === 'quantity')) dimensions.push({ key: 'quantity', label: 'Pack quantity', valueType: 'integer', options: [] })
+  return dimensions.map((dimension) => dimension.key === 'quantity' && dimension.label.toLowerCase() === 'quantity' ? { ...dimension, label: 'Pack quantity' } : dimension)
 }
 
 function categoryImages(value: unknown): Record<string, string> {

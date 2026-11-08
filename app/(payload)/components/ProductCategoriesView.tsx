@@ -23,7 +23,7 @@ const initialDimensions: Dimension[] = [
     ['shapes', 'Shape', defaultProductDimensionOptions.shapes],
   ] as const).map(([key, label, options]) => ({ key, label, valueType: 'text' as const, options: options.map((option) => ({ ...option, products: [] })) })),
   { key: 'color', label: 'Color', valueType: 'text', options: [] },
-  { key: 'quantity', label: 'Quantity', valueType: 'integer', options: [] },
+  { key: 'quantity', label: 'Pack quantity', valueType: 'integer', options: [] },
 ]
 
 export function ProductCategoriesView() {
@@ -186,7 +186,7 @@ export function ProductCategoriesView() {
             className="mt-1 block w-full rounded-xl border border-[#e7ddd8] bg-white px-4 py-3 text-sm text-[#302522]"
             value={newDimension}
             onChange={(event) => setNewDimension(event.target.value)}
-            placeholder="e.g. Quantity"
+            placeholder="e.g. Finish"
             disabled={busy}
           />
         </label>
@@ -257,7 +257,9 @@ export function ProductCategoriesView() {
               {currentDimension?.label} {currentDimension?.valueType === 'integer' ? 'values in use' : 'options'}
             </h2>
             <p className="mt-1 text-sm text-[#968680]">
-              {currentDimension?.valueType === 'integer'
+              {currentDimension?.key === 'quantity'
+                ? 'Pack quantity means pieces in one pack, not the number added to the cart. Multiple pack quantities for the same Length + Shape + Size combination are not supported by Product Studio yet.'
+                : currentDimension?.valueType === 'integer'
                 ? 'Enter integer values directly on each product variant. The values below are collected from products.'
                 : currentDimension?.key === 'color'
                   ? 'Assign one color to each product in Product Studio. Color is used for filtering and is not a variant choice.'

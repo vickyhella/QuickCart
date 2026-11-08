@@ -171,3 +171,5 @@ npm run migrate:production -- apply
 前台提速：`SafeImage` 为本地和已配置的 R2 图片启用响应式尺寸；R2 白名单从现有 `R2_PUBLIC_URL` 环境配置生成，未知外链继续直接加载。新增图片超过 2400px 时缩小展示版本，原图保留。商品页服务端提供当前商品，列表 / 搜索只返回摘要，保留购物车所需变体；`lib/storefront-request.js` 合并并发请求，商品与导航接口使用 30 秒浏览器私有缓存，手动重试跳过该缓存。无新环境变量或迁移，修改 `next.config.mjs` 后需重启开发服务；部署后生效。结账仍由原服务端校验实际价格和库存。
 
 Marketing Studio → SEO 改为左右对照编辑与实时预览，可选择商品预览描述和搜索结果；变量说明折叠展示，保存入口吸底，已保存 SEO 表格支持名称筛选。入口为 `app/(payload)/components/MarketingSeoEditor.tsx` 与同名 CSS Module，沿用现有保存逻辑，无新增迁移或配置。
+
+Categories 的 Color 为商品级筛选，当前本地未配置选项；需先增加颜色，再在 Product Studio 为商品指定颜色。Quantity 显示为 Pack quantity，存储 key 仍为 `quantity`；Categories 页面明确提示它是套装件数，当前不能生成同一 Length + Shape + Size 的多个件数规格。检查说明见 `docs/categories-variants-review.md`，无数据或 Variant ID 迁移。

@@ -38,9 +38,9 @@ export default function Home() {
 
       <section className="bg-[#fbf8f5] px-0 pt-0">
         <div className="storefront-container storefront-card grid bg-[#eee5f2] lg:min-h-[600px] lg:grid-cols-2 xl:min-h-[640px]">
-          <div className="order-2 flex flex-col justify-center bg-[#eee5f2] px-6 py-9 sm:px-10 sm:py-12 lg:order-1 lg:px-16 lg:py-12">
+          <div className="order-2 flex flex-col justify-center bg-[#eee5f2] px-6 py-7 sm:px-10 sm:py-12 lg:order-1 lg:px-16 lg:py-12">
             <p className="text-xs font-semibold tracking-[0.16em] text-[#704576]">{hero.eyebrow}</p>
-            <h1 className="mt-5 max-w-[620px] font-serif text-[3.35rem] leading-[.93] tracking-[-.055em] sm:text-7xl lg:text-[4.8rem] xl:text-[5rem]">
+            <h1 className="mt-4 max-w-[620px] font-serif text-[3rem] leading-[.96] tracking-[-.055em] sm:mt-5 sm:text-7xl lg:text-[4.8rem] xl:text-[5rem]">
               {hero.title.split('\n').map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}
             </h1>
             <p className="mt-6 max-w-md text-[15px] leading-7 text-[#393720] sm:text-base">
@@ -58,7 +58,7 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="relative order-1 aspect-square overflow-hidden bg-[#eee5f2] sm:aspect-[4/3] lg:order-2 lg:aspect-auto lg:min-h-[600px] xl:min-h-[640px]">
+          <div className="relative order-1 aspect-[3/2] overflow-hidden bg-[#eee5f2] sm:aspect-[4/3] lg:order-2 lg:aspect-auto lg:min-h-[600px] xl:min-h-[640px]">
             {heroImage ? (
               <div className="absolute inset-0 block">
               <SafeImage
@@ -176,6 +176,11 @@ export default function Home() {
                 <p className="mt-2 text-sm leading-6 text-white/70">{description}</p>
               </div>
             ))}
+          </div>
+          <div className="mt-9 flex flex-wrap gap-x-6 gap-y-3 border-t border-white/20 pt-5 text-sm font-semibold text-[#e5c8df]">
+            <Link href="/how-to-apply/" className="underline underline-offset-4 hover:text-white">How to apply ↗</Link>
+            <Link href="/size-guide/" className="underline underline-offset-4 hover:text-white">Find your nail size ↗</Link>
+            <Link href="/what-you-will-get/" className="underline underline-offset-4 hover:text-white">What’s in the set ↗</Link>
           </div>
         </div>
       </section>

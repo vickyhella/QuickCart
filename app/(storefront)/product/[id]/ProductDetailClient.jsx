@@ -19,7 +19,7 @@ import { productVariantAttributeKeys } from '@/lib/product-color'
 
 export default function ProductPage() {
   const { id } = useParams()
-  const { products, productsStatus, fetchProductData, addToCart, router, currency } = useAppContext()
+  const { products, productsStatus, fetchProductData, addToCart, router, currency, shippingSettings, shippingEstimate, siteSettings } = useAppContext()
   const product = products.find((item) => item._id === String(id) || item.slug === String(id))
   const [mainImage, setMainImage] = useState('')
   const [selectedLength, setSelectedLength] = useState('')
@@ -36,7 +36,7 @@ export default function ProductPage() {
       const initial = variants.find((variant) => String(variant.id) === preferredVariant) || variants[0]
       setSelectedLength(initial.length || '')
       setSelectedShape(initial.shape || '')
-      setSelectedSize(initial.size || 's')
+      setSelectedSize('')
       setSelectedAttributes(initial.attributes || {})
     } else {
       setSelectedLength('')
@@ -59,8 +59,8 @@ export default function ProductPage() {
 
   const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`
   const pricing = getPriceDetails(product, selectedVariant)
-  const availableLengths = [...new Set(variants.filter((variant) => variant.shape === selectedShape && (variant.size || 's') === selectedSize).map((variant) => variant.length).filter(Boolean))]
-  const availableShapes = [...new Set(variants.filter((variant) => variant.length === selectedLength && (variant.size || 's') === selectedSize).map((variant) => variant.shape).filter(Boolean))]
+  const availableLengths = [...new Set(variants.filter((variant) => variant.shape === selectedShape && (!selectedSize || (variant.size || 's') === selectedSize)).map((variant) => variant.length).filter(Boolean))]
+  const availableShapes = [...new Set(variants.filter((variant) => variant.length === selectedLength && (!selectedSize || (variant.size || 's') === selectedSize)).map((variant) => variant.shape).filter(Boolean))]
   const matchesAttributes = (variant) => attributeKeys.every((key) => String(variant.attributes?.[key] ?? '') === String(selectedAttributes[key] ?? ''))
   const availableSizes = sortProductSizes(variants.filter((variant) => (!selectedLength || variant.length === selectedLength) && (!selectedShape || variant.shape === selectedShape) && matchesAttributes(variant)).map((variant) => variant.size || 's'))
   const galleryImages = [...new Set([selectedVariant?.image?.url, ...product.image].filter(Boolean))]
@@ -72,7 +72,7 @@ export default function ProductPage() {
     if (matching) {
       setSelectedLength(matching.length)
       setSelectedShape(matching.shape)
-      setSelectedSize(matching.size || 's')
+      setSelectedSize(dimension === 'size' ? matching.size || 's' : '')
       setSelectedAttributes(matching.attributes || proposedAttributes)
     }
   }
@@ -112,8 +112,14 @@ export default function ProductPage() {
             </div>}
             <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full">
               <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="ui-button ui-button--secondary w-full sm:flex-1">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/cart') }} className="ui-button ui-button--primary w-full sm:flex-1">Buy now</button>
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/checkout') }} className="ui-button ui-button--primary w-full sm:flex-1">Buy now</button>
             </div>
+            {variants.length > 0 && <p className="mt-2 text-xs text-[#786963]" role="status">{selectedVariant ? `Selected size: ${String(selectedVariant.size || 's').toUpperCase()}` : 'Choose your size before adding this set to your bag.'}</p>}
+            <details className="mt-4 rounded-lg bg-[#f8f3ef] px-4 py-3 text-sm">
+              <summary className="cursor-pointer font-medium underline underline-offset-2">How to choose your size</summary>
+              <p className="mt-3 leading-6 text-[#6e5c55]">Measure the widest part of each natural nail in millimeters, then compare those measurements with the <Link className="underline" href="/size-guide/">size guide</Link>. Try each press-on against a clean, dry nail before applying adhesive. If you’re unsure, contact <a className="underline" href={`mailto:${siteSettings.customerEmail}`}>{siteSettings.customerEmail}</a> before ordering.</p>
+            </details>
+            <p className="mt-4 text-sm leading-6 text-[#6e5c55]">Estimated delivery: {shippingEstimate}. Free shipping on orders over {currency || '$'}{Number(shippingSettings.freeShippingThreshold).toFixed(2)} after discounts. <Link href="/shipping-policy/" className="underline underline-offset-2">Shipping details</Link></p>
             <PaymentMethods className="mt-3" />
             <div className="product-markdown text-[#6e5c55] leading-7 mt-7">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
@@ -124,7 +130,7 @@ export default function ProductPage() {
             <div className="grid grid-cols-2 gap-4 border-y border-[#e8ded8] py-5 mt-7 text-sm">
               {(selectedVariant?.shape || product.shape) && <div><p className="text-[#998f89]">Shape</p><p className="mt-1">{formatDimension(selectedVariant?.shape || product.shape)}</p></div>}
               {(selectedVariant?.length || product.length) && <div><p className="text-[#998f89]">Length</p><p className="mt-1">{formatDimension(selectedVariant?.length || product.length)}</p></div>}
-              <div><p className="text-[#998f89]">Size</p><p className="mt-1 uppercase">{selectedVariant?.size || (variants.length ? 'Choose above' : 'Varies by set')}</p></div>
+              <div><p className="text-[#998f89]">Size</p><p className="mt-1 uppercase">{selectedVariant?.size || (variants.length ? 'Choose size above' : 'Varies by set')}</p></div>
               {attributeKeys.map((key) => <div key={key}><p className="text-[#998f89]">{formatDimension(key)}</p><p className="mt-1">{selectedVariant?.attributes?.[key] ?? '—'}</p></div>)}
               <div><p className="text-[#998f89]">Set</p><p className="mt-1">Reusable press-on nails</p></div>
               {product.sku && <div><p className="text-[#998f89]">SKU</p><p className="mt-1">{product.sku}</p></div>}

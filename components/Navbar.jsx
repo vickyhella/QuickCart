@@ -5,6 +5,7 @@ import { Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useAppContext } from "@/context/AppContext";
 import CartDrawer from "@/components/CartDrawer";
+import { mergeRepositoryPages } from "@/lib/repository-pages";
 
 const CatalogNavigation = ({ pathname, products, storefrontNavigation, storefrontNavigationStatus }) => {
     const searchParams = useSearchParams();
@@ -14,7 +15,7 @@ const CatalogNavigation = ({ pathname, products, storefrontNavigation, storefron
     const options = (configured, values, order) => configured.length ? configured.map((item) => item.value) : [...new Set([...order, ...values])].filter(Boolean).sort((a, b) => (order.indexOf(a) < 0 ? 100 : order.indexOf(a)) - (order.indexOf(b) < 0 ? 100 : order.indexOf(b)) || a.localeCompare(b));
     const lengths = options(storefrontNavigation.lengths, products.flatMap((product) => [String(product.length || "").split(",").map((item) => item.trim()), ...(product.variants || []).map((variant) => variant.length)].flat()), lengthOrder);
     const shapes = options(storefrontNavigation.shapes, products.flatMap((product) => [String(product.shape || "").split(",").map((item) => item.trim()), ...(product.variants || []).map((variant) => variant.shape)].flat()), shapeOrder);
-    const pages = storefrontNavigation.pages.filter((page) => page.placement === 'navigation');
+    const pages = mergeRepositoryPages(storefrontNavigation.pages).filter((page) => page.placement === 'navigation');
     const isNavigationPage = (page) => currentPath === `/${page.slug}`;
     const howToUseActive = pages.some(isNavigationPage);
     const sale = searchParams.get('sale') === 'true';

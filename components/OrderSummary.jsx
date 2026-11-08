@@ -29,6 +29,7 @@ export default function OrderSummary() {
                         {subtotal.toFixed(2)}
                     </span>
                 </div>
+                {quote?.shippingTotal > 0 && quote?.freeShippingThreshold != null && subtotal < quote.freeShippingThreshold && <p className="-mt-2 text-xs text-[#6e5c55]">Add {symbol}{(quote.freeShippingThreshold - subtotal).toFixed(2)} for free shipping.</p>}
                 <div className="flex justify-between">
                     <span className="text-[#6e5c55]">Shipping <span className="text-xs text-[#786963]">({shippingEstimate})</span></span>
                     <span>{shipping}</span>
@@ -39,11 +40,8 @@ export default function OrderSummary() {
                     <span>Included in prices</span>
                 </div>
                 <div className="flex justify-between border-t border-[#d8c9c1] pt-4 text-base font-medium">
-                    <span>Subtotal</span>
-                    <span>
-                        {symbol}
-                        {subtotal.toFixed(2)}
-                    </span>
+                    <span>Total</span>
+                    <span>{quote ? `${symbol}${quote.total.toFixed(2)}` : "Calculating…"}</span>
                 </div>
             </div>
             <button

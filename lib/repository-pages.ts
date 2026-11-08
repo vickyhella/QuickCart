@@ -8,6 +8,9 @@ export const repositoryPages = [
   { slug: 'terms-conditions', title: 'Terms of Service', placement: 'footer-customer-care', description: 'Terms for shopping with Ginny Nana.' },
   { slug: 'refunds-returns', title: 'Refunds & Returns', placement: 'footer-customer-care', description: 'Ginny Nana cancellation, quality issue, return and refund policies.' },
   { slug: 'shipping-policy', title: 'Shipping Policy', placement: 'footer-customer-care', description: 'Ginny Nana shipping destinations, rates and delivery estimates.' },
+  { slug: 'how-to-apply', title: 'How to Apply', placement: 'navigation', description: 'A simple step-by-step guide to fitting and applying press-on nails.' },
+  { slug: 'size-guide', title: 'Nail Size Guide', placement: 'navigation', description: 'Measure your natural nails and find the closest press-on size.' },
+  { slug: 'what-you-will-get', title: 'What’s in the Set', placement: 'navigation', description: 'See the tools and accessories included with a Ginny Nana nail set.' },
 ] as const
 
 export const repositoryPageSlugs = repositoryPages.map(({ slug }) => slug)

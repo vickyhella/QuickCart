@@ -64,6 +64,10 @@ Sandbox 已完成一笔端到端付款测试，订单显示 Paid；Production Li
 
 ## 政策与运费（仓库维护）
 
+顾客指南也在 `content/pages/*.md` 维护：`how-to-apply.md`、`size-guide.md` 和 `what-you-will-get.md`；对应原创示意图位于 `public/site/guides/*.svg`。页面标题和 How to Use 导航入口配置在 `lib/repository-pages.ts`，无需数据库 migration。
+
+贴戴与测量指南使用生成的操作特写配可编辑 SVG 文字；原始图片图层在 `public/site/guides/photos/`。修改文案或版式可编辑 `scripts/build-nail-guides.mjs`，运行 `node scripts/build-nail-guides.mjs` 重新生成两张 SVG；图层、直接编辑及重生成规则见[指南图片维护](./docs/guide-images.md)。无需新增依赖或环境变量。
+
 六个核心页面在 `content/pages/*.md` 编辑，前台沿用原网址；标题、SEO 简介与固定页脚链接在 `lib/repository-pages.ts`。当前配送说明从 `config/shipping.json` 生成，结账共用同份配置。折后满 USD 50 免邮，否则 0.0001–0.2010 kg 收 USD 9、0.2011–0.6010 kg 收 USD 12、≥0.6011 kg 免费；备货 5–10、运输 7–15 个工作日，合计预计 12–25 个工作日。
 
 Admin → Pages 提供页面预览链接和 Markdown 路径；Store settings 提供运费预览与当前维护位置。`config/content-sources.json` 可逐组切换 `repository` / `admin`，切换前要分别应用数据库 migration、检查并按需补建 Pages 内容，再核对后台数据；migration 不会同步 Pages 正文，只有部署后来源切换才会生效。具体命令和覆盖说明见[政策与运费维护](./docs/store-policies.md)。GMC 配送规则仍需手动同步；仓库来源不依赖数据库，Admin 来源需要数据库可用。

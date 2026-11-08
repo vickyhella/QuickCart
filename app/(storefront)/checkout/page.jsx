@@ -180,7 +180,7 @@ export default function CheckoutPage() {
                   <Image unoptimized src={product.image[0]} alt={product.name} fill sizes="64px" className="object-cover" />
                   <span className="absolute right-0 top-0 bg-[#754b43] text-white rounded-bl px-1.5 text-xs">{line.quantity}</span>
                 </div>
-                <div className="flex-1"><p>{product.name}</p><p className="text-xs text-[#786963] mt-1">{[formatDimension(line.length), formatDimension(line.shape)].filter(Boolean).join(' · ')}</p></div>
+                <div className="flex-1"><p>{product.name}</p><p className="text-xs text-[#786963] mt-1">{[formatDimension(line.shape), formatDimension(line.length), line.size ? line.size.toUpperCase() : ''].filter(Boolean).join(' · ')}</p></div>
                 <span>{symbol}{(unitPrice * line.quantity).toFixed(2)}</span>
               </div>)}
             </div>

@@ -14,7 +14,7 @@ export default function Footer() {
     <footer className="border-t border-[#3d2b36] bg-[#261a22] text-white/65">
       <div className="grid gap-10 md:grid-cols-3 px-5 md:px-12 lg:px-20 py-12">
         <div>
-          <Link href="/" aria-label={`${siteSettings.brandName} home`}><Image src={siteSettings.footerLogo} alt={siteSettings.brandName} width={190} height={46} className="h-10 w-auto" /></Link>
+          <Link href="/" aria-label={`${siteSettings.brandName} home`}><Image src={siteSettings.footerLogo} alt={siteSettings.brandName} width={390} height={92} style={{ width: 'auto' }} className="h-10 w-auto" /></Link>
           <p className="text-sm leading-6 mt-4 max-w-sm">{siteSettings.defaultSeo.description}</p>
         </div>
         <div>

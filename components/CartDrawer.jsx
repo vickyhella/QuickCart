@@ -83,7 +83,6 @@ export default function CartDrawer({ open, onClose }) {
                 <article key={key} className="flex gap-4">
                   <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-lg bg-[#f8f3ef]">
                     <SafeImage
-                      unoptimized
                       src={variant?.image?.url || product.image?.[0]}
                       alt={product.name}
                       fill

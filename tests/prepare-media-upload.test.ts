@@ -48,3 +48,13 @@ test('preserves animated GIF input instead of flattening it into WebP', async ()
   assert.equal(prepared.outputMimeType, 'image/gif')
   assert.deepEqual(prepared.output, source)
 })
+
+
+test('caps oversized WebP delivery images at 2400px and retains original bytes', async () => {
+  const source = await sharp({ create: { width: 3000, height: 1500, channels: 3, background: '#a64b72' } }).webp().toBuffer()
+  const prepared = await prepareMediaUpload(asFile('large.webp', 'image/webp', source), 80)
+  const metadata = await sharp(prepared.output).metadata()
+  assert.equal(metadata.width, 2400)
+  assert.equal(metadata.height, 1200)
+  assert.deepEqual(prepared.original, source)
+})

@@ -4,6 +4,7 @@ import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import ts from 'typescript'
+import * as storefrontProduct from '../lib/storefront-product.js'
 import * as mediaResolver from '../lib/resolve-product-media.js'
 import * as pricing from '../lib/product-pricing'
 import * as merchantDescription from '../lib/merchant-feed-description.js'
@@ -69,6 +70,7 @@ function fixture() {
   }
   const policy = load('lib/storefront-cache.ts', { 'next/cache.js': nextCache })
   const modules: Record<string, any> = {
+    '@/lib/storefront-product': storefrontProduct,
     'next/cache': nextCache, 'next/server': { NextResponse: { json: Response.json.bind(Response) } },
     '@/payload.config': { default: {} }, payload: { getPayload: async () => payload },
     './resolve-product-media': mediaResolver, './storefront-cache': policy, '@/lib/storefront-cache': policy,

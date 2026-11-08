@@ -23,10 +23,11 @@ export async function prepareMediaUpload(file: File, quality: number, outputName
   const image = sharp(decoded).rotate()
   const metadata = await image.metadata()
   if (!metadata.width || !metadata.height) throw new Error('The uploaded image could not be decoded into a visible picture.')
-  if (isWebP) return { original: source, originalMimeType: mimeType || 'image/webp', output: source, outputMimeType: 'image/webp', outputName: outputName || name }
+  const oversized = metadata.width > 2400 || metadata.height > 2400
+  if (isWebP && !oversized) return { original: source, originalMimeType: mimeType || 'image/webp', output: source, outputMimeType: 'image/webp', outputName: outputName || name }
 
   const clampedQuality = Math.max(1, Math.min(100, Number(quality) || 82))
-  const output = await image.webp({ quality: clampedQuality }).toBuffer()
+  const output = await image.resize({ width: 2400, height: 2400, fit: 'inside', withoutEnlargement: true }).webp({ quality: clampedQuality }).toBuffer()
   const outputMetadata = await sharp(output).metadata()
   if (!outputMetadata.width || !outputMetadata.height || output.length === 0) throw new Error('The converted WebP image is empty.')
   const stem = name.replace(/\.[^.]+$/, '') || `product-image-${Date.now()}`

@@ -167,3 +167,5 @@ npm run migrate:production -- apply
 先读 [AGENTS.md](./AGENTS.md) 和相关 PRD，再沿用现有 API、组件与业务逻辑。功能行为、重要目录、命令、环境变量或部署方式有变化时，同时用简短中文更新本 README；详细操作步骤和待办放在相应的 `docs/` 文件里，避免重复粘贴。
 
 导航与页脚 Logo 在 `components/Navbar.jsx`、`components/Footer.jsx` 使用 SVG 的原始尺寸 390×92，CSS 按比例缩放，避免图片宽高警告；无需迁移或新增配置。
+
+前台提速：`SafeImage` 为本地和已配置的 R2 图片启用响应式尺寸；R2 白名单从现有 `R2_PUBLIC_URL` 环境配置生成，未知外链继续直接加载。新增图片超过 2400px 时缩小展示版本，原图保留。商品页服务端提供当前商品，列表 / 搜索只返回摘要，保留购物车所需变体；`lib/storefront-request.js` 合并并发请求，商品与导航接口使用 30 秒浏览器私有缓存，手动重试跳过该缓存。无新环境变量或迁移，修改 `next.config.mjs` 后需重启开发服务；部署后生效。结账仍由原服务端校验实际价格和库存。

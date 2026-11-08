@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import Image from 'next/image'
+import Image from '@/components/SafeImage'
 import Link from 'next/link'
 import Footer from '@/components/Footer'
 import Navbar from '@/components/Navbar'
@@ -177,7 +177,7 @@ export default function CheckoutPage() {
             <div className="space-y-4 mt-5">
               {lines.map(({ lineKey, line, product, unitPrice }) => <div key={lineKey} className="flex gap-3 text-sm">
                 <div className="relative w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-white">
-                  <Image unoptimized src={product.image[0]} alt={product.name} fill sizes="64px" className="object-cover" />
+                  <Image src={product.image[0]} alt={product.name} fill sizes="64px" className="object-cover" />
                   <span className="absolute right-0 top-0 bg-[#754b43] text-white rounded-bl px-1.5 text-xs">{line.quantity}</span>
                 </div>
                 <div className="flex-1"><p>{product.name}</p><p className="text-xs text-[#786963] mt-1">{[formatDimension(line.shape), formatDimension(line.length), line.size ? line.size.toUpperCase() : ''].filter(Boolean).join(' · ')}</p></div>

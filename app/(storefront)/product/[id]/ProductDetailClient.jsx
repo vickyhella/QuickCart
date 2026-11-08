@@ -18,10 +18,10 @@ import { getPriceDetails } from '@/lib/product-pricing'
 import { sortProductSizes } from '@/lib/product-size-order'
 import { productVariantAttributeKeys } from '@/lib/product-color'
 
-export default function ProductPage() {
+export default function ProductPage({ initialProduct = null } = {}) {
   const { id } = useParams()
   const { products, productsStatus, fetchProductData, addToCart, router, currency, shippingSettings, shippingEstimate, siteSettings } = useAppContext()
-  const product = products.find((item) => item._id === String(id) || item.slug === String(id))
+  const product = initialProduct || products.find((item) => item._id === String(id) || item.slug === String(id))
   const [mainImage, setMainImage] = useState('')
   const [selectedLength, setSelectedLength] = useState('')
   const [selectedShape, setSelectedShape] = useState('')
@@ -56,8 +56,8 @@ export default function ProductPage() {
     else setMainImage('')
   }, [selectedVariant?.id, selectedVariant?.image?.url])
 
-  if (productsStatus === 'loading') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><p className="py-32 text-center text-[#786963]" role="status">Loading designs…</p><Footer /></main>
-  if (productsStatus === 'error') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center text-[#786963]" role="alert"><p>We couldn’t load this design.</p><button type="button" onClick={fetchProductData} className="mt-3 underline">Try again</button></div><Footer /></main>
+  if (!product && productsStatus === 'loading') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><p className="py-32 text-center text-[#786963]" role="status">Loading designs…</p><Footer /></main>
+  if (!product && productsStatus === 'error') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center text-[#786963]" role="alert"><p>We couldn’t load this design.</p><button type="button" onClick={fetchProductData} className="mt-3 underline">Try again</button></div><Footer /></main>
   if (!product) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center"><h1 className="font-serif text-3xl">This design is unavailable</h1><Link href="/all-products" className="inline-block mt-5 underline">Browse all designs</Link></div><Footer /></main>
 
   const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`
@@ -88,9 +88,9 @@ export default function ProductPage() {
         <div className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,520px)_minmax(0,1fr)] lg:gap-12">
           <div className="mx-auto w-full max-w-[520px]">
             <div className="aspect-[4/5] max-h-[650px] bg-[#f5f0ec] rounded-xl overflow-hidden">
-              <SafeImage unoptimized src={mainImage || selectedVariant?.image?.url || product.image[0]} alt={selectedVariant?.image?.altText || product.imageAlt?.[Math.max(0, product.image.indexOf(mainImage || product.image[0]))] || product.name} width={800} height={1000} className="w-full h-full object-contain p-3 sm:p-5" priority sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 520px" />
+              <SafeImage src={mainImage || selectedVariant?.image?.url || product.image[0]} alt={selectedVariant?.image?.altText || product.imageAlt?.[Math.max(0, product.image.indexOf(mainImage || product.image[0]))] || product.name} width={800} height={1000} className="w-full h-full object-contain p-3 sm:p-5" priority sizes="(max-width: 640px) 100vw, (max-width: 1024px) 80vw, 520px" />
             </div>
-            {galleryImages.length > 1 && <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3 mt-3">{galleryImages.map((image, index) => <button key={image + index} onClick={() => setMainImage(image)} className="aspect-square rounded-lg overflow-hidden bg-[#f5f0ec] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#754b43]"><SafeImage unoptimized src={image} alt={product.imageAlt?.[Math.max(0, product.image.indexOf(image))] || `${product.name} view ${index + 1}`} width={160} height={160} className="w-full h-full object-contain p-1" /></button>)}</div>}
+            {galleryImages.length > 1 && <div className="grid grid-cols-4 sm:grid-cols-5 gap-2 sm:gap-3 mt-3">{galleryImages.map((image, index) => <button key={image + index} onClick={() => setMainImage(image)} className="aspect-square rounded-lg overflow-hidden bg-[#f5f0ec] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#754b43]"><SafeImage src={image} alt={product.imageAlt?.[Math.max(0, product.image.indexOf(image))] || `${product.name} view ${index + 1}`} width={160} height={160} sizes="(max-width: 639px) 22vw, 100px" className="w-full h-full object-contain p-1" /></button>)}</div>}
           </div>
           <div className="min-w-0 w-full max-w-2xl lg:py-3">
             <p className="text-xs uppercase tracking-[0.24em] text-[#9a756d]">Handmade press-on nails</p>

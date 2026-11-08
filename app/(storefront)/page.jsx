@@ -57,7 +57,7 @@ export default function Home() {
             <a href="#first-set" className="mt-4 inline-flex min-h-10 w-fit items-center text-sm font-medium text-[var(--store-accent)] underline underline-offset-4">New to press-ons? Start here</a>
           </div>
           <div className="relative order-1 aspect-[2/1] overflow-hidden bg-[var(--store-lavender)] sm:aspect-[4/3] lg:order-2 lg:aspect-auto lg:min-h-[580px] xl:min-h-[620px]">
-            {hero.image && <SafeImage unoptimized src={hero.image} alt={hero.alt} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover object-[center_55%] lg:object-[center_28%]" priority />}
+            {hero.image && <SafeImage src={hero.image} alt={hero.alt} fill sizes="(max-width: 1023px) 100vw, 50vw" className="object-cover object-[center_55%] lg:object-[center_28%]" priority />}
             {hero.badge && <span className="absolute bottom-6 right-6 hidden bg-[var(--store-surface)] px-4 py-3 text-xs font-semibold sm:block">{hero.badge}</span>}
           </div>
         </div>

@@ -54,7 +54,6 @@ const Cart = () => {
                         <div>
                           <div className="rounded-xl overflow-hidden bg-[var(--gn-lavender-soft)] p-2">
                             <SafeImage
-                              unoptimized
                               src={variant?.image?.url || product.image[0]}
                               alt=""
                               className="w-16 h-auto object-cover"

@@ -1,3 +1,4 @@
+import { toStorefrontProduct } from '@/lib/storefront-product'
 import { getPublishedCatalog, getStorefrontMarketingSettings } from '@/lib/storefront-catalog'
 import ProductDetailClient from './ProductDetailClient'
 
@@ -33,6 +34,8 @@ export async function generateMetadata({ params }) {
   }
 }
 
-export default function ProductPage() {
-  return <ProductDetailClient />
+export default async function ProductPage({ params }) {
+  const { id } = await params
+  const product = await findProduct(id)
+  return <ProductDetailClient initialProduct={product ? toStorefrontProduct(product) : null} />
 }

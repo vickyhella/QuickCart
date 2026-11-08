@@ -1,3 +1,4 @@
+import { toStorefrontSummary } from '@/lib/storefront-product'
 import { getPublishedCatalog } from '@/lib/storefront-catalog'
 
 export const dynamic = 'force-dynamic'
@@ -10,7 +11,7 @@ export async function GET(request: Request) {
   const products = query ? (await getPublishedCatalog()).filter((product) => String(product.title || '').toLowerCase().includes(query)).sort((a, b) => String(a.title).localeCompare(String(b.title))) : []
   const totalPages = Math.max(1, Math.ceil(products.length / 24))
   return Response.json({
-    docs: products.slice((page - 1) * 24, page * 24), totalDocs: products.length, totalPages, page,
+    docs: products.slice((page - 1) * 24, page * 24).map(toStorefrontSummary), totalDocs: products.length, totalPages, page,
     hasPrevPage: page > 1, hasNextPage: page < totalPages, prevPage: page > 1 ? page - 1 : null, nextPage: page < totalPages ? page + 1 : null,
   }, { headers: { 'Cache-Control': 'no-store' } })
 }

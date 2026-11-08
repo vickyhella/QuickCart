@@ -8,7 +8,7 @@ import ts from 'typescript'
 const source = readFileSync(new URL('../app/(storefront)/product/[id]/ProductDetailClient.jsx', import.meta.url), 'utf8')
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true } }).outputText
 
-function productPage(sizes = ['xs', 's', 'm'], query = '', outOfStock = false) {
+function productPage(sizes = ['xs', 's', 'm'], query = '', outOfStock = false, serverRendered = false) {
   const variants = sizes.map((size) => ({ id: `variant-${size}`, length: 'short', shape: 'oval', size, enabled: true, trackStock: true, stock: outOfStock ? 0 : 10 }))
   const product = { _id: 'nails', name: 'Nails', image: [], variants }
   const state: any[] = []
@@ -28,7 +28,7 @@ function productPage(sizes = ['xs', 's', 'm'], query = '', outOfStock = false) {
     },
     'next/navigation': { useParams: () => ({ id: 'nails' }) },
     '@/context/AppContext': { useAppContext: () => ({
-      products: [product], productsStatus: 'success', addToCart: (...args: any[]) => added.push(args), router: { push: (route: string) => routes.push(route) },
+      products: serverRendered ? [] : [product], productsStatus: serverRendered ? 'loading' : 'success', addToCart: (...args: any[]) => added.push(args), router: { push: (route: string) => routes.push(route) },
       shippingSettings: { freeShippingThreshold: 50 }, shippingEstimate: '12–25 days', siteSettings: { customerEmail: 'hello@example.com' },
     }) },
     '@/lib/format-dimension': { formatDimension: (value: string) => value },
@@ -38,7 +38,7 @@ function productPage(sizes = ['xs', 's', 'm'], query = '', outOfStock = false) {
   }
   const exports: any = {}
   runInNewContext(code, { exports, URLSearchParams, window: { location: { search: query }, setTimeout: () => 0 }, require: (name: string) => imports[name] || { __esModule: true, default: name } })
-  const render = () => { cursor = 0; effects = []; return exports.default() }
+  const render = () => { cursor = 0; effects = []; return exports.default(serverRendered ? { initialProduct: product } : undefined) }
   render()
   effects.forEach((effect) => effect())
   return { tree: render(), added, routes }
@@ -75,4 +75,12 @@ test('a selected out-of-stock size still prevents purchase', () => {
   const nodes = elements(productPage(['s'], '', true).tree)
   assert.equal(nodes.find((node) => node.type === 'button' && node.props.children === 'Out of stock')?.props.disabled, true)
   assert.equal(nodes.find((node) => node.type === 'button' && node.props.children === 'Buy now')?.props.disabled, true)
+})
+
+
+test('a server-provided product renders before the browser catalogue finishes loading', () => {
+  const page = productPage(['s'], '', false, true)
+  const nodes = elements(page.tree)
+  assert.ok(nodes.some((node) => node.type === 'button' && node.props.children === 'Add to cart'))
+  assert.ok(!nodes.some((node) => node.props.children === 'Loading designs…'))
 })

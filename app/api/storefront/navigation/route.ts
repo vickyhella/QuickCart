@@ -78,6 +78,6 @@ export async function GET() {
     data = { lengths: options('lengths'), shapes: options('shapes'), pages: [] }
   }
   return Response.json(data, {
-    headers: { 'Cache-Control': 'no-store' },
+    headers: { 'Cache-Control': 'private, max-age=30, must-revalidate' },
   })
 }

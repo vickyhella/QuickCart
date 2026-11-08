@@ -19,10 +19,10 @@ const ProductCard = ({ product }) => {
         >
             <div className="store-product-card__media">
                 <SafeImage
-                    unoptimized
                     src={product.image?.[0] || '/media/ginny-nana-press-on-nails-test1-01.webp'}
                     alt={product.imageAlt?.[0] || product.name}
                     className="store-product-card__image"
+                    sizes="(max-width: 639px) 45vw, (max-width: 1023px) 30vw, 400px"
                     width={720}
                     height={900}
                 />

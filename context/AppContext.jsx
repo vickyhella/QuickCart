@@ -1,4 +1,5 @@
 'use client'
+import { fetchStorefrontJSON } from '@/lib/storefront-request'
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
 import toast from "react-hot-toast";
@@ -59,12 +60,10 @@ export const AppContextProvider = (props) => {
         window.localStorage.setItem('ginnynana-cart', JSON.stringify(cartItems))
     }, [cartItems, cartLoaded])
 
-    const fetchProductData = async () => {
+    const fetchProductData = async (refresh = true) => {
         setProductsStatus('loading')
         try {
-            const response = await fetch('/api/storefront/products', { cache: 'no-store' })
-            if (!response.ok) throw new Error('Could not load products')
-            const { docs = [] } = await response.json()
+            const { docs = [] } = await fetchStorefrontJSON('/api/storefront/products', Boolean(refresh))
             setProducts(docs.map(toStorefrontProduct))
             setProductsStatus('loaded')
         } catch (error) {
@@ -133,15 +132,11 @@ export const AppContextProvider = (props) => {
     }
 
     useEffect(() => {
-        fetchProductData()
+        fetchProductData(false)
         let lastNavigationFetch = 0
         const fetchNavigation = () => {
             lastNavigationFetch = Date.now()
-            fetch('/api/storefront/navigation', { cache: 'no-store' })
-            .then((response) => {
-                if (!response.ok) throw new Error('Could not load storefront navigation')
-                return response.json()
-            })
+            fetchStorefrontJSON('/api/storefront/navigation')
             .then((data) => {
                 setStorefrontNavigation(data)
                 setStorefrontNavigationStatus('loaded')

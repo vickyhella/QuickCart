@@ -173,3 +173,5 @@ npm run migrate:production -- apply
 Marketing Studio → SEO 改为左右对照编辑与实时预览，可选择商品预览描述和搜索结果；变量说明折叠展示，保存入口吸底，已保存 SEO 表格支持名称筛选。入口为 `app/(payload)/components/MarketingSeoEditor.tsx` 与同名 CSS Module，沿用现有保存逻辑，无新增迁移或配置。
 
 Categories 的 Color 为商品级筛选，当前本地未配置选项；需先增加颜色，再在 Product Studio 为商品指定颜色。Quantity 显示为 Pack quantity，存储 key 仍为 `quantity`；Categories 页面明确提示它是套装件数，当前不能生成同一 Length + Shape + Size 的多个件数规格。检查说明见 `docs/categories-variants-review.md`，无数据或 Variant ID 迁移。
+
+后台工作区布局：Products、Media、Media Originals 的原生列表共用标题 → 标签 → 工具 → 列表顺序及对应工作区边距；修复 `beforeList` 内容贴边问题，原生筛选、分页和操作保留。Spreadsheet 对齐 Product Studio 的宽度和留白，媒体工具页补齐标题；标签窄屏可换行。样式在 `app/(payload)/studio-utilities.css`，导航组件为 `ProductWorkspaceTabs.tsx` / `MediaWorkspaceTabs.tsx`。无需配置、依赖或数据库迁移。

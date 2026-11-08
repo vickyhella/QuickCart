@@ -46,3 +46,63 @@
   margin: 0;
   padding: 0;
 }
+
+/* Payload renders beforeList outside its Gutter. Keep workspace tabs/tools in the
+   same frame and place the native header above them without replacing list controls. */
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) {
+  --workspace-list-gutter: 20px;
+  --workspace-list-max-width: 1600px;
+  --workspace-list-top: 40px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  max-width: var(--workspace-list-max-width);
+  margin-inline: auto;
+  padding: var(--workspace-list-top) var(--workspace-list-gutter) var(--spacing-view-bottom, 40px);
+}
+
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) > .collection-list__wrap {
+  display: contents;
+}
+
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) > .collection-list__wrap > .list-header {
+  order: -2;
+  margin: 0 0 32px;
+}
+
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) .list-header__title {
+  font-size: 36px;
+  font-weight: 600;
+}
+
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) .custom-view-description {
+  color: var(--brand-text-secondary);
+  font-size: 14px;
+}
+
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) > .admin-workspace-tabs {
+  order: -1;
+}
+
+.template-default__wrap > .collection-list:has(> .admin-workspace-tabs) .collection-list__tables {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.admin-workspace-tabs { min-width: 0; flex-wrap: wrap; }
+.admin-workspace-tabs > a { white-space: nowrap; }
+
+@media (min-width: 640px) {
+  .template-default__wrap > .collection-list:has(> .admin-workspace-tabs) { --workspace-list-gutter: 32px; }
+}
+@media (min-width: 1024px) {
+  .template-default__wrap > .collection-list:has(> .admin-workspace-tabs) { --workspace-list-gutter: 40px; }
+}
+
+.template-default__wrap > :is(.collection-list--media, .collection-list--media-originals):has(> .admin-workspace-tabs) {
+  --workspace-list-gutter: clamp(20px, 4vw, 56px);
+  --workspace-list-max-width: 1320px;
+  --workspace-list-top: 24px;
+}

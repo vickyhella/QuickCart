@@ -723,8 +723,8 @@ export function ProductBulkEditor() {
   }
 
   return (
-    <main className="product-studio min-h-screen bg-[#f7f3f0] px-5 py-6 font-sans text-base antialiased text-[#302522] md:px-8 lg:px-10">
-      <header className="mb-5">
+    <main className="product-studio mx-auto min-h-screen max-w-[1600px] bg-[#f7f3f0] px-5 py-10 font-sans text-base antialiased text-[#302522] md:px-8 lg:px-10">
+      <header className="mb-8">
         <h1 className="text-3xl font-semibold tracking-tight">Spreadsheet</h1>
         <p className="mt-2 max-w-[1000px] text-sm text-[#766966]">
         Edit cells directly or paste a tab-separated range copied from Excel or Google Sheets. One row represents one product. Use “Edit variants” for a readable variant table; image cells accept a Media ID or filename. Created date, Published date, and Storefront New status are read-only diagnostic columns.

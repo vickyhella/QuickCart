@@ -14,7 +14,7 @@ export function ProductWorkspaceTabs() {
     <nav
       aria-label="Product Studio sections"
       role="tablist"
-      className="mb-8 flex gap-2 border-b border-[#e7ddd8]"
+      className="admin-workspace-tabs mb-8 flex gap-2 border-b border-[#e7ddd8]"
     >
       {productWorkspaceTabs.map(({ label, href }) => {
         const active = href === activeHref

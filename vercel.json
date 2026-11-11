@@ -1,10 +1,6 @@
 {
   "crons": [
     {
-      "path": "/api/cron/pinterest-publish",
-      "schedule": "0 9 * * *"
-    },
-    {
       "path": "/api/cron/cleanup-studio-media",
       "schedule": "0 10 * * *"
     }

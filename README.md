@@ -177,3 +177,11 @@ Categories 的 Color 为商品级筛选，当前本地未配置选项；需先�
 后台工作区布局：Products、Media、Media Originals 的原生列表共用标题 → 标签 → 工具 → 列表顺序及对应工作区边距；修复 `beforeList` 内容贴边问题，原生筛选、分页和操作保留。Spreadsheet 对齐 Product Studio 的宽度和留白，媒体工具页补齐标题；标签窄屏可换行。样式在 `app/(payload)/studio-utilities.css`，导航组件为 `ProductWorkspaceTabs.tsx` / `MediaWorkspaceTabs.tsx`。无需配置、依赖或数据库迁移。
 
 Media → Image names & metadata 使用与 SEO 相同的编辑 / 预览布局；可选择商品和图片，实时预览新上传图片的文件名、标题、Alt 和 Caption，已保存元数据单独展示并支持搜索。组件为 `MarketingMetadataEditor.tsx`，预览规则在 `lib/media-template-preview.ts`；沿用原保存和上传逻辑，不批量改写现有图片，无新增迁移或配置。
+
+## Pinterest 定时发布
+
+在 QuickCart 的 Netlify Production 中配置 Functions 环境变量 `PINTEREST_ACCESS_TOKEN`、`PINTEREST_BOARD_ID` 和 `CRON_SECRET` 后重新部署。令牌和密钥标记为 Secret，已有的 `CRON_SECRET` 可继续使用。公开发布需要 Pinterest Standard access。
+
+在 Marketing Studio 的 Pinterest publishing 中选择已上架且有公开主图的商品并设定时间。`netlify/functions/pinterest-publish.ts` 每天北京时间 17:00 调用发布接口处理已到期的任务。请在 Pinterest Posts 查看发布状态、Pin ID 或失败原因。Netlify 的预览部署不会自动运行此定时任务。
+
+当前发布接口使用固定的 Access Token，过期前需更新 Netlify 中的值并重新部署。

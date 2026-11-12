@@ -11,9 +11,11 @@
   },
   "discovery": {
     "lengths": [
+      { "value": "x-short", "label": "X-Short", "description": "The closest fit to natural nails" },
       { "value": "short", "label": "Short", "description": "A little everyday detail" },
       { "value": "medium", "label": "Medium", "description": "A little more length" },
-      { "value": "long", "label": "Long", "description": "A bigger statement" }
+      { "value": "long", "label": "Long", "description": "A bigger statement" },
+      { "value": "x-long", "label": "X-Long", "description": "The most dramatic length" }
     ]
   },
   "featured": {

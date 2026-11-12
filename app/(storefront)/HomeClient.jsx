@@ -73,10 +73,10 @@ export default function Home({ selection }) {
             <div><h2 id="length-heading" className="font-serif text-3xl tracking-[-.03em] sm:text-4xl">Start with your length.</h2><p className="mt-2 text-sm leading-6 text-[var(--store-muted)]">Find the look that fits your day.</p></div>
             <Link href="/by-shape/" className="inline-flex min-h-10 items-center text-sm font-medium text-[var(--store-accent)] underline underline-offset-4">Prefer to shop by shape?</Link>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-3 sm:mt-7 sm:gap-6">
+          <div className="mt-5 grid grid-cols-3 gap-3 sm:mt-7 sm:gap-5 lg:grid-cols-5">
             {lengths.map((item) => <Link key={item.value} href={'/by-length?length=' + encodeURIComponent(item.value)} className="group min-w-0 rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--store-accent)]">
-              <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-[var(--store-lavender)] sm:aspect-[4/3]"><SafeImage src={item.image.image} alt={item.image.alt} fill sizes="(max-width: 639px) 30vw, (max-width: 1023px) 31vw, 380px" className="object-cover object-[center_65%] transition-transform duration-500 group-hover:scale-[1.03]" /></div>
-              <h3 className="mt-3 flex items-center justify-between gap-1 font-serif text-xl sm:text-3xl">{item.label}<span aria-hidden="true" className="text-base text-[var(--store-accent)]">↗</span></h3>
+              <div className="relative aspect-[3/4] overflow-hidden rounded-lg bg-[var(--store-lavender)] sm:aspect-[4/3]"><SafeImage src={item.image.image} alt={item.image.alt} fill sizes="(max-width: 639px) 30vw, (max-width: 1023px) 31vw, 240px" className="object-cover object-[center_65%] transition-transform duration-500 group-hover:scale-[1.03]" /></div>
+              <h3 className="mt-3 flex items-center justify-between gap-1 font-serif text-lg sm:text-2xl">{item.label}<span aria-hidden="true" className="text-base text-[var(--store-accent)]">↗</span></h3>
               <p className="mt-1 hidden text-sm text-[var(--store-muted)] sm:block">{item.description}</p>
             </Link>)}
           </div>

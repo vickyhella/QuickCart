@@ -193,5 +193,5 @@ Media → Image names & metadata 使用与 SEO 相同的编辑 / 预览布局；
 ## 商城 SEO 与 Google 商品 Feed
 
 - `/robots.txt` 声明 `/sitemap.xml`。站点地图包含公开入口和符合索引条件的已发布商品，商品详情默认使用正式域名下的 slug 作为 canonical，并保留后台手工设置。
-- 首页精选、`/all-products/` 和 `/collections/short/`、`/collections/oval/` 在服务端输出商品链接。商品列表每页 24 款，筛选状态保存在 URL。商品详情首屏支持 `?variant=ID`，并输出商品与变体结构化数据。
+- 首页按 X-Short、Short、Medium、Long、X-Long 展示五档长度，卡片进入对应的长度筛选。首页精选、`/all-products/` 和 `/collections/short/`、`/collections/oval/` 在服务端输出商品链接。商品列表每页 24 款，筛选状态保存在 URL。商品详情首屏支持 `?variant=ID`，并输出商品与变体结构化数据。
 - `/api/merchant/feed.xml` 统一使用 `https://ginnynana.com` 生成商品落地链接，保留变体参数。部署后在 Search Console 提交站点地图，并在 Merchant Center 重新获取 Feed。无需数据库 migration。验收步骤见 [SEO 上线验收](./docs/storefront-seo.md)。

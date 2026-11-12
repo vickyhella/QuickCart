@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import ts from 'typescript'
+import * as storefrontSeo from '../lib/storefront-seo.js'
 import * as pricing from '../lib/product-pricing.js'
 import * as shippingConfig from '../lib/shipping-config'
 import * as validation from '../lib/product-validation.js'
@@ -37,6 +38,7 @@ function loadRoute(path: string, payload: any, extra: Record<string, unknown> = 
     '@/lib/product-seo-templates': { resolveProductSeoTemplates: () => ({ title: '', description: '' }) },
     '@/lib/studio-description-template': { DEFAULT_STUDIO_DESCRIPTION_TEMPLATE: '' },
     '@/lib/studio-product-media': { resolveStudioProductMedia: async () => ({ media: [], unavailableCount: 0 }) },
+    '@/lib/storefront-seo': storefrontSeo,
     '@/lib/environment-config': { getEnvironmentVariable: () => '' },
     '@/lib/admin-access': adminAccess,
     '@/lib/resolve-product-media': { resolveProductMedia: async (_payload: unknown, products: unknown[]) => products },

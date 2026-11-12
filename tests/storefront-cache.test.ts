@@ -4,6 +4,8 @@ import { test } from 'node:test'
 import { runInNewContext } from 'node:vm'
 import { AsyncLocalStorage } from 'node:async_hooks'
 import ts from 'typescript'
+import * as storefrontCollections from '../lib/storefront-collections.js'
+import * as storefrontSeo from '../lib/storefront-seo.js'
 import * as storefrontProduct from '../lib/storefront-product.js'
 import * as mediaResolver from '../lib/resolve-product-media.js'
 import * as pricing from '../lib/product-pricing'
@@ -74,6 +76,8 @@ function fixture() {
     'next/cache': nextCache, 'next/server': { NextResponse: { json: Response.json.bind(Response) } },
     '@/payload.config': { default: {} }, payload: { getPayload: async () => payload },
     './resolve-product-media': mediaResolver, './storefront-cache': policy, '@/lib/storefront-cache': policy,
+    '@/lib/storefront-seo': storefrontSeo,
+    '@/lib/storefront-collections': storefrontCollections,
     '@/lib/environment-config': { getEnvironmentVariable: () => '' },
     '@/lib/product-pricing': pricing, '@/lib/merchant-feed-description': merchantDescription,
   }
@@ -94,6 +98,7 @@ test('homepage, catalog, searches and both feeds share one projected product/med
     const list = await (await routes[1].GET()).json()
     assert.equal(list.docs[0].variants[0].image.url, '/image-11.webp')
     for (const query of ['rose', 'ROSE', `not-found-${visit}`]) await routes[2].GET(new Request(`https://shop.example/api/storefront/search?q=${query}`))
+    assert.match(await (await routes[3].GET()).text(), /<g:link>https:\/\/ginnynana\.com\/product\/rose\/\?variant=s<\/g:link>/)
     for (const route of routes.slice(3)) {
       const xml = await (await route.GET()).text()
       assert.match(xml, /<g:title>Rose/)
@@ -210,4 +215,18 @@ test('a real Marketing save scopes template refreshes and shares the saved setti
   await save({ doc, previousDoc, req })
   assert.equal(scans, 1)
   assert.equal(updates, 1)
+})
+
+test('sitemap includes published canonical products and excludes noindex or alternate canonicals', async () => {
+  const { modules, products } = fixture()
+  products.push(
+    { ...products[0], id: 2, slug: 'hidden', seoNoIndex: true } as any,
+    { ...products[0], id: 3, slug: 'duplicate', seoCanonicalUrl: '/product/rose/' } as any,
+    { ...products[0], id: 4, slug: 'invalid-override', seoCanonicalUrl: 'https://[' } as any,
+  )
+  const sitemap = load('app/sitemap.js', modules)
+  const urls = (await sitemap.default()).map((entry: { url: string }) => entry.url)
+  assert.ok(urls.includes('https://ginnynana.com/product/rose/'))
+  assert.ok(urls.includes('https://ginnynana.com/product/invalid-override/'))
+  assert.ok(!urls.some((url: string) => /hidden|duplicate/.test(url)))
 })

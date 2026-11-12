@@ -1,4 +1,4 @@
-import { getEnvironmentVariable } from '@/lib/environment-config'
+import { productUrl, storefrontOrigin } from '@/lib/storefront-seo'
 import { getPublishedCatalog } from '@/lib/storefront-catalog'
 import { getPriceDetails } from '@/lib/product-pricing'
 import { merchantDescription } from '@/lib/merchant-feed-description'
@@ -19,7 +19,7 @@ const amount = (value) => `${Number(value || 0).toFixed(2)} USD`
 export async function GET() {
   const productsWithMedia = await getPublishedCatalog()
 
-  const siteURL = (getEnvironmentVariable('NEXT_PUBLIC_SITE_URL') || 'https://ginnynana.com').replace(/\/$/, '')
+  const siteURL = storefrontOrigin
   const entries = productsWithMedia.flatMap((product) => {
     const shippingWeight = Number(product.shippingWeight) > 0 ? Number(product.shippingWeight) : 0.2
     const image = typeof product.featuredImage === 'object' ? product.featuredImage : null
@@ -29,8 +29,7 @@ export async function GET() {
 
     return items.map((variant) => {
       const { price, salePrice, onSale } = getPriceDetails(product, variant)
-      const productURL = new URL(`/product/${encodeURIComponent(product.slug || product.id)}/`, siteURL)
-      if (variant?.id) productURL.searchParams.set('variant', String(variant.id))
+      const productURL = productUrl(product, variant)
       const variantImage = variant?.image && typeof variant.image === 'object' ? variant.image : null
       const imageURL = variantImage?.url || image?.url || (product.gallery || [])[0]?.url
       if (!imageURL) return null

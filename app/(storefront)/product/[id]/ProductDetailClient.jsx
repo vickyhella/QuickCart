@@ -1,9 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import SafeImage from '@/components/SafeImage'
 import Link from 'next/link'
-import { useParams } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import ProductCard from '@/components/ProductCard'
@@ -18,48 +17,19 @@ import { getPriceDetails } from '@/lib/product-pricing'
 import { sortProductSizes } from '@/lib/product-size-order'
 import { productVariantAttributeKeys } from '@/lib/product-color'
 
-export default function ProductPage({ initialProduct = null } = {}) {
-  const { id } = useParams()
-  const { products, productsStatus, fetchProductData, addToCart, router, currency, shippingSettings, shippingEstimate, siteSettings } = useAppContext()
-  const product = initialProduct || products.find((item) => item._id === String(id) || item.slug === String(id))
+export default function ProductPage({ initialProduct, initialVariant } = {}) {
+  const { products, addToCart, router, currency, shippingSettings, shippingEstimate, siteSettings } = useAppContext()
+  const product = initialProduct
   const [mainImage, setMainImage] = useState('')
-  const [selectedLength, setSelectedLength] = useState('')
-  const [selectedShape, setSelectedShape] = useState('')
-  const [selectedSize, setSelectedSize] = useState('')
-  const [selectedAttributes, setSelectedAttributes] = useState({})
+  const [selectedLength, setSelectedLength] = useState(initialVariant?.length || '')
+  const [selectedShape, setSelectedShape] = useState(initialVariant?.shape || '')
+  const [selectedSize, setSelectedSize] = useState(initialVariant ? initialVariant.size || 's' : '')
+  const [selectedAttributes, setSelectedAttributes] = useState(initialVariant?.attributes || {})
   const [added, setAdded] = useState(false)
-
-  useEffect(() => setMainImage(''), [id])
-  const variants = (product?.variants || []).filter((variant) => variant.enabled !== false)
-  useEffect(() => {
-    if (variants.length) {
-      const preferredVariant = new URLSearchParams(window.location.search).get('variant')
-      const initial = variants.find((variant) => String(variant.id) === preferredVariant)
-        || variants.find((variant) => String(variant.size || 's').toLowerCase() === 's')
-        || variants[0]
-      setSelectedLength(initial.length || '')
-      setSelectedShape(initial.shape || '')
-      setSelectedSize(initial.size || 's')
-      setSelectedAttributes(initial.attributes || {})
-    } else {
-      setSelectedLength('')
-      setSelectedShape('')
-      setSelectedSize('')
-      setSelectedAttributes({})
-    }
-  }, [id, product?.variants?.length])
+  const variants = (product.variants || []).filter((variant) => variant.enabled !== false)
 
   const attributeKeys = productVariantAttributeKeys(variants)
   const selectedVariant = variants.find((variant) => (variant.length || '') === selectedLength && (variant.shape || '') === selectedShape && (variant.size || 's') === selectedSize && attributeKeys.every((key) => String(variant.attributes?.[key] ?? '') === String(selectedAttributes[key] ?? '')))
-  useEffect(() => {
-    if (selectedVariant?.image?.url) setMainImage(selectedVariant.image.url)
-    else setMainImage('')
-  }, [selectedVariant?.id, selectedVariant?.image?.url])
-
-  if (!product && productsStatus === 'loading') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><p className="py-32 text-center text-[#786963]" role="status">Loading designs…</p><Footer /></main>
-  if (!product && productsStatus === 'error') return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center text-[#786963]" role="alert"><p>We couldn’t load this design.</p><button type="button" onClick={fetchProductData} className="mt-3 underline">Try again</button></div><Footer /></main>
-  if (!product) return <main className="min-h-screen bg-[#fffdfa]"><Navbar /><div className="py-32 text-center"><h1 className="font-serif text-3xl">This design is unavailable</h1><Link href="/all-products" className="inline-block mt-5 underline">Browse all designs</Link></div><Footer /></main>
-
   const money = (amount) => `${currency || '$'}${Number(amount).toFixed(2)}`
   const pricing = getPriceDetails(product, selectedVariant)
   const availableLengths = [...new Set(variants.filter((variant) => variant.shape === selectedShape && (!selectedSize || (variant.size || 's') === selectedSize)).map((variant) => variant.length).filter(Boolean))]
@@ -73,8 +43,9 @@ export default function ProductPage({ initialProduct = null } = {}) {
     const matching = variants.find((variant) => (variant.length || '') === proposed.length && (variant.shape || '') === proposed.shape && (variant.size || 's') === proposed.size && attributeKeys.every((key) => String(variant.attributes?.[key] ?? '') === String(proposedAttributes[key] ?? '')))
       || variants.find((variant) => variant[dimension] === value)
     if (matching) {
-      setSelectedLength(matching.length)
-      setSelectedShape(matching.shape)
+      if (matching.id !== selectedVariant?.id) setMainImage('')
+      setSelectedLength(matching.length || '')
+      setSelectedShape(matching.shape || '')
       setSelectedSize(matching.size || 's')
       setSelectedAttributes(matching.attributes || proposedAttributes)
     }
@@ -113,11 +84,6 @@ export default function ProductPage({ initialProduct = null } = {}) {
                 </label>
               })}
             </div>}
-            <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full">
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="ui-button ui-button--secondary w-full sm:flex-1">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
-              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/checkout') }} className="ui-button ui-button--primary w-full sm:flex-1">Buy now</button>
-            </div>
-            {variants.length > 0 && <p className="mt-2 text-xs text-[#786963]" role="status">{selectedVariant ? `Selected size: ${String(selectedVariant.size || 's').toUpperCase()}. Check your measurements below before ordering.` : 'Choose your size before adding this set to your bag.'}</p>}
             <details className="mt-4 rounded-lg bg-[#f8f3ef] px-4 py-3 text-sm">
               <summary className="cursor-pointer font-medium underline underline-offset-2">How to choose your size</summary>
               <p className="mt-3 leading-6 text-[#6e5c55]">Measure the widest part of each natural nail from sidewall to sidewall. Measure both hands, then compare your measurements with the chart below.</p>
@@ -125,6 +91,11 @@ export default function ProductPage({ initialProduct = null } = {}) {
               <p className="mt-3 leading-6 text-[#6e5c55]">See the <Link className="underline underline-offset-2" href="/size-guide/">step-by-step measuring guide</Link> for photos. Try each press-on against a clean, dry nail before applying adhesive. If you’re unsure, contact <a className="underline" href={`mailto:${siteSettings.customerEmail}`}>{siteSettings.customerEmail}</a> before ordering.</p>
             </details>
             <p className="mt-4 text-sm leading-6 text-[#6e5c55]">Estimated delivery: {shippingEstimate}. Free shipping on orders over {currency || '$'}{Number(shippingSettings.freeShippingThreshold).toFixed(2)} after discounts. <Link href="/shipping-policy/" className="underline underline-offset-2">Shipping details</Link></p>
+            <div className="flex flex-col sm:flex-row gap-3 mt-6 w-full">
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); setAdded(true); window.setTimeout(() => setAdded(false), 1800) }} className="ui-button ui-button--secondary w-full sm:flex-1">{selectedOutOfStock ? 'Out of stock' : added ? 'Added to cart ✓' : 'Add to cart'}</button>
+              <button disabled={(variants.length > 0 && !selectedVariant) || selectedOutOfStock} onClick={() => { addToCart(product._id, selectedVariant); router.push('/checkout') }} className="ui-button ui-button--primary w-full sm:flex-1">Buy now</button>
+            </div>
+            {variants.length > 0 && <p className="mt-2 text-xs text-[#786963]" role="status">{selectedVariant ? `Selected size: ${String(selectedVariant.size || 's').toUpperCase()}. Check your measurements before ordering.` : 'Choose your size before adding this set to your bag.'}</p>}
             <PaymentMethods className="mt-3" />
             <div className="product-markdown text-[#6e5c55] leading-7 mt-7">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={{

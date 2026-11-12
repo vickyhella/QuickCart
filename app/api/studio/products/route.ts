@@ -37,8 +37,8 @@ export async function GET(request: Request) {
     limit,
     sort,
     depth: 1,
+    // Payload needs the media filename and storage fields to generate the public URL.
     select: { title: true, slug: true, sku: true, price: true, compareAtPrice: true, status: true, createdAt: true, updatedAt: true, featuredImage: true, variants: { id: true } },
-    populate: { media: { url: true } },
     overrideAccess: false,
     user,
   })

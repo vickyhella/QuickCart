@@ -186,6 +186,10 @@ Media → Image names & metadata 使用与 SEO 相同的编辑 / 预览布局；
 
 当前发布接口使用固定的 Access Token，过期前需更新 Netlify 中的值并重新部署。
 
+## Product Studio 商品缩略图
+
+商品列表通过 `/api/studio/products` 读取主图关联，由 Payload 根据媒体文件信息生成图片地址。修复适用于现有 R2 媒体，无需重新上传或数据库迁移。
+
 ## 商城 SEO 与 Google 商品 Feed
 
 - `/robots.txt` 声明 `/sitemap.xml`。站点地图包含公开入口和符合索引条件的已发布商品，商品详情默认使用正式域名下的 slug 作为 canonical，并保留后台手工设置。

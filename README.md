@@ -182,7 +182,7 @@ Media → Image names & metadata 使用与 SEO 相同的编辑 / 预览布局；
 
 在 QuickCart 的 Netlify Production 中配置 Functions 环境变量 `PINTEREST_ACCESS_TOKEN`、`PINTEREST_BOARD_ID` 和 `CRON_SECRET` 后重新部署。令牌和密钥标记为 Secret，已有的 `CRON_SECRET` 可继续使用。公开发布需要 Pinterest Standard access。
 
-在 Marketing Studio 的 Pinterest publishing 中选择已上架且有公开主图的商品并设定时间。`netlify/functions/pinterest-publish.ts` 每天北京时间 17:00 调用发布接口处理已到期的任务。请在 Pinterest Posts 查看发布状态、Pin ID 或失败原因。Netlify 的预览部署不会自动运行此定时任务。
+在 Marketing Studio 的 Pinterest publishing 中选择已上架且有公开主图的商品并设定时间。`netlify/functions/pinterest-publish.ts` 每天北京时间 17:00 调用发布接口，按到期顺序每次最多处理 5 条。单条请求最多等待 5 秒，批次预留写入状态的时间，未开始的任务留待下次执行。请求超时时先检查 Pinterest 是否已生成 Pin，再决定是否手动重试。请在 Pinterest Posts 查看发布状态、Pin ID 或失败原因。Netlify 的预览部署不会自动运行此定时任务。
 
 当前发布接口使用固定的 Access Token，过期前需更新 Netlify 中的值并重新部署。
 

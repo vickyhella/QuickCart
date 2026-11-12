@@ -22,11 +22,12 @@ export default async function publishScheduledPins(): Promise<void> {
     throw new Error(`Pinterest publishing endpoint returned HTTP ${response.status}.`)
   }
 
-  const { processed, results } = await response.json() as {
+  const { processed, remaining, results } = await response.json() as {
     processed: number
+    remaining: number
     results: { status: string }[]
   }
   const failed = results.filter(({ status }) => status === 'failed').length
-  console.info(`Pinterest publishing processed ${processed} post(s), with ${failed} failure(s).`)
+  console.info(`Pinterest publishing processed ${processed} post(s), with ${failed} failure(s) and ${remaining} due post(s) still queued.`)
   if (failed) throw new Error('Check the failed records in Pinterest Posts for details.')
 }

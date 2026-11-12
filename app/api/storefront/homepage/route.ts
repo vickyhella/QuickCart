@@ -10,10 +10,10 @@ const getHomepageImages = unstable_cache(async (imageIDs: string[]) => {
   const payload = await getPayload({ config })
   const images = await payload.find({
     collection: 'media', where: { id: { in: imageIDs } }, limit: imageIDs.length,
-    depth: 0, select: { url: true, altText: true }, overrideAccess: true,
+    depth: 0, overrideAccess: true,
   })
   return images.docs
-}, ['storefront-homepage-images-v1'], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_SETTINGS_TAG] })
+}, ['storefront-homepage-images-v2'], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_SETTINGS_TAG] })
 
 async function getHomepageData() {
   // Keep these cache scopes separate: Next bypasses nested unstable_cache readers.

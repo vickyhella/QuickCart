@@ -21,7 +21,7 @@ const getNavigationData = unstable_cache(async () => {
   }))
   const imageSettings = Array.isArray(dimensions.dimensions) ? (dimensions.dimensions as any[]).find((item) => item?.key === '__category-preview-images')?.options || [] : []
   const imageIDs = imageSettings.map((item: any) => String(item?.image || '')).filter(Boolean)
-  const imageDocs = imageIDs.length ? await payload.find({ collection: 'media', where: { id: { in: imageIDs } }, limit: imageIDs.length, depth: 0, select: { url: true }, overrideAccess: true }) : { docs: [] }
+  const imageDocs = imageIDs.length ? await payload.find({ collection: 'media', where: { id: { in: imageIDs } }, limit: imageIDs.length, depth: 0, overrideAccess: true }) : { docs: [] }
   const imageURLs = new Map<string, string>(imageDocs.docs.map((item: any) => [String(item.id), String(item.url || '')] as [string, string]))
   const configuredImages = new Map<string, string>(imageSettings.map((image: any) => [String(image.value), String(image.image || '')] as [string, string]))
   const withImages = (key: string, options: any[] = []) => options.map((option) => {
@@ -61,7 +61,7 @@ const getNavigationData = unstable_cache(async () => {
     shapes,
     pages,
   }
-}, [`storefront-navigation-v4-${contentSources.categoryImages}`], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_NAVIGATION_TAG] })
+}, [`storefront-navigation-v5-${contentSources.categoryImages}`], { revalidate: STOREFRONT_CACHE_SECONDS, tags: [STOREFRONT_NAVIGATION_TAG] })
 
 export async function GET() {
   let data

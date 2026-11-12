@@ -52,8 +52,8 @@ function fixture() {
     find: async (query: any) => {
       queries.push(query)
       assert.equal(query.depth, 0)
-      assert.ok(query.select, 'Every public read must project its required fields')
       if (query.collection === 'products') {
+        assert.ok(query.select, 'Public product reads must project their required fields')
         assert.equal(query.where.status.equals, 'published')
         assert.equal(query.select.suppliers, undefined)
         assert.equal(query.select.supplierSKU, undefined)
@@ -62,7 +62,7 @@ function fixture() {
         return { docs: structuredClone(products.slice(offset, offset + query.limit)), hasNextPage: offset + query.limit < products.length }
       }
       assert.equal(query.collection, 'media')
-      return { docs: query.where.id.in.map((id: number | string) => ({ id, url: `/image-${id}.webp`, altText: 'Nails' })) }
+      return { docs: query.where.id.in.map((id: number | string) => ({ id, url: !query.select || query.select.filename ? `/image-${id}.webp` : null, altText: 'Nails' })) }
     },
     findGlobal: async (query: any) => {
       queries.push(query)

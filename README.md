@@ -188,7 +188,7 @@ Media → Image names & metadata 使用与 SEO 相同的编辑 / 预览布局；
 
 ## Product Studio 商品缩略图
 
-商品列表通过 `/api/studio/products` 读取主图关联，由 Payload 根据媒体文件信息生成图片地址。修复适用于现有 R2 媒体，无需重新上传或数据库迁移。
+商品列表通过 `/api/studio/products` 读取主图关联，由 Payload 根据媒体文件信息生成图片地址。首页和分类选择后台图片时，也由 Payload 读取完整媒体记录生成 R2 地址。现有图片无需重新上传或数据库迁移。
 
 ## 商城 SEO 与 Google 商品 Feed
 
